@@ -2,8 +2,6 @@
 # PC Help Hub - NETWORK DIAGNOSTICS
 # ==============================================================================
 
-$scriptUrl = "i need this :)"
-
 # Self-Elevation block
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Requesting Administrative privileges to run diagnostics..." -ForegroundColor Cyan
@@ -178,4 +176,5 @@ Write-Host "===============================================================" -Fo
 Write-Host ""
 
 Write-Host "Press any key to close this window..." -ForegroundColor Yellow
+
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
