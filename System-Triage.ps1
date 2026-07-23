@@ -52,7 +52,7 @@ $ziptar = "$File\PCHH-Triage_$random.zip"
 
 $sys_eventlog_path = "$File\system_eventlogs.evtx"
 
-$scriptVersion = "2.0"
+$scriptVersion = "1.0"
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
 
@@ -212,7 +212,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 </head>
 <body class="tab-summary">
 <header>
-  <h1 id="appTitle">PCHH Triage <span style="color:var(--dim);font-weight:400">— System Summary and Crash Log Report</span></h1>
+  <h1 id="appTitle">PCHH Triage <span style="color:var(--dim);font-weight:400"> System Summary and Crash Report</span></h1>
   <span id="range" class="mono"></span>
   <label id="drop">Open another CSV<input type="file" accept=".csv" hidden></label>
 </header>
