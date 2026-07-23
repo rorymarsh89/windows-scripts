@@ -1228,7 +1228,7 @@ function reliabilityexport {
     Write-Host "[3/4] Collecting diagnostics.." -ForegroundColor Blue
 
     try {
-        Write-Host "      - reliability history" -ForegroundColor DarkGray
+        Write-Host "      - Reliability history" -ForegroundColor DarkGray
         $recs = Get-CimInstance Win32_ReliabilityRecords -ErrorAction Stop | ForEach-Object {
             [PSCustomObject]@{
                 t = $_.TimeGenerated.ToString("dd/MM/yyyy HH:mm:ss")
@@ -1243,10 +1243,10 @@ function reliabilityexport {
         $recs | Export-Csv $reliability_csv_path -NoTypeInformation -Encoding UTF8
 
         # Curated system events for the viewer
-        Write-Host "      - notable system events" -ForegroundColor DarkGray
+        Write-Host "      - Notable system events" -ForegroundColor DarkGray
         $sysEvents = @(Get-CuratedSystemEvents)
 
-        Write-Host "      - drive SMART data" -ForegroundColor DarkGray
+        Write-Host "      - Drive S.M.A.R.T data" -ForegroundColor DarkGray
         # Raw ATA SMART attributes (SATA drives; NVMe reports via reliability counters instead)
         $rawSmart = @{}
         $predictFail = @{}
@@ -1362,7 +1362,7 @@ function reliabilityexport {
             } | Where-Object { $_ })
         } catch { }
 
-        Write-Host "      - GPU and display info via dxdiag (this one can take up to 30 seconds)" -ForegroundColor DarkGray
+        Write-Host "      - GPU and display info via DXDIAG (this can take up to 30 seconds)" -ForegroundColor DarkGray
         # Per-output display -> GPU mapping via dxdiag (waits up to 30s; falls back to WMI data above)
         $displays = @()
         try {
@@ -1398,7 +1398,7 @@ function reliabilityexport {
             } | Sort-Object mem -Descending)
         } catch { }
 
-        Write-Host "      - network adapters, memory and running processes" -ForegroundColor DarkGray
+        Write-Host "      - Network adapters, Memory and Running processes" -ForegroundColor DarkGray
         # Network adapters (no IPs, MACs or SSIDs collected)
         $net = $null
         try {
