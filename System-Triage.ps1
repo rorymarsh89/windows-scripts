@@ -127,7 +127,7 @@ body.tab-dumps #dumpsView{display:block}
 .smart-kv dt{color:var(--dim)}
 .smart-kv dd{text-align:right;font-family:'IBM Plex Mono',monospace}
 .proc-head{display:grid;grid-template-columns:1fr 110px 110px;color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line);margin-top:8px}
-.proc-row{display:grid;grid-template-columns:1fr 110px 110px;padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
+.proc-row{display:grid;grid-template-columns:1fr 110px 110px;padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px}
 .proc-row span:nth-child(2),.proc-row span:nth-child(3),.proc-head span:nth-child(2),.proc-head span:nth-child(3){text-align:right}
 .pager{display:flex;gap:12px;align-items:center;margin-top:12px}
 .pg-btn{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--dim);font-family:inherit;font-size:14px;padding:6px 14px;cursor:pointer}
@@ -644,7 +644,7 @@ function renderProcList(){
   const SZ=50,pages=Math.max(1,Math.ceil(rows.length/SZ));
   if(PS_.page>pages)PS_.page=pages;
   const slice=rows.slice((PS_.page-1)*SZ,PS_.page*SZ);
-  el.innerHTML=slice.map(p=>'<div class="proc-row"><span class="mono">'+esc(p.name)+'</span><span>'+esc(String(p.cnt))+'</span><span class="mono">'+esc(String(p.mem))+' MB</span></div>').join('')||'<div style="color:var(--faint);padding:10px 4px">No matches.</div>';
+  el.innerHTML=slice.map(p=>'<div class="proc-row"><span>'+esc(p.name)+'</span><span>'+esc(String(p.cnt))+'</span><span class="mono">'+esc(String(p.mem))+' MB</span></div>').join('')||'<div style="color:var(--faint);padding:10px 4px">No matches.</div>';
   document.querySelectorAll('.sorth').forEach(hd=>{
     hd.querySelector('.arrow').textContent=hd.dataset.key===PS_.key?(PS_.dir>0?' \u25b2':' \u25bc'):'';
   });
@@ -775,6 +775,40 @@ function renderSummary(){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
     if(slow.length)notes.push('<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>');
   }
+  // Known software flags: anti-cheat/kernel drivers, OC & monitoring tools, RGB/peripheral suites, bloatware/PUPs
+  const SOFT_FLAGS=[
+    {re:/riot vanguard/i,        label:'Riot Vanguard',              grp:'ac'},
+    {re:/easy anti-?cheat/i,     label:'Easy Anti-Cheat',            grp:'ac'},
+    {re:/battleye/i,             label:'BattlEye',                   grp:'ac'},
+    {re:/faceit anti-?cheat|faceit ac/i, label:'FACEIT AC',          grp:'ac'},
+    {re:/msi afterburner/i,      label:'MSI Afterburner',            grp:'oc'},
+    {re:/rtss|rivatuner/i,       label:'RTSS (RivaTuner Statistics)',grp:'oc'},
+    {re:/intel.*extreme tuning|intel\(r\) xtu/i, label:'Intel XTU', grp:'oc'},
+    {re:/ryzen master/i,         label:'AMD Ryzen Master',           grp:'oc'},
+    {re:/corsair icue/i,         label:'Corsair iCUE',               grp:'periph'},
+    {re:/razer synapse/i,        label:'Razer Synapse',              grp:'periph'},
+    {re:/(logitech|logi) g ?hub/i, label:'Logitech G HUB',           grp:'periph'},
+    {re:/armoury crate/i,        label:'ASUS Armoury Crate',         grp:'periph'},
+    {re:/mystic light/i,         label:'MSI Mystic Light',           grp:'periph'},
+    {re:/aura sync/i,            label:'ASUS Aura Sync',             grp:'periph'},
+    {re:/mcafee/i,               label:'McAfee',                     grp:'bloat'},
+    {re:/norton (360|security)/i,label:'Norton 360',                 grp:'bloat'},
+    {re:/wildtangent/i,          label:'WildTangent Games',          grp:'bloat'},
+    {re:/advanced systemcare|driver booster|iobit/i, label:'IObit utilities', grp:'bloat'},
+    {re:/reimage|restoro/i,      label:'Restoro/Reimage',            grp:'bloat'},
+    {re:/pc cleaner pro|mycleanpc|pc healthboost|systweak/i, label:'PC "cleaner" utility', grp:'bloat'},
+    {re:/driverfix|smart driver care|driver updater/i, label:'Third-party driver updater', grp:'bloat'},
+  ];
+  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',bloat:'Potential bloatware/PUP'};
+  const foundSoft={};
+  (sp.programs||[]).forEach(p=>{
+    SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
+  });
+  Object.keys(foundSoft).forEach(grp=>{
+    const items=[...foundSoft[grp]].sort().join(', ');
+    notes.push('<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>');
+  });
+
   const gpuDrvRe=/nvlddmkm|amdwddmg|amdkmdag|atikmdag/i;
   const tdrEvents=SYSEVT.filter(r=>String(r.id)==='4101'||gpuDrvRe.test(r.prov)||gpuDrvRe.test(r.msg||''));
   if(tdrEvents.length){
