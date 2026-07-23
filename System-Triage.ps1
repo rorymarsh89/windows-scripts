@@ -53,6 +53,7 @@ $ziptar = "$File\PCHH-Triage_$random.zip"
 $sys_eventlog_path = "$File\system_eventlogs.evtx"
 
 $scriptVersion = "1.0"
+$lookbackDays = 365   # match reliability history's ~1 year span; System log is size-capped anyway
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
 
@@ -743,11 +744,27 @@ function renderSummary(){
   const shutdowns=events.filter(e=>/unexpected/i.test(e.m)&&e.s==='EventLog').length;
   const notes=[];
   notes.push(crashes?'<span class="r"><b>'+crashes+'</b> Application crash'+(crashes>1?'es':'')+'</span>':'<span class="g">No application crashes</span>');
-  notes.push(shutdowns?'<span class="r"><b>'+shutdowns+'</b> Unexpected shutdown(s)</span>':'<span class="g">No unexpected shutdowns</span>');
+  // Unexpected shutdowns: reliability history (6008-derived) and Kernel-Power 41 record the
+  // same incident. Report one merged line, using the larger count if they disagree.
+  const kp41ev=SYSEVT.filter(r=>String(r.id)==='41');
+  const shutdownCount=Math.max(shutdowns,kp41ev.length);
+  if(shutdownCount){
+    const BC_NAMES={ '278':'0x116 VIDEO_TDR_FAILURE','279':'0x117 VIDEO_TDR_TIMEOUT_DETECTED','281':'0x119 VIDEO_SCHEDULER_INTERNAL_ERROR','321':'0x141 VIDEO_ENGINE_TIMEOUT_DETECTED','322':'0x142 VIDEO_TDR_APPLICATION_BLOCKED' };
+    const bcs=[...new Set(kp41ev.map(r=>String(r.bc||'')).filter(b=>b&&b!=='0'))];
+    let detail;
+    if(bcs.length){
+      detail='bugcheck '+bcs.map(b=>BC_NAMES[b]||('code '+b)).join(', ');
+    }else if(kp41ev.length){
+      detail='no bugcheck \u2014 power loss, hard reset or hang';
+    }else{
+      detail='reliability history only \u2014 outside event log window';
+    }
+    notes.push('<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>');
+  }else{
+    notes.push('<span class="g">No unexpected shutdowns</span>');
+  }
   if(DUMPS.length)notes.push('<span class="y"><b>'+DUMPS.length+'</b> Memory dump'+(DUMPS.length>1?'s':'')+' collected</span> <span style="color:var(--faint)">(in zip)</span>');
-  const kp41=SYSEVT.filter(r=>String(r.id)==='41').length;
   const wheaFatal=SYSEVT.filter(r=>/WHEA/i.test(r.prov)&&['18','46'].includes(String(r.id))).length;
-  if(kp41)notes.push('<span class="r"><b>'+kp41+'</b> Kernel-Power 41 event'+(kp41>1?'s':'')+'</span>');
   if(wheaFatal)notes.push('<span class="r"><b>'+wheaFatal+'</b> Fatal hardware error'+(wheaFatal>1?'s':'')+' (WHEA)</span>');
   SMART.forEach(d=>{
     const probs=smartProbs(d);
@@ -764,9 +781,6 @@ function renderSummary(){
     const drv=[...new Set(tdrEvents.map(r=>{const m2=(r.prov+' '+(r.msg||'')).match(gpuDrvRe);return m2?m2[0].toLowerCase():null;}).filter(Boolean))];
     notes.push('<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>');
   }
-  const TDR_BC={ '278':'0x116 VIDEO_TDR_FAILURE','279':'0x117 VIDEO_TDR_TIMEOUT_DETECTED','281':'0x119 VIDEO_SCHEDULER_INTERNAL_ERROR','321':'0x141 VIDEO_ENGINE_TIMEOUT_DETECTED','322':'0x142 VIDEO_TDR_APPLICATION_BLOCKED' };
-  const gpuBc=[...new Set(SYSEVT.filter(r=>String(r.id)==='41'&&TDR_BC[r.bc]).map(r=>TDR_BC[r.bc]))];
-  gpuBc.forEach(b=>notes.push('<span class="r">Bugcheck <b>'+esc(b)+'</b> recorded</span>'));
   const lke=RAW.filter(r=>/LiveKernelEvent/i.test(r.m||'')).length;
   if(lke)notes.push('<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>');
   if(NET&&NET.wifi&&NET.wifi.signal){
@@ -787,7 +801,7 @@ function renderSys(){
   const v=document.getElementById('sysView');
   let h='';
   if(!SYSEVT.length){
-    h+='<div class="sys-ok">\u2713 No notable system events found in the last 14 days.</div>';
+    h+='<div class="sys-ok">\u2713 No notable system events found in the collection window.</div>';
     v.innerHTML=h;return;
   }
   const evs=SYSEVT.map(r=>({...r,dt:parseDate(r.t)})).filter(r=>r.dt).sort((a,b)=>b.dt-a.dt);
@@ -1138,7 +1152,7 @@ function eventlogexport {
     Write-Host ""
     Write-Host "[2/4] Exporting Windows event logs.." -ForegroundColor Blue
 
-    $startTime = (Get-Date).AddDays(-14).ToString("yyyy-MM-ddTHH:mm:ss")
+    $startTime = (Get-Date).AddDays(-$lookbackDays).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")
 
     try {
         wevtutil epl System $sys_eventlog_path /q:"*[System[TimeCreated[@SystemTime>='$startTime']]]"
@@ -1170,7 +1184,7 @@ function Get-CuratedSystemEvents {
         @{ P = '*WER-SystemErrorReporting';   I = 1001 }
     )
     $ids = @($allow | ForEach-Object { $_.I } | Select-Object -Unique)
-    $since = (Get-Date).AddDays(-14)
+    $since = (Get-Date).AddDays(-$lookbackDays)
 
     # Windows limits FilterHashtable to 23 event IDs per query - chunk the list
     $raw = @()
@@ -1215,7 +1229,7 @@ function Get-CuratedSystemEvents {
             lvl  = 3
             bc   = ''
             cnt  = $whea17.Count
-            msg  = "$($whea17.Count) corrected PCIe hardware error(s) recorded in the last 14 days (summarised)."
+            msg  = "$($whea17.Count) corrected PCIe hardware error(s) recorded in the last $lookbackDays days (summarised)."
         }
     }
 
