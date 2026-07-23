@@ -798,12 +798,25 @@ function renderSummary(){
     {re:/reimage|restoro/i,      label:'Restoro/Reimage',            grp:'bloat'},
     {re:/pc cleaner pro|mycleanpc|pc healthboost|systweak/i, label:'PC "cleaner" utility', grp:'bloat'},
     {re:/driverfix|smart driver care|driver updater/i, label:'Third-party driver updater', grp:'bloat'},
+    {re:/nzxt cam/i,             label:'NZXT CAM',                   grp:'periph'},
+    {re:/msi dragon center|dragon center/i, label:'MSI Dragon Center', grp:'periph'},
+    {re:/nahimic/i,              label:'Nahimic Audio',              grp:'audio'},
+    {re:/nvidia geforce experience/i, label:'GeForce Experience',    grp:'audio'},
+    {re:/xbox game bar|gaming services/i, label:'Xbox Game Bar',     grp:'audio'},
+    {re:/streamlabs/i,           label:'Streamlabs OBS',             grp:'audio'},
+    {re:/hola vpn/i,             label:'Hola VPN',                   grp:'net'},
+    {re:/killer network|killer control center/i, label:'Killer Network Manager', grp:'net'},
   ];
-  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',bloat:'Potential bloatware/PUP'};
+  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP'};
   const foundSoft={};
   (sp.programs||[]).forEach(p=>{
     SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
   });
+  const avStr=specVal(sp.info,'Antivirus');
+  if(avStr){
+    const avList=avStr.split(',').map(s=>s.trim()).filter(Boolean);
+    if(avList.length>1)notes.push('<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>');
+  }
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
     notes.push('<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>');
