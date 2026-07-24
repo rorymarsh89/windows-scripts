@@ -336,6 +336,7 @@ const DUMPS = /*__DUMPS__*/[];
 const SYSEVT = /*__SYSEVT__*/[];
 const SMART = /*__SMART__*/[];
 const DIRTY = /*__DIRTY__*/[];
+const DISKLAYOUT = /*__DISKLAYOUT__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
 const HAGS = /*__HAGS__*/null;
@@ -617,6 +618,26 @@ function renderSpecs(){
     });
     dh+='</div></div>';
   }
+  if(DISKLAYOUT.length){
+    dh+='<div class="spec-section"><h2>Disk layout</h2>';
+    const TYPE_COLOR={'EFI System Partition':'var(--info)','Recovery':'var(--warn)','Recovery (MBR)':'var(--warn)','Microsoft Reserved':'var(--faint)','Data':'var(--ok)','System':'var(--dim)'};
+    DISKLAYOUT.forEach(dk=>{
+      const total=dk.partitions.reduce((a,p)=>a+p.sizeGB,0)||dk.sizeGB||1;
+      dh+='<div class="drive" style="margin-bottom:14px"><h3>Disk '+dk.disk+' <span style="color:var(--dim);font-weight:400">'+esc(dk.style||'Unknown')+' \u00b7 '+dk.sizeGB+' GB</span></h3>';
+      dh+='<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin:10px 0;background:var(--panel2)">';
+      dk.partitions.forEach(p=>{
+        const pct=Math.max(1.5,(p.sizeGB/total*100));
+        const col=TYPE_COLOR[p.type]||'var(--dim)';
+        dh+='<div title="'+esc(p.type)+(p.letter?' ('+esc(p.letter)+')':'')+' \u2014 '+p.sizeGB+' GB" style="width:'+pct+'%;background:'+col+';border-right:1px solid var(--panel)"></div>';
+      });
+      dh+='</div><dl class="kv smart-kv">';
+      dk.partitions.forEach(p=>{
+        dh+='<dt><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+(TYPE_COLOR[p.type]||'var(--dim)')+';margin-right:6px"></span>'+esc(p.type)+(p.letter?' ('+esc(p.letter)+')':'')+'</dt><dd>'+p.sizeGB+' GB</dd>';
+      });
+      dh+='</dl></div>';
+    });
+    dh+='</div>';
+  }
   if(SMART.length){
     dh+='<div class="spec-section"><h2>SMART data</h2><div class="drive-grid">';
     SMART.forEach(d=>{
@@ -868,6 +889,8 @@ function renderSummary(){
   });
   DIRTY.forEach(v=>notes.push('<span class="y">Volume '+esc(v)+' has its dirty bit set</span>'));
   if(DEVERR.length)notes.push('<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>');
+  const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
+  if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push('<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>');
   if(RAM.length){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
     if(slow.length)notes.push('<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>');
@@ -1603,6 +1626,37 @@ function reliabilityexport {
             }
         } catch { }
 
+        # Disk layout: partition style (GPT/MBR) and partition -> drive-letter chain per physical disk.
+        # Useful for Secure Boot troubleshooting (requires GPT) and spotting a missing/damaged ESP.
+        $diskLayout = @()
+        try {
+            Get-Disk -ErrorAction Stop | ForEach-Object {
+                $disk = $_
+                $parts = @(Get-Partition -DiskNumber $disk.Number -ErrorAction SilentlyContinue | Sort-Object PartitionNumber | ForEach-Object {
+                    $p = $_
+                    $typeLabel = switch -Regex ("$($p.GptType)$($p.MbrType)") {
+                        'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' { "EFI System Partition"; break }
+                        'e3c9e316-0b5c-4db8-817d-f92df00215ae' { "Microsoft Reserved"; break }
+                        'de94bba4-06d1-4d40-a16a-bfd50179d6ac' { "Recovery"; break }
+                        '^7$'                                   { "Recovery (MBR)"; break }
+                        default { if ($p.DriveLetter) { "Data" } else { "System" } }
+                    }
+                    [PSCustomObject]@{
+                        num    = $p.PartitionNumber
+                        type   = $typeLabel
+                        sizeGB = [math]::Round($p.Size / 1GB, 2)
+                        letter = if ($p.DriveLetter) { "$($p.DriveLetter):" } else { "" }
+                    }
+                })
+                $diskLayout += [PSCustomObject]@{
+                    disk       = $disk.Number
+                    style      = "$($disk.PartitionStyle)"
+                    sizeGB     = [math]::Round($disk.Size / 1GB, 1)
+                    partitions = $parts
+                }
+            }
+        } catch { }
+
         # Per-stick RAM info (slots, part numbers, rated vs configured speed)
         $ram = @()
         try {
@@ -1634,6 +1688,31 @@ function reliabilityexport {
                 $drvDesc = (Get-ItemProperty -Path $_.PSPath -Name 'DriverDesc' -ErrorAction SilentlyContinue).DriverDesc
                 if ($qw -and $drvDesc) { $vramByKey[$drvDesc] = $qw }
             }
+        } catch { }
+
+        Write-Host "      - Hotfixes, Device Manager and audio devices" -ForegroundColor DarkGray
+        $hotfixes = @()
+        try {
+            $hotfixes = @(Get-HotFix -ErrorAction Stop | Sort-Object InstalledOn -Descending | ForEach-Object {
+                [PSCustomObject]@{
+                    id   = "$($_.HotFixID)"
+                    desc = "$($_.Description)"
+                    date = if ($_.InstalledOn) { $_.InstalledOn.ToString("dd/MM/yyyy") } else { "" }
+                }
+            })
+        } catch { }
+
+        $devErrors = @()
+        try {
+            $devErrors = @(Get-CimInstance Win32_PNPEntity -ErrorAction Stop | Where-Object { $_.ConfigManagerErrorCode -ne 0 } | ForEach-Object {
+                [PSCustomObject]@{ name = "$($_.Name)"; code = "$($_.ConfigManagerErrorCode)" }
+            })
+        } catch { }
+
+        $audio = $null
+        try {
+            $playback = (Get-CimInstance Win32_SoundDevice -ErrorAction Stop | Where-Object { $_.Status -eq 'OK' } | Select-Object -First 1).Name
+            $audio = [PSCustomObject]@{ playback = "$playback" }
         } catch { }
 
         # Hardware-accelerated GPU Scheduling (system-wide setting, not per-adapter)
@@ -1875,7 +1954,27 @@ function reliabilityexport {
                     foreach ($prof in $profiles) {
                         $extDir = Join-Path $prof.FullName "Extensions"
                         if (-not (Test-Path $extDir)) { continue }
+
+                        # Cross-reference against the browser's own extension state, not just what's
+                        # on disk - Chromium doesn't always clean up an extension's folder immediately
+                        # after uninstall/disable, which can make a removed extension look "installed".
+                        # state: 0 = disabled, 1 = enabled. Only IDs present here with state=1 count.
+                        $enabledIds = $null
+                        foreach ($prefFile in @('Secure Preferences', 'Preferences')) {
+                            $prefPath = Join-Path $prof.FullName $prefFile
+                            if (-not (Test-Path $prefPath)) { continue }
+                            try {
+                                $prefs = Get-Content $prefPath -Raw -ErrorAction Stop | ConvertFrom-Json
+                                if ($prefs.extensions -and $prefs.extensions.settings) {
+                                    $enabledIds = @($prefs.extensions.settings.PSObject.Properties | Where-Object { $_.Value.state -eq 1 } | ForEach-Object { $_.Name })
+                                    break
+                                }
+                            } catch { }
+                        }
+
                         Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                            $extId = $_.Name
+                            if ($enabledIds -and $enabledIds -notcontains $extId) { return }
                             $verDir = Get-ChildItem -Path $_.FullName -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
                             if (-not $verDir) { return }
                             $manifestPath = Join-Path $verDir.FullName "manifest.json"
@@ -2027,12 +2126,13 @@ function reliabilityexport {
         $ramJson = if ($ram.Count -gt 0) { (ConvertTo-Json @($ram) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $smartJson = if ($smart.Count -gt 0) { (ConvertTo-Json @($smart) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $dirtyJson = if ($dirtyVols.Count -gt 0) { (ConvertTo-Json @($dirtyVols) -Compress).Replace('</', '<\/') } else { '[]' }
+        $diskLayoutJson = if ($diskLayout.Count -gt 0) { (ConvertTo-Json @($diskLayout) -Compress -Depth 4).Replace('</', '<\/') } else { '[]' }
         $specsRaw = Get-Content -Path $infofile -Raw -ErrorAction SilentlyContinue
         if ($null -eq $specsRaw) { $specsRaw = "" }
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
     }
     catch {
