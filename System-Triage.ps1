@@ -1681,7 +1681,7 @@ function reliabilityexport {
                         'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' { "EFI System Partition"; break }
                         'e3c9e316-0b5c-4db8-817d-f92df00215ae' { "Microsoft Reserved"; break }
                         'de94bba4-06d1-4d40-a16a-bfd50179d6ac' { "Recovery"; break }
-                        '^7$'                                   { "Recovery (MBR)"; break }
+                        '^27$'                                 { "Recovery (MBR)"; break }
                         default { if ($p.DriveLetter) { "Data" } else { "System" } }
                     }
                     [PSCustomObject]@{
@@ -2328,3 +2328,4 @@ function endmessage {
 }
 
 dmpcheck
+
