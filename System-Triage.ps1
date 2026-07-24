@@ -66,24 +66,47 @@ $viewerTemplate = @'
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PCHH Triage — System Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#101216; --panel:#181b21; --panel2:#1f232b; --line:#2a2f39;
-  --text:#e6e9ef; --dim:#8b92a0; --faint:#5b616e;
-  --err:#ff5d5d; --warn:#ffb454; --ok:#5dd39e; --info:#6aa7ff;
+  --bg:#0b0c0f; --panel:#151720; --panel2:#1e212b; --line:#2c313d;
+  --text:#f5f7fa; --dim:#aab0bd; --faint:#767e8c;
+  --err:#ff6b6b; --warn:#ffc069; --ok:#3ddc97; --info:#6aa7ff;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:16px;min-height:100vh}
+#appShell{display:flex;background:var(--bg);padding:40px 16px 40px 40px;gap:16px;min-height:100vh;width:100%}
 .mono{font-family:'IBM Plex Mono',monospace}
-header{padding:20px 24px 0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-#tabs{display:flex;gap:26px;padding:14px 24px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-#pageFoot{padding:10px 24px 26px;color:var(--faint);font-size:13px}
-.tab{background:none;border:none;color:var(--dim);font-family:inherit;font-size:17px;font-weight:500;padding:8px 2px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab:hover{color:var(--text)}
-.tab.on{color:var(--text);border-bottom-color:var(--info)}
-#summary{padding:0;display:none;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.55}
-#summary.has{display:flex}
+#sidebar{width:230px;flex:0 0 230px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;padding:36px 16px 22px}
+#brand{font-size:19px;font-weight:600;letter-spacing:.01em;padding:0 10px 18px}
+#content{flex:1;min-width:0}
+@media (max-width:900px){
+  #appShell{flex-direction:column;padding:16px}
+  #sidebar{width:auto;flex:0 0 auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:14px}
+  #brand{padding:0 14px 0 0}
+  #tabs{flex-direction:row;flex-wrap:wrap;gap:6px 14px;flex:1}
+  .nav-group{display:contents}
+  .nav-group-title{display:none}
+  #sideFoot{width:100%;order:99;flex-direction:row;justify-content:space-between;padding-top:10px}
+}
+#tabs{display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+.nav-group{margin-bottom:14px}
+.nav-group-title{display:flex;align-items:center;justify-content:space-between;color:var(--text);font-size:18px;text-transform:none;letter-spacing:0;font-weight:600;padding:8px 10px;cursor:pointer;border-radius:6px;user-select:none}
+.nav-group-title:hover{color:var(--text)}
+.nav-group-title.static{cursor:default}
+.nav-group-title.static:hover{color:var(--dim)}
+.nav-group-title .chev{font-size:10px;transition:transform .15s;color:var(--faint)}
+.nav-group.collapsed .nav-group-title .chev{transform:rotate(-90deg)}
+.nav-group.collapsed .nav-group-items{display:none}
+.nav-group-items{display:flex;flex-direction:column;gap:2px}
+#sideFoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+#sideFoot span{color:var(--faint);font-size:12px}
+.tab{display:block;width:100%;text-align:left;background:none;border:none;color:var(--dim);font-family:inherit;font-size:16px;font-weight:500;padding:9px 10px 9px 20px;cursor:pointer;border-radius:9px}
+.tab:hover{color:var(--text);background:color-mix(in srgb,var(--panel2) 60%,transparent)}
+.tab.on{color:var(--text);background:var(--panel2)}
+#summary{padding:0;display:flex;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.55}
+
+
 #summary .sline{color:var(--dim)}
 #summary .sline b{color:inherit;font-weight:500}
 #summary .slabel{color:var(--dim)}
@@ -102,28 +125,35 @@ body.tab-summary #summaryView{display:block}
 body.tab-rel #relView{display:block}
 body.tab-sys #sysView{display:block}
 body.tab-drives #drivesView{display:block}
+body.tab-gpu #gpuView{display:block}
+body.tab-memory #memoryView{display:block}
 body.tab-net #netView{display:block}
+body.tab-security #securityView{display:block}
+body.tab-processes #processesView{display:block}
 body.tab-apps #appsView{display:block}
+body.tab-extensions #extensionsView{display:block}
 body.tab-dumps #dumpsView{display:block}
-#summaryView,#sysView,#drivesView,#netView,#appsView,#dumpsView{padding:18px 24px 48px;max-width:1100px}
+#pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
+#pageTitleSub{color:var(--info);font-weight:600}
+#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
-.spec-section{margin-bottom:28px}
-.spec-section h2{font-size:14px;font-weight:500;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.spec-section{margin-bottom:40px}
+.spec-section h2{font-size:14px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .kv{display:grid;grid-template-columns:210px 1fr;gap:7px 16px;font-size:15px}
 .kv dt{color:var(--dim)}
 .kv dd{word-break:break-word}
 .kv dd.flag-off{color:var(--warn)}
-.drive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.drive{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
-.drive h3{font-size:15.5px;font-weight:500;margin-bottom:2px}
-.drive .sub{color:var(--dim);font-size:14px;margin-bottom:10px}
+.drive-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+.drive{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
+.drive h3{font-size:17px;font-weight:600;margin-bottom:4px}
+.drive .sub{color:var(--dim);font-size:14.5px;margin-bottom:16px}
 .drive .meter{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-bottom:6px}
 .drive .meter div{height:100%;background:var(--info)}
 .drive .meter.low div{background:var(--warn)}
 .drive .use{color:var(--dim);font-size:14px}
 .drive.smart-bad{border-color:var(--err)}
-.smart-kv{grid-template-columns:1fr auto;font-size:14px;gap:3px 12px}
+.smart-kv{grid-template-columns:1fr auto;font-size:14.5px;gap:7px 12px}
 .smart-kv dt{color:var(--dim)}
 .smart-kv dd{text-align:right;font-family:'IBM Plex Mono',monospace}
 .proc-head{display:grid;grid-template-columns:1fr 110px 110px;color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line);margin-top:8px}
@@ -146,12 +176,12 @@ body.tab-dumps #dumpsView{display:block}
 @media (max-width:600px){#progList{columns:1}.kv{grid-template-columns:1fr;gap:0}.kv dt{margin-top:8px}}
 h1{font-size:24px;font-weight:600;letter-spacing:.01em}
 #range{color:var(--dim);font-size:14px}
-#drop{margin-left:auto;font-size:12px;color:var(--faint);border:1px dashed var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+#drop{display:block;margin:0 0 16px;font-size:12px;color:var(--faint);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;text-align:center}
 #drop:hover{color:var(--dim);border-color:var(--dim)}
 body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 /* timeline */
-#timeline{padding:18px 24px 6px}
+#timeline{padding:18px 0 6px}
 #tlHead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 #tlRange{color:var(--text);font-size:15px;font-weight:500}
 #tlHint{color:var(--faint);font-size:13.5px}
@@ -175,7 +205,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .axis-lab.active{color:var(--text)}
 
 /* controls */
-#controls{padding:12px 24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+#controls{padding:12px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:14px;color:var(--dim);cursor:pointer;font-family:inherit}
 .chip .n{color:var(--faint);margin-left:4px}
 .chip.on{color:var(--text);border-color:var(--dim)}
@@ -188,7 +218,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 #clearDay{display:none;font-size:12px;color:var(--info);cursor:pointer;background:none;border:none;font-family:inherit}
 
 /* rows */
-#list{padding:8px 24px 48px}
+#list{padding:8px 0 48px}
 .day-head{color:var(--text);font-size:16px;font-weight:500;padding:22px 0 8px;border-bottom:1px solid var(--line);margin-bottom:4px}
 .sev-head{font-size:15px;font-weight:500;padding:12px 0 5px 4px}
 .sev-err{color:var(--err)}.sev-warn{color:var(--warn)}.sev-info{color:var(--info)}
@@ -205,30 +235,63 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .row.open .msg{display:block}
 #empty{color:var(--faint);padding:40px 0;text-align:center;display:none}
 @media (max-width:600px){
-  header,#timeline,#controls,#list{padding-left:14px;padding-right:14px}
+  #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
+  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView{padding:24px 16px 48px}
+  #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
 </head>
 <body class="tab-summary">
-<header>
-  <h1 id="appTitle">PCHH Triage <span style="color:var(--dim);font-weight:400"> System Summary and Crash Report</span></h1>
-  <span id="range" class="mono"></span>
+<div id="appShell">
+<aside id="sidebar">
+  <div id="brand">PCHH Triage</div>
   <label id="drop">Open another CSV<input type="file" accept=".csv" hidden></label>
-</header>
+  <nav id="tabs">
+    <div class="nav-group">
+      <div class="nav-group-title static"><span>Overview</span></div>
+      <div class="nav-group-items">
+        <button class="tab on" data-tab="summary">System Summary</button>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title"><span>Diagnostics</span><span class="chev">&#9660;</span></div>
+      <div class="nav-group-items">
+        <button class="tab" data-tab="rel">Reliability History</button>
+        <button class="tab" data-tab="sys">Event Viewer</button>
+        <button class="tab" data-tab="dumps" id="dumpsTab" style="display:none">Memory Dumps</button>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title"><span>Hardware</span><span class="chev">&#9660;</span></div>
+      <div class="nav-group-items">
+        <button class="tab" data-tab="drives">Drives</button>
+        <button class="tab" data-tab="gpu">GPU and Display(s)</button>
+        <button class="tab" data-tab="memory">Memory (RAM)</button>
+        <button class="tab" data-tab="net">Network</button>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title"><span>System</span><span class="chev">&#9660;</span></div>
+      <div class="nav-group-items">
+        <button class="tab" data-tab="security">Security</button>
+        <button class="tab" data-tab="processes">Running Processes</button>
+        <button class="tab" data-tab="apps">Installed Apps</button>
+        <button class="tab" data-tab="extensions">Browser Extensions</button>
+      </div>
+    </div>
+  </nav>
+  <div id="sideFoot"><span id="pageFoot"></span></div>
+</aside>
+<main id="content">
 
-<nav id="tabs">
-  <button class="tab on" data-tab="summary">System Summary</button>
-  <button class="tab" data-tab="rel">Reliability</button>
-  <button class="tab" data-tab="sys">Event Viewer</button>
-  <button class="tab" data-tab="drives">Drives</button>
-  <button class="tab" data-tab="net">Network</button>
-  <button class="tab" data-tab="apps">Apps</button>
-  <button class="tab" data-tab="dumps" id="dumpsTab" style="display:none">Memory Dumps</button>
-</nav>
+<h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- System Summary</span></h1>
 
-<div id="summaryView" class="view"><div id="summary"></div><div id="specsContent"></div></div>
+<div id="summaryView" class="view">
+  <div class="spec-section"><h2>System Specs</h2><div id="summary"></div><div id="specsContent"></div></div>
+  <div class="spec-section"><h2>General Notes</h2><div id="notesBody"></div></div>
+</div>
 
 <div id="relView" class="view">
 <div id="timeline">
@@ -254,11 +317,17 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <div id="sysView" class="view"></div>
 <div id="drivesView" class="view"></div>
+<div id="gpuView" class="view"></div>
+<div id="memoryView" class="view"></div>
 <div id="netView" class="view"></div>
+<div id="securityView" class="view"></div>
+<div id="processesView" class="view"></div>
 <div id="appsView" class="view"></div>
+<div id="extensionsView" class="view"></div>
 <div id="dumpsView" class="view"></div>
 
-<footer id="pageFoot"></footer>
+</main>
+</div>
 
 <script>
 const RAW = /*__DATA__*/[];
@@ -269,11 +338,16 @@ const SMART = /*__SMART__*/[];
 const DIRTY = /*__DIRTY__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
+const HAGS = /*__HAGS__*/null;
 const MONS = /*__MONS__*/[];
 const DISPLAYS = /*__DISPLAYS__*/[];
 const PROCS = /*__PROCS__*/[];
 const MEMUSE = /*__MEMUSE__*/null;
 const NET = /*__NET__*/null;
+const SECURITY = /*__SECURITY__*/null;
+const HOTFIXES = /*__HOTFIXES__*/[];
+const DEVERR = /*__DEVERR__*/[];
+const AUDIO = /*__AUDIO__*/null;
 const VER = /*__VER__*/"";
 const GEN = /*__GEN__*/"";
 
@@ -327,14 +401,6 @@ function render(){
 
   const shown = base.filter(e=>state.cats.has(e.cat));
 
-  // header range
-  if(events.length){
-    const lo=events[events.length-1].d, hi=events[0].d;
-    document.getElementById('range').textContent =
-      lo.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+
-      hi.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+
-      ' · '+events.length+' events';
-  }
 
   // timeline: continuous calendar days, windowed to 7 with scroll
   const allDays=[];
@@ -519,7 +585,7 @@ function renderSpecs(){
   }
   let h='';
   if(sp.info.length){
-    h+='<div class="spec-section" style="margin-top:26px"><h2>Other System Specs</h2><dl class="kv">';
+    h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
     const SHOWN=['OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','Ram Capacity','RAM Speed'];
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
@@ -527,19 +593,13 @@ function renderSpecs(){
     });
     h+='</dl></div>';
   }
-  if(RAM.length){
-    h+='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2><div class="drive-grid">';
-    RAM.forEach(m=>{
-      h+='<div class="drive"><h3>'+esc(m.slot)+'</h3>'+
-        '<div class="sub">'+esc(m.mfr||'')+'</div>'+
-        '<dl class="kv smart-kv">'+
-        '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
-        '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
-        (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
-        (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
-        '</dl></div>';
-    });
-    h+='</div></div>';
+  if(AUDIO&&AUDIO.playback){
+    h+='<div class="spec-section"><h2>Audio</h2><dl class="kv"><dt>Default playback device</dt><dd>'+esc(AUDIO.playback)+'</dd></dl></div>';
+  }
+  if(DEVERR.length){
+    h+='<div class="spec-section"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
+    DEVERR.forEach(e=>{h+='<dt>'+esc(e.name)+'</dt><dd style="color:var(--err)">Error code '+esc(e.code)+'</dd>';});
+    h+='</dl></div>';
   }
   let dh='';
   if(sp.drives.length){
@@ -594,39 +654,72 @@ function renderSpecs(){
   }
   v.innerHTML=h;
   document.getElementById('drivesView').innerHTML=dh||'<div class="spec-section"><h2>Drives</h2><div style="color:var(--faint)">No drive data embedded.</div></div>';
-  renderApps(sp.programs);
+  renderAppsList(sp.programs);
+  renderProcesses();
+  renderExtensions();
 }
 const PS_={q:'',page:1,key:'mem',dir:-1}, PG_={q:'',page:1};
 let PROGS_ALL=[];
-function renderApps(programs){
-  PROGS_ALL=programs||[];
-  const av=document.getElementById('appsView');
-  let ah='';
-  if(PROCS.length){
-    ah+='<div class="spec-section"><h2>Running processes ('+PROCS.length+')</h2>'+
-      '<input id="procSearch" type="text" placeholder="Filter processes\u2026">'+
-      '<div class="proc-head">'+
-      '<span class="sorth" data-key="name">Process<span class="arrow"></span></span>'+
-      '<span class="sorth" data-key="cnt">Instances<span class="arrow"></span></span>'+
-      '<span class="sorth" data-key="mem">Memory<span class="arrow"></span></span></div>'+
-      '<div id="procList"></div><div class="pager" id="procPager"></div></div>';
+function renderProcesses(){
+  const v=document.getElementById('processesView');
+  if(!PROCS.length){
+    v.innerHTML='<div class="spec-section"><h2>Running Processes</h2><div style="color:var(--faint)">No process data embedded.</div></div>';
+    return;
   }
-  if(PROGS_ALL.length){
-    ah+='<div class="spec-section"><h2>Installed programs ('+PROGS_ALL.length+')</h2>'+
-      '<input id="progSearch" type="text" placeholder="Filter programs\u2026">'+
-      '<div id="progList"></div><div class="pager" id="progPager"></div></div>';
-  }
-  av.innerHTML=ah||'<div class="spec-section"><h2>Apps</h2><div style="color:var(--faint)">No data embedded.</div></div>';
+  v.innerHTML='<div class="spec-section"><h2>Running processes ('+PROCS.length+')</h2>'+
+    '<input id="procSearch" type="text" placeholder="Filter processes\u2026">'+
+    '<div class="proc-head">'+
+    '<span class="sorth" data-key="name">Process<span class="arrow"></span></span>'+
+    '<span class="sorth" data-key="cnt">Instances<span class="arrow"></span></span>'+
+    '<span class="sorth" data-key="mem">Memory<span class="arrow"></span></span></div>'+
+    '<div id="procList"></div><div class="pager" id="procPager"></div></div>';
   const pf=document.getElementById('procSearch');
   if(pf)pf.oninput=e=>{PS_.q=e.target.value.toLowerCase();PS_.page=1;renderProcList();};
-  const ps=document.getElementById('progSearch');
-  if(ps)ps.oninput=e=>{PG_.q=e.target.value.toLowerCase();PG_.page=1;renderProgList();};
   document.querySelectorAll('.sorth').forEach(hd=>hd.onclick=()=>{
     const k=hd.dataset.key;
     if(PS_.key===k)PS_.dir=-PS_.dir; else {PS_.key=k;PS_.dir=k==='name'?1:-1;}
     PS_.page=1;renderProcList();
   });
-  renderProcList();renderProgList();
+  renderProcList();
+}
+function renderAppsList(programs){
+  PROGS_ALL=programs||[];
+  const v=document.getElementById('appsView');
+  let ah='';
+  if(PROGS_ALL.length){
+    ah+='<div class="spec-section"><h2>Installed programs ('+PROGS_ALL.length+')</h2>'+
+      '<input id="progSearch" type="text" placeholder="Filter programs\u2026">'+
+      '<div id="progList"></div><div class="pager" id="progPager"></div></div>';
+  }
+  if(HOTFIXES.length){
+    ah+='<div class="spec-section"><h2>Installed updates ('+HOTFIXES.length+')</h2>'+
+      '<input id="hfSearch" type="text" placeholder="Filter updates\u2026">'+
+      '<div id="hfList"></div><div class="pager" id="hfPager"></div></div>';
+  }
+  v.innerHTML=ah||'<div class="spec-section"><h2>Installed Apps</h2><div style="color:var(--faint)">No data embedded.</div></div>';
+  const hf=document.getElementById('hfSearch');
+  if(hf)hf.oninput=e=>{HF_.q=e.target.value.toLowerCase();HF_.page=1;renderHfList();};
+  renderHfList();
+  const ps=document.getElementById('progSearch');
+  if(ps)ps.oninput=e=>{PG_.q=e.target.value.toLowerCase();PG_.page=1;renderProgList();};
+  renderProgList();
+}
+function renderExtensions(){
+  const v=document.getElementById('extensionsView');
+  if(!SECURITY||!SECURITY.extensions||!SECURITY.extensions.length){
+    v.innerHTML='<div class="spec-section"><h2>Browser Extensions</h2><div style="color:var(--faint)">No browser extension data embedded.</div></div>';
+    return;
+  }
+  const byBrowser={};
+  SECURITY.extensions.forEach(e=>{(byBrowser[e.browser]=byBrowser[e.browser]||[]).push(e.name);});
+  let h='<div class="spec-section"><h2>Browser extensions ('+SECURITY.extensions.length+')</h2>';
+  Object.keys(byBrowser).forEach(b=>{
+    const names=[...new Set(byBrowser[b])].sort((a,c)=>a.localeCompare(c,undefined,{sensitivity:'base'}));
+    h+='<div style="margin-bottom:10px"><div class="sev-head" style="color:var(--dim)">'+esc(b)+' ('+names.length+')</div>'+
+      '<div style="color:var(--dim);font-size:14px;line-height:1.8">'+names.map(esc).join('<br>')+'</div></div>';
+  });
+  h+='</div>';
+  v.innerHTML=h;
 }
 function pager(el,page,pages,total,shown,onGo){
   if(!el)return;
@@ -659,6 +752,16 @@ function renderProgList(){
   el.innerHTML=slice.map(p=>'<div>'+esc(p)+'</div>').join('')||'<div style="color:var(--faint)">No matches.</div>';
   pager(document.getElementById('progPager'),PG_.page,pages,rows.length,slice.length,g=>{PG_.page+=g;renderProgList();});
 }
+const HF_={q:'',page:1};
+function renderHfList(){
+  const el=document.getElementById('hfList');if(!el)return;
+  const rows=HOTFIXES.filter(h=>!HF_.q||(h.id+' '+h.desc).toLowerCase().includes(HF_.q));
+  const SZ=50,pages=Math.max(1,Math.ceil(rows.length/SZ));
+  if(HF_.page>pages)HF_.page=pages;
+  const slice=rows.slice((HF_.page-1)*SZ,HF_.page*SZ);
+  el.innerHTML=slice.map(h=>'<div>'+esc(h.id)+(h.desc?' <span style="color:var(--faint)">'+esc(h.desc)+'</span>':'')+(h.date?' <span class="mono" style="color:var(--faint)">'+esc(h.date)+'</span>':'')+'</div>').join('')||'<div style="color:var(--faint)">No matches.</div>';
+  pager(document.getElementById('hfPager'),HF_.page,pages,rows.length,slice.length,g=>{HF_.page+=g;renderHfList();});
+}
 function smartProbs(d){
   const probs=[];
   if(d.pf==='1')probs.push('drive predicts its own failure');
@@ -670,6 +773,10 @@ function smartProbs(d){
   if(+d.reu>0)probs.push(d.reu+' uncorrected read errors');
   if(+d.weu>0)probs.push(d.weu+' uncorrected write errors');
   return probs;
+}
+function friendlyMedia(m){
+  const map={ '802.3':'Ethernet (802.3)', 'Native 802.11':'Wi-Fi (802.11)', '802.11':'Wi-Fi (802.11)', 'Bluetooth':'Bluetooth', 'WiMax':'WiMAX', 'Unspecified':'' };
+  return map.hasOwnProperty(m)?map[m]:m;
 }
 function friendlyDriver(gpuName,ver,radeon){
   if(!ver)return '';
@@ -705,22 +812,11 @@ function renderSummary(){
   if(up)pairs.push(['System uptime', esc(up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''))]);
   const cpu=specVal(sp.info,'CPU Name');
   if(cpu)pairs.push(['CPU', esc(cpu.trim())]);
-  if(DISPLAYS.length){
-    const byGpu={};
-    DISPLAYS.forEach(d=>{(byGpu[d.gpu]=byGpu[d.gpu]||[]).push(d);});
-    const gnames=Object.keys(byGpu);
-    const drvByName={},radByName={};GPUS.forEach(g=>{if(g.name){drvByName[g.name]=g.drv;radByName[g.name]=g.radeon||'';}});
-    gnames.forEach((g,i)=>{
-      const rows=byGpu[g].filter(d=>d.mon||d.mode).map(d=>'\u21b3 '+esc(d.mon||'Display')+(d.mode?' \u2014 '+esc(d.mode):'')).join('<br>');
-      const drv=drvByName[g]?' <span style="color:var(--dim)">driver '+friendlyDriver(g,esc(drvByName[g]),radByName[g]?esc(radByName[g]):'')+'</span>':'';
-      pairs.push(['GPU'+(gnames.length>1?' '+(i+1):''), esc(g)+drv+(rows?'<br><span style="color:var(--dim)">'+rows+'</span>':'')]);
-    });
-  } else if(GPUS.length){
-    GPUS.forEach((g,i)=>pairs.push(['GPU'+(GPUS.length>1?' '+(i+1):''), esc(g.name)+(g.drv?' <span style="color:var(--dim)">driver '+friendlyDriver(g.name,esc(g.drv),g.radeon?esc(g.radeon):'')+'</span>':'')]));
-    if(MONS.length)pairs.push(['Display'+(MONS.length>1?'s':''), MONS.map(esc).join('<br>')]);
+  if(GPUS.length||DISPLAYS.length){
+    pairs.push(['GPU'+(GPUS.length>1?'s':''), (GPUS.length||DISPLAYS.length? (new Set(DISPLAYS.length?DISPLAYS.map(d=>d.gpu):GPUS.map(g=>g.name))).size:0)+' detected <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
   } else {
     const gpu=specVal(sp.info,'GPU');
-    if(gpu)pairs.push(['GPU', esc(gpu)]);
+    if(gpu)pairs.push(['GPU', esc(gpu)+' <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
   }
   const mb=specVal(sp.info,'Motherboard'), mbMfr=specVal(sp.info,'Motherboard Manufacturer');
   if(mb)pairs.push(['Motherboard', esc(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim())]);
@@ -729,7 +825,7 @@ function renderSummary(){
   if(RAM.length){
     const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
     const conf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
-    pairs.push(['Memory', totGB+' GB total'+(conf?' @ '+esc(conf)+' MT/s':'')+' <span style="color:var(--faint)">(modules below)</span>']);
+    pairs.push(['Memory', totGB+' GB total'+(conf?' @ '+esc(conf)+' MT/s':'')+' <span style="color:var(--faint)">(see Hardware \u203a Memory)</span>']);
   } else {
     const rc=specVal(sp.info,'Ram Capacity');
     if(rc)pairs.push(['Memory', esc(rc)]);
@@ -771,6 +867,7 @@ function renderSummary(){
     if(probs.length)notes.push('<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>');
   });
   DIRTY.forEach(v=>notes.push('<span class="y">Volume '+esc(v)+' has its dirty bit set</span>'));
+  if(DEVERR.length)notes.push('<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>');
   if(RAM.length){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
     if(slow.length)notes.push('<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>');
@@ -822,6 +919,18 @@ function renderSummary(){
     notes.push('<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>');
   });
 
+  if(SECURITY){
+    if(SECURITY.defender&&SECURITY.defender.rtp!=='True')notes.push('<span class="r">Windows Defender real-time protection is disabled</span>');
+    if(SECURITY.firewall&&SECURITY.firewall.some(f=>f.enabled!=='True')){
+      const off=SECURITY.firewall.filter(f=>f.enabled!=='True').map(f=>f.profile);
+      notes.push('<span class="r">Firewall disabled on: '+esc(off.join(', '))+'</span>');
+    }
+    if(SECURITY.stalledServices&&SECURITY.stalledServices.length)notes.push('<span class="y"><b>'+SECURITY.stalledServices.length+'</b> Automatic service'+(SECURITY.stalledServices.length>1?'s':'')+' not running (see Security tab)</span>');
+    if(SECURITY.threats&&SECURITY.threats.length)notes.push('<span class="r"><b>'+SECURITY.threats.length+'</b> threat detection'+(SECURITY.threats.length>1?'s':'')+' recorded by Windows Defender</span>');
+    if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push('<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+' (see Security tab)</span>');
+    if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push('<span class="y">Hosts file redirects a known update/security domain (see Security tab)</span>');
+    if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push('<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+' (see Security tab)</span>');
+  }
   const gpuDrvRe=/nvlddmkm|amdwddmg|amdkmdag|atikmdag/i;
   const tdrEvents=SYSEVT.filter(r=>String(r.id)==='4101'||gpuDrvRe.test(r.prov)||gpuDrvRe.test(r.msg||''));
   if(tdrEvents.length){
@@ -835,13 +944,9 @@ function renderSummary(){
     if(sig&&sig<50)notes.push('<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>');
   }
   if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push('<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>');
-  if(!pairs.length&&!notes.length){el.classList.remove('has');return;}
-  let out=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
-  if(notes.length){
-    out+='<div class="notes-head">General Notes</div><ul class="notes">'+notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>';
-  }
-  el.innerHTML=out;
-  el.classList.add('has');
+  const nEl=document.getElementById('notesBody');
+  el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
+  nEl.innerHTML=notes.length?'<ul class="notes">'+notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>':'';
 }
 function sysCat(lvl){return lvl<=2?'err':lvl===3?'warn':'info';}
 function renderSys(){
@@ -868,6 +973,116 @@ function renderSys(){
   v.innerHTML=h;
   v.querySelectorAll('.row').forEach(r=>r.onclick=()=>r.classList.toggle('open'));
 }
+function renderSecurity(){
+  const v=document.getElementById('securityView');
+  if(!SECURITY){
+    v.innerHTML='<div class="spec-section"><h2>Security</h2><div style="color:var(--faint)">No security data embedded.</div></div>';
+    return;
+  }
+  let h='';
+  const d=SECURITY.defender;
+  if(d){
+    h+='<div class="spec-section"><h2>Windows Defender</h2><dl class="kv">';
+    h+='<dt>Real-time protection</dt><dd style="color:'+(d.rtp==='True'?'var(--ok)':'var(--err)')+'">'+(d.rtp==='True'?'Enabled':'Disabled')+'</dd>';
+    if(d.lastQuick)h+='<dt>Last quick scan</dt><dd>'+esc(d.lastQuick)+'</dd>';
+    if(d.lastFull)h+='<dt>Last full scan</dt><dd>'+esc(d.lastFull)+'</dd>';
+    if(d.sigAge)h+='<dt>Signature age</dt><dd>'+esc(d.sigAge)+' day'+(d.sigAge==='1'?'':'s')+'</dd>';
+    h+='</dl></div>';
+  }
+  if(SECURITY.firewall&&SECURITY.firewall.length){
+    h+='<div class="spec-section"><h2>Firewall</h2><dl class="kv">';
+    SECURITY.firewall.forEach(f=>{h+='<dt>'+esc(f.profile)+'</dt><dd style="color:'+(f.enabled==='True'?'var(--ok)':'var(--err)')+'">'+(f.enabled==='True'?'Enabled':'Disabled')+'</dd>';});
+    h+='</dl></div>';
+  }
+  if(SECURITY.threats&&SECURITY.threats.length){
+    h+='<div class="spec-section"><h2>Threat detections ('+SECURITY.threats.length+')</h2><dl class="kv">';
+    SECURITY.threats.forEach(t=>{h+='<dt>'+esc(t.time)+'</dt><dd>'+esc(t.name)+(t.act==='True'?' <span style="color:var(--ok)">(action successful)</span>':' <span style="color:var(--err)">(action failed)</span>')+'</dd>';});
+    h+='</dl></div>';
+  } else if(d) {
+    h+='<div class="spec-section"><h2>Threat detections</h2><div style="color:var(--ok)">\u2713 No threats recorded by Windows Defender.</div></div>';
+  }
+  if(SECURITY.exclFlags&&SECURITY.exclFlags.length){
+    h+='<div class="spec-section"><h2>Defender exclusion alerts</h2><ul class="notes">'+SECURITY.exclFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
+  }
+  if(SECURITY.exclusions&&SECURITY.exclusions.length){
+    h+='<div class="spec-section"><h2>All Defender exclusions ('+SECURITY.exclusions.length+')</h2><div style="color:var(--dim);font-size:14px;line-height:1.8">'+SECURITY.exclusions.map(esc).join('<br>')+'</div></div>';
+  }
+  if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length){
+    h+='<div class="spec-section"><h2>Hosts file</h2><div style="color:var(--dim);font-size:14px;margin-bottom:8px">'+SECURITY.hostsCustom+' custom entr'+(SECURITY.hostsCustom===1?'y':'ies')+' found.</div><ul class="notes">'+SECURITY.hostsFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
+  } else if(typeof SECURITY.hostsCustom==='number'){
+    h+='<div class="spec-section"><h2>Hosts file</h2><div style="color:var(--dim);font-size:14px">'+SECURITY.hostsCustom+' custom entr'+(SECURITY.hostsCustom===1?'y':'ies')+' found, none flagged.</div></div>';
+  }
+  if(SECURITY.startupFlags&&SECURITY.startupFlags.length){
+    h+='<div class="spec-section"><h2>Startup entries flagged</h2><ul class="notes">'+SECURITY.startupFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
+  }
+  if(SECURITY.stalledServices&&SECURITY.stalledServices.length){
+    h+='<div class="spec-section"><h2>Automatic services not running ('+SECURITY.stalledServices.length+')</h2><dl class="kv">';
+    SECURITY.stalledServices.forEach(s=>{h+='<dt>'+esc(s.name)+'</dt><dd style="color:var(--warn)">'+esc(s.state)+'</dd>';});
+    h+='</dl></div>';
+  }
+  v.innerHTML=h||'<div class="spec-section"><h2>Security</h2><div style="color:var(--faint)">No security data embedded.</div></div>';
+}
+function renderGPU(){
+  const v=document.getElementById('gpuView');
+  if(!GPUS.length && !DISPLAYS.length){
+    v.innerHTML='<div class="spec-section"><h2>GPU and Display(s)</h2><div style="color:var(--faint)">No GPU data embedded.</div></div>';
+    return;
+  }
+  const byGpu={};
+  DISPLAYS.forEach(d=>{(byGpu[d.gpu]=byGpu[d.gpu]||[]).push(d);});
+  const drvByName={},radByName={},vramByName={};
+  GPUS.forEach(g=>{if(g.name){drvByName[g.name]=g.drv;radByName[g.name]=g.radeon||'';vramByName[g.name]=g.vram||0;}});
+  const gnames=Object.keys(byGpu).length?Object.keys(byGpu):GPUS.map(g=>g.name);
+
+  let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
+  if(HAGS)h+='<div style="color:var(--dim);font-size:14px;margin-bottom:16px">Hardware-accelerated GPU Scheduling: <b style="color:var(--text)">'+esc(HAGS)+'</b></div>';
+  h+='<div class="drive-grid">';
+  gnames.forEach(g=>{
+    const drv=drvByName[g]?friendlyDriver(g,esc(drvByName[g]),radByName[g]?esc(radByName[g]):''):'';
+    const vram=vramByName[g];
+    const displays=byGpu[g]||[];
+    h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
+      (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
+    const dispRows=displays.filter(d=>d.mon||d.mode);
+    const fallbackMons=(!Object.keys(byGpu).length && MONS.length)?MONS:[];
+    if(dispRows.length||fallbackMons.length){
+      h+='<div class="sev-head" style="color:var(--dim);padding-top:4px">Connected Display'+((dispRows.length+fallbackMons.length)>1?'s':'')+'</div><dl class="kv smart-kv">';
+      dispRows.forEach(d=>{h+='<dt>'+esc(d.mon||'Display')+'</dt><dd>'+esc(d.mode||'')+'</dd>';});
+      fallbackMons.forEach(m=>{h+='<dt>Connected Display</dt><dd>'+esc(m)+'</dd>';});
+      h+='</dl>';
+    }
+    h+='</div>';
+  });
+  h+='</div></div>';
+  v.innerHTML=h;
+}
+function renderMemory(){
+  const v=document.getElementById('memoryView');
+  if(!RAM.length){
+    v.innerHTML='<div class="spec-section"><h2>Memory modules</h2><div style="color:var(--faint)">No memory module data embedded.</div></div>';
+    return;
+  }
+  let h='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2><div class="drive-grid">';
+  RAM.forEach(m=>{
+    h+='<div class="drive"><h3>'+esc(m.slot)+'</h3>'+
+      '<div class="sub">'+esc(m.mfr||'')+'</div>'+
+      '<dl class="kv smart-kv">'+
+      '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
+      '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
+      (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
+      (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
+      '</dl></div>';
+  });
+  h+='</div></div>';
+  if(MEMUSE&&MEMUSE.pt){
+    const pct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
+    h+='<div class="spec-section"><h2>Memory usage at capture</h2><dl class="kv">'+
+      '<dt>Physical memory used</dt><dd>'+MEMUSE.pu.toFixed(1)+' / '+MEMUSE.pt.toFixed(1)+' GB ('+pct+'%)</dd>';
+    if(MEMUSE.ct)h+='<dt>Commit charge</dt><dd>'+MEMUSE.cu.toFixed(1)+' / '+MEMUSE.ct.toFixed(1)+' GB ('+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'%)</dd>';
+    h+='</dl></div>';
+  }
+  v.innerHTML=h;
+}
 function renderNet(){
   const v=document.getElementById('netView');
   if(!NET||(!NET.adapters||!NET.adapters.length)&&!NET.wifi){
@@ -885,7 +1100,7 @@ function renderNet(){
         '<dl class="kv smart-kv">'+
         '<dt>Status</dt><dd style="color:'+stCol+'">'+esc(a.status)+'</dd>'+
         (up&&a.speed?'<dt>Link speed</dt><dd>'+esc(a.speed)+'</dd>':'')+
-        (a.media?'<dt>Media</dt><dd>'+esc(a.media)+'</dd>':'')+
+        (a.media?'<dt>Media</dt><dd>'+esc(friendlyMedia(a.media))+'</dd>':'')+
         '</dl></div>';
     });
     h+='</div></div>';
@@ -930,6 +1145,10 @@ function renderDumps(){
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
   document.body.className='tab-'+t.dataset.tab;
+  document.getElementById('pageTitleSub').textContent='- '+t.textContent;
+});
+document.querySelectorAll('.nav-group-title:not(.static)').forEach(g=>g.onclick=()=>{
+  g.closest('.nav-group').classList.toggle('collapsed');
 });
 renderSpecs();
 load(RAW);
@@ -937,7 +1156,10 @@ renderSummary();
 renderSys();
 renderDumps();
 renderNet();
-if(VER||GEN)document.getElementById('pageFoot').textContent='Generated'+(GEN?' '+GEN:'')+' · PCHH Triage'+(VER?' v'+VER:'');
+renderGPU();
+renderMemory();
+renderSecurity();
+document.getElementById('pageFoot').textContent=(GEN?'Generated '+GEN+' · ':'')+'PCHH Triage'+(VER?' v'+VER:'')+' · Author: Rory (ctrl.alt.repeat)';
 </script>
 </body>
 </html>
@@ -1401,9 +1623,30 @@ function reliabilityexport {
         try {
             $radeonVer = "$((Get-ItemProperty 'HKLM:\SOFTWARE\AMD\CN' -ErrorAction Stop).RadeonSoftwareVersion)"
         } catch { }
+        # Accurate VRAM per adapter - Win32_VideoController's AdapterRAM is a 32-bit field that
+        # overflows/wraps on cards with >4GB VRAM (a known, widely-reported Windows bug). The real
+        # value lives in the driver's registry key as a 64-bit QWORD.
+        $vramByKey = @{}
+        try {
+            $classRoot = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+            Get-ChildItem $classRoot -ErrorAction Stop | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object {
+                $qw = (Get-ItemProperty -Path $_.PSPath -Name 'HardwareInformation.qwMemorySize' -ErrorAction SilentlyContinue).'HardwareInformation.qwMemorySize'
+                $drvDesc = (Get-ItemProperty -Path $_.PSPath -Name 'DriverDesc' -ErrorAction SilentlyContinue).DriverDesc
+                if ($qw -and $drvDesc) { $vramByKey[$drvDesc] = $qw }
+            }
+        } catch { }
+
+        # Hardware-accelerated GPU Scheduling (system-wide setting, not per-adapter)
+        $hagsEnabled = $null
+        try {
+            $hw = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -ErrorAction Stop).HwSchMode
+            $hagsEnabled = if ($hw -eq 2) { "Enabled" } else { "Disabled" }
+        } catch { }
+
         $gpus = @()
         try {
             $gpus = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | ForEach-Object {
+                $vram = if ($vramByKey.ContainsKey($_.Name)) { $vramByKey[$_.Name] } elseif ($_.AdapterRAM) { $_.AdapterRAM } else { 0 }
                 [PSCustomObject]@{
                     name   = "$($_.Name)"
                     drv    = "$($_.DriverVersion)"
@@ -1411,6 +1654,7 @@ function reliabilityexport {
                     hres   = if ($_.CurrentHorizontalResolution) { [int]$_.CurrentHorizontalResolution } else { 0 }
                     vres   = if ($_.CurrentVerticalResolution) { [int]$_.CurrentVerticalResolution } else { 0 }
                     hz     = if ($_.CurrentRefreshRate) { [int]$_.CurrentRefreshRate } else { 0 }
+                    vram   = if ($vram) { [math]::Round($vram / 1GB, 1) } else { 0 }
                 }
             })
         } catch { }
@@ -1440,7 +1684,10 @@ function reliabilityexport {
                     [PSCustomObject]@{
                         gpu  = "$($_.CardName)"
                         mon  = $mon.Trim()
-                        mode = ("$($_.CurrentMode)" -replace ' \(\d+ bit\)', '').Trim()
+                        mode = $(
+                            $raw = "$($_.CurrentMode)".Trim()
+                            if ($raw -match '^(.*?)\s*\((\d+) bit\)\s*\((\d+Hz)\)\s*$') { "$($Matches[1]) ($($Matches[3]), $($Matches[2])-bit)" } else { $raw }
+                        )
                     }
                 } | Where-Object { $_.gpu })
                 Remove-Item $dxPath -Force -ErrorAction SilentlyContinue
@@ -1457,6 +1704,236 @@ function reliabilityexport {
                     mem  = [math]::Round((($_.Group | Measure-Object WorkingSet64 -Sum).Sum) / 1MB)
                 }
             } | Sort-Object mem -Descending)
+        } catch { }
+
+        Write-Host "      - Security (Defender status, exclusions, hosts file, startup, browser extensions)" -ForegroundColor DarkGray
+        $security = $null
+        try {
+            # Defender status + scan history
+            $mpStatus = $null
+            try { $mpStatus = Get-MpComputerStatus -ErrorAction Stop } catch { }
+            $defender = if ($mpStatus) {
+                [PSCustomObject]@{
+                    rtp        = "$($mpStatus.RealTimeProtectionEnabled)"
+                    lastQuick  = if ($mpStatus.QuickScanEndTime) { $mpStatus.QuickScanEndTime.ToString("dd/MM/yyyy HH:mm") } else { "" }
+                    lastFull   = if ($mpStatus.FullScanEndTime) { $mpStatus.FullScanEndTime.ToString("dd/MM/yyyy HH:mm") } else { "" }
+                    sigAge     = "$($mpStatus.AntivirusSignatureAge)"
+                    sigVersion = "$($mpStatus.AntivirusSignatureVersion)"
+                }
+            } else { $null }
+
+            $threats = @()
+            try {
+                $threats = @(Get-MpThreatDetection -ErrorAction Stop | Select-Object -First 25 | ForEach-Object {
+                    [PSCustomObject]@{
+                        name = "$($_.ThreatName)"
+                        time = $_.InitialDetectionTime.ToString("dd/MM/yyyy HH:mm")
+                        act  = "$($_.ActionSuccess)"
+                    }
+                })
+            } catch { }
+
+            # Exclusions with dangerous-pattern flagging (paths genericized to strip username)
+            $genericize = { param($p) if ("$p") { "$p" -replace [regex]::Escape("$env:USERPROFILE"), "%USERPROFILE%" -replace 'C:\\Users\\[^\\]+', "C:\Users\<user>" } else { "$p" } }
+            $exclusions = @()
+            $exclFlags = @()
+            try {
+                $mpPref = Get-MpPreference -ErrorAction Stop
+                foreach ($p in $mpPref.ExclusionPath) {
+                    $g = & $genericize $p
+                    $exclusions += "Path: $g"
+                    if ($p -match '^[A-Za-z]:\\?$') { $exclFlags += "Entire drive excluded: $g" }
+                    elseif ($p -match '\\(Temp|AppData\\Roaming)\\?$') { $exclFlags += "Broad system folder excluded: $g" }
+                }
+                foreach ($e in $mpPref.ExclusionExtension) {
+                    $exclusions += "Extension: .$e"
+                    if ($e -match '^(exe|dll|scr|bat|ps1)$') { $exclFlags += "Executable file type excluded: .$e" }
+                }
+                foreach ($pr in $mpPref.ExclusionProcess) { $exclusions += "Process: $(& $genericize $pr)" }
+            } catch { }
+
+            # Hosts file: count custom entries, flag known-domain redirects
+            $hostsCustom = 0
+            $hostsFlags = @()
+            try {
+                $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+                $watchDomains = 'windowsupdate\.microsoft\.com|update\.microsoft\.com|\.microsoft\.com$|malwarebytes\.com|windowsdefender|virustotal\.com|avast\.com|kaspersky\.com|mcafee\.com|norton\.com'
+                Get-Content $hostsPath -ErrorAction Stop | ForEach-Object {
+                    $line = $_.Trim()
+                    if ($line -and -not $line.StartsWith('#')) {
+                        $hostsCustom++
+                        if ($line -match $watchDomains -and $line -notmatch '^\s*(0\.0\.0\.0|127\.0\.0\.1)\s') {
+                            $hostsFlags += $line
+                        } elseif ($line -match $watchDomains) {
+                            $hostsFlags += "$line (redirected to loopback/null - likely intentional block)"
+                        }
+                    }
+                }
+            } catch { }
+
+            # Suspicious startup entries: no publisher/signature, or launching from Temp/AppData with odd naming
+            $startupFlags = @()
+            try {
+                $runKeys = @(
+                    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
+                    'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'
+                )
+                foreach ($rk in $runKeys) {
+                    if (Test-Path $rk) {
+                        $props = Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue
+                        $props.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
+                            $val = "$($_.Value)"
+                            $exePath = ($val -replace '^"?([^"]+\.exe)"?.*$', '$1')
+                            $suspicious = $false
+                            $reason = ""
+                            if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { $suspicious = $true; $reason = "runs from Temp folder" }
+                            elseif (Test-Path $exePath -ErrorAction SilentlyContinue) {
+                                try {
+                                    $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
+                                    if ($sig.Status -ne 'Valid') { $suspicious = $true; $reason = "unsigned or invalid signature" }
+                                } catch { }
+                            }
+                            if ($suspicious) { $startupFlags += "$($_.Name): $reason" }
+                        }
+                    }
+                }
+            } catch { }
+
+            # Firewall status per profile
+            $firewall = @()
+            try {
+                $firewall = @(Get-NetFirewallProfile -ErrorAction Stop | ForEach-Object {
+                    [PSCustomObject]@{ profile = "$($_.Name)"; enabled = "$($_.Enabled)" }
+                })
+            } catch { }
+
+            # Scheduled Tasks: user-created, non-Microsoft, enabled - flag unsigned/Temp-run actions
+            try {
+                $tasks = Get-ScheduledTask -ErrorAction Stop | Where-Object {
+                    $_.State -ne 'Disabled' -and $_.TaskPath -notmatch '\\Microsoft\\' -and $_.TaskPath -notmatch '\\Windows\\'
+                }
+                foreach ($t in $tasks) {
+                    $act = ($t.Actions | Where-Object { $_.Execute } | Select-Object -First 1).Execute
+                    if (-not $act) { continue }
+                    $exePath = $act -replace '^"?([^"]+)"?.*$', '$1'
+                    $suspicious = $false
+                    $reason = ""
+                    if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { $suspicious = $true; $reason = "runs from Temp folder" }
+                    elseif (Test-Path $exePath -ErrorAction SilentlyContinue) {
+                        try {
+                            $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
+                            if ($sig.Status -ne 'Valid') { $suspicious = $true; $reason = "unsigned or invalid signature" }
+                        } catch { }
+                    }
+                    if ($suspicious) { $startupFlags += "Scheduled task '$($t.TaskName)': $reason" }
+                }
+            } catch { }
+
+            # Startup folder shortcuts (both all-users and current user)
+            try {
+                $startupDirs = @("$env:ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp", "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\StartUp")
+                foreach ($sd in $startupDirs) {
+                    if (-not (Test-Path $sd)) { continue }
+                    Get-ChildItem -Path $sd -Filter "*.lnk" -ErrorAction SilentlyContinue | ForEach-Object {
+                        try {
+                            $sh = New-Object -ComObject WScript.Shell
+                            $target = $sh.CreateShortcut($_.FullName).TargetPath
+                            if ($target -match '\\(Temp|AppData\\Local\\Temp)\\') {
+                                $startupFlags += "Startup shortcut '$($_.BaseName)': runs from Temp folder"
+                            }
+                        } catch { }
+                    }
+                }
+            } catch { }
+
+            # Services set to Automatic that are not Running
+            $stalledServices = @()
+            try {
+                $stalledServices = @(Get-CimInstance Win32_Service -Filter "StartMode='Auto' AND State!='Running'" -ErrorAction Stop | ForEach-Object {
+                    [PSCustomObject]@{ name = "$($_.DisplayName)"; state = "$($_.State)" }
+                } | Select-Object -First 20)
+            } catch { }
+
+            # Browser extensions: Chrome + Edge, all profiles, name only (no IDs, no sync data)
+            $extensions = @()
+            try {
+                $browserRoots = @(
+                    @{ browser = "Chrome";    root = "$env:LOCALAPPDATA\Google\Chrome\User Data" },
+                    @{ browser = "Edge";      root = "$env:LOCALAPPDATA\Microsoft\Edge\User Data" },
+                    @{ browser = "Brave";     root = "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\User Data" },
+                    @{ browser = "Opera";     root = "$env:APPDATA\Opera Software\Opera Stable" },
+                    @{ browser = "Opera GX";  root = "$env:APPDATA\Opera Software\Opera GX Stable" },
+                    @{ browser = "Vivaldi";   root = "$env:LOCALAPPDATA\Vivaldi\User Data" }
+                )
+                foreach ($b in $browserRoots) {
+                    if (-not (Test-Path $b.root)) { continue }
+                    $profiles = @(Get-ChildItem -Path $b.root -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'Default' -or $_.Name -match '^Profile \d+$' })
+                    if ($profiles.Count -eq 0 -and (Test-Path (Join-Path $b.root "Extensions"))) {
+                        # Opera / Opera GX keep the Extensions folder directly under the root (no Default subfolder)
+                        $profiles = @([PSCustomObject]@{ FullName = $b.root; Name = "Default" })
+                    }
+                    foreach ($prof in $profiles) {
+                        $extDir = Join-Path $prof.FullName "Extensions"
+                        if (-not (Test-Path $extDir)) { continue }
+                        Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                            $verDir = Get-ChildItem -Path $_.FullName -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+                            if (-not $verDir) { return }
+                            $manifestPath = Join-Path $verDir.FullName "manifest.json"
+                            if (-not (Test-Path $manifestPath)) { return }
+                            try {
+                                $manifest = Get-Content $manifestPath -Raw -ErrorAction Stop | ConvertFrom-Json
+                                $name = "$($manifest.name)"
+                                if ($name -match '^__MSG_(.+)__$') {
+                                    $key = $Matches[1]
+                                    $locale = if ($manifest.default_locale) { $manifest.default_locale } else { "en" }
+                                    $msgPath = Join-Path $verDir.FullName "_locales\$locale\messages.json"
+                                    if (Test-Path $msgPath) {
+                                        try {
+                                            $msgs = Get-Content $msgPath -Raw -ErrorAction Stop | ConvertFrom-Json
+                                            if ($msgs.$key.message) { $name = "$($msgs.$key.message)" }
+                                        } catch { }
+                                    }
+                                }
+                                if ($name -and $name -notmatch '^__MSG_') {
+                                    $extensions += [PSCustomObject]@{ browser = $b.browser; profile = $prof.Name; name = $name }
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+            } catch { }
+
+            # Firefox: extensions.json per profile (different storage format to Chromium)
+            try {
+                $ffRoot = "$env:APPDATA\Mozilla\Firefox\Profiles"
+                if (Test-Path $ffRoot) {
+                    Get-ChildItem -Path $ffRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '\.default' } | ForEach-Object {
+                        $extJsonPath = Join-Path $_.FullName "extensions.json"
+                        if (-not (Test-Path $extJsonPath)) { return }
+                        try {
+                            $extData = Get-Content $extJsonPath -Raw -ErrorAction Stop | ConvertFrom-Json
+                            foreach ($addon in $extData.addons) {
+                                if ($addon.type -ne 'extension' -or $addon.active -ne $true) { continue }
+                                $name = if ($addon.defaultLocale -and $addon.defaultLocale.name) { "$($addon.defaultLocale.name)" } else { "$($addon.id)" }
+                                if ($name) { $extensions += [PSCustomObject]@{ browser = "Firefox"; profile = $_.Name; name = $name } }
+                            }
+                        } catch { }
+                    }
+                }
+            } catch { }
+
+            $security = [PSCustomObject]@{
+                defender         = $defender
+                threats          = $threats
+                exclusions       = $exclusions
+                exclFlags        = $exclFlags
+                hostsCustom      = $hostsCustom
+                hostsFlags       = $hostsFlags
+                startupFlags     = $startupFlags
+                extensions       = $extensions
+                firewall         = $firewall
+                stalledServices  = $stalledServices
+            }
         } catch { }
 
         Write-Host "      - Network adapters, Memory and Running processes" -ForegroundColor DarkGray
@@ -1537,10 +2014,15 @@ function reliabilityexport {
         $sysJson   = if ($sysEvents.Count -gt 0) { (ConvertTo-Json @($sysEvents) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
         $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $displaysJson = if ($displays.Count -gt 0) { (ConvertTo-Json @($displays) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $procsJson = if ($procs.Count -gt 0) { (ConvertTo-Json @($procs) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $netJson = if ($net) { (ConvertTo-Json $net -Compress -Depth 4).Replace('</', '<\/') } else { 'null' }
+        $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
+        $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $devErrorsJson = if ($devErrors.Count -gt 0) { (ConvertTo-Json @($devErrors) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $audioJson = if ($audio) { (ConvertTo-Json $audio -Compress).Replace('</', '<\/') } else { 'null' }
         $memuseJson = if ($memuse) { (ConvertTo-Json $memuse -Compress).Replace('</', '<\/') } else { 'null' }
         $ramJson = if ($ram.Count -gt 0) { (ConvertTo-Json @($ram) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $smartJson = if ($smart.Count -gt 0) { (ConvertTo-Json @($smart) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -1550,7 +2032,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
     }
     catch {
