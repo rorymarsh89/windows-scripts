@@ -131,11 +131,12 @@ body.tab-net #netView{display:block}
 body.tab-security #securityView{display:block}
 body.tab-processes #processesView{display:block}
 body.tab-apps #appsView{display:block}
+body.tab-updates #updatesView{display:block}
 body.tab-extensions #extensionsView{display:block}
 body.tab-dumps #dumpsView{display:block}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
@@ -169,6 +170,8 @@ body.tab-dumps #dumpsView{display:block}
 #procSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:6px}
 #procSearch:focus{outline:none;border-color:var(--dim)}
 #progSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;font-family:inherit;width:260px;margin-bottom:10px}
+#hfSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:10px}
+#hfSearch:focus{outline:none;border-color:var(--dim)}
 #progSearch:focus{outline:none;border-color:var(--dim)}
 #progList{columns:3;column-gap:24px;font-size:14.5px;line-height:1.9;color:var(--dim)}
 #progList div{break-inside:avoid}
@@ -238,7 +241,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView{padding:24px 16px 48px}
+  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -278,6 +281,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
         <button class="tab" data-tab="security">Security</button>
         <button class="tab" data-tab="processes">Running Processes</button>
         <button class="tab" data-tab="apps">Installed Apps</button>
+        <button class="tab" data-tab="updates">Windows Updates</button>
         <button class="tab" data-tab="extensions">Browser Extensions</button>
       </div>
     </div>
@@ -323,6 +327,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="securityView" class="view"></div>
 <div id="processesView" class="view"></div>
 <div id="appsView" class="view"></div>
+<div id="updatesView" class="view"></div>
 <div id="extensionsView" class="view"></div>
 <div id="dumpsView" class="view"></div>
 
@@ -340,6 +345,8 @@ const DISKLAYOUT = /*__DISKLAYOUT__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
 const HAGS = /*__HAGS__*/null;
+const WUHISTORY = /*__WUHISTORY__*/[];
+const WINUPDATE = /*__WINUPDATE__*/null;
 const MONS = /*__MONS__*/[];
 const DISPLAYS = /*__DISPLAYS__*/[];
 const PROCS = /*__PROCS__*/[];
@@ -678,6 +685,7 @@ function renderSpecs(){
   renderAppsList(sp.programs);
   renderProcesses();
   renderExtensions();
+  renderUpdates();
 }
 const PS_={q:'',page:1,key:'mem',dir:-1}, PG_={q:'',page:1};
 let PROGS_ALL=[];
@@ -706,24 +714,45 @@ function renderProcesses(){
 function renderAppsList(programs){
   PROGS_ALL=programs||[];
   const v=document.getElementById('appsView');
-  let ah='';
-  if(PROGS_ALL.length){
-    ah+='<div class="spec-section"><h2>Installed programs ('+PROGS_ALL.length+')</h2>'+
-      '<input id="progSearch" type="text" placeholder="Filter programs\u2026">'+
-      '<div id="progList"></div><div class="pager" id="progPager"></div></div>';
-  }
-  if(HOTFIXES.length){
-    ah+='<div class="spec-section"><h2>Installed updates ('+HOTFIXES.length+')</h2>'+
-      '<input id="hfSearch" type="text" placeholder="Filter updates\u2026">'+
-      '<div id="hfList"></div><div class="pager" id="hfPager"></div></div>';
-  }
-  v.innerHTML=ah||'<div class="spec-section"><h2>Installed Apps</h2><div style="color:var(--faint)">No data embedded.</div></div>';
-  const hf=document.getElementById('hfSearch');
-  if(hf)hf.oninput=e=>{HF_.q=e.target.value.toLowerCase();HF_.page=1;renderHfList();};
-  renderHfList();
+  v.innerHTML=PROGS_ALL.length?
+    '<div class="spec-section"><h2>Installed programs ('+PROGS_ALL.length+')</h2>'+
+    '<input id="progSearch" type="text" placeholder="Filter programs\u2026">'+
+    '<div id="progList"></div><div class="pager" id="progPager"></div></div>'
+    :'<div class="spec-section"><h2>Installed Apps</h2><div style="color:var(--faint)">No data embedded.</div></div>';
   const ps=document.getElementById('progSearch');
   if(ps)ps.oninput=e=>{PG_.q=e.target.value.toLowerCase();PG_.page=1;renderProgList();};
   renderProgList();
+}
+function renderUpdates(){
+  const v=document.getElementById('updatesView');
+  let h='';
+  const w=WINUPDATE;
+  if(w){
+    h+='<div class="spec-section"><h2>Windows Update status</h2><dl class="kv">';
+    h+='<dt>Pending reboot</dt><dd style="color:'+(w.pendingReboot?'var(--warn)':'var(--ok)')+'">'+(w.pendingReboot?'Yes':'No')+'</dd>';
+    if(w.serviceStatus)h+='<dt>Windows Update service</dt><dd style="color:'+(w.serviceStatus==='Running'?'var(--ok)':'var(--warn)')+'">'+esc(w.serviceStatus)+'</dd>';
+    h+='</dl></div>';
+  }
+  if(WUHISTORY.length){
+    const failCount=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
+    h+='<div class="spec-section"><h2>Recent update history ('+WUHISTORY.length+')</h2>';
+    if(failCount)h+='<div style="color:var(--warn);font-size:14px;margin-bottom:12px">'+failCount+' update'+(failCount>1?'s':'')+' did not complete successfully</div>';
+    h+='<dl class="kv">';
+    WUHISTORY.forEach(u=>{
+      const col=u.result==='Succeeded'?'var(--ok)':(u.result==='Failed'||u.result==='Cancelled')?'var(--err)':'var(--warn)';
+      h+='<dt>'+esc(u.date)+'</dt><dd>'+esc(u.title)+' <span style="color:'+col+'">('+esc(u.result)+')</span></dd>';
+    });
+    h+='</dl></div>';
+  }
+  if(HOTFIXES.length){
+    h+='<div class="spec-section"><h2>Installed updates ('+HOTFIXES.length+')</h2>'+
+      '<input id="hfSearch" type="text" placeholder="Filter updates\u2026">'+
+      '<div id="hfList"></div><div class="pager" id="hfPager"></div></div>';
+  }
+  v.innerHTML=h||'<div class="spec-section"><h2>Windows Updates</h2><div style="color:var(--faint)">No update data embedded.</div></div>';
+  const hf=document.getElementById('hfSearch');
+  if(hf)hf.oninput=e=>{HF_.q=e.target.value.toLowerCase();HF_.page=1;renderHfList();};
+  renderHfList();
 }
 function renderExtensions(){
   const v=document.getElementById('extensionsView');
@@ -891,6 +920,10 @@ function renderSummary(){
   if(DEVERR.length)notes.push('<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>');
   const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
   if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push('<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>');
+  if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push('<span class="y">System has a pending reboot (Windows Update or servicing)</span>');
+  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push('<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>');
+  const wuFails=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
+  if(wuFails)notes.push('<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully (see Windows Updates tab)</span>');
   if(RAM.length){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
     if(slow.length)notes.push('<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>');
@@ -1702,6 +1735,43 @@ function reliabilityexport {
             })
         } catch { }
 
+        Write-Host "      - Windows Update history and pending reboot status (can take a few seconds)" -ForegroundColor DarkGray
+        # Pending reboot: several independent flags across Windows can indicate this; any one being set means yes
+        $pendingReboot = $false
+        try {
+            $rebootChecks = @(
+                'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending',
+                'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+            )
+            foreach ($rc in $rebootChecks) { if (Test-Path $rc) { $pendingReboot = $true } }
+            if (-not $pendingReboot) {
+                $pfro = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name 'PendingFileRenameOperations' -ErrorAction SilentlyContinue).PendingFileRenameOperations
+                if ($pfro) { $pendingReboot = $true }
+            }
+        } catch { }
+
+        # Windows Update service status
+        $wuServiceStatus = ""
+        try { $wuServiceStatus = "$((Get-Service -Name wuauserv -ErrorAction Stop).Status)" } catch { }
+
+        # Recent Windows Update history, including FAILED/pending attempts that Get-HotFix cannot show
+        $wuHistory = @()
+        try {
+            $session = New-Object -ComObject Microsoft.Update.Session
+            $searcher = $session.CreateUpdateSearcher()
+            $historyCount = $searcher.GetTotalHistoryCount()
+            if ($historyCount -gt 0) {
+                $resultMap = @{ 1 = "In progress"; 2 = "Succeeded"; 3 = "Succeeded with errors"; 4 = "Failed"; 5 = "Cancelled" }
+                $wuHistory = @($searcher.QueryHistory(0, [Math]::Min($historyCount, 40)) | ForEach-Object {
+                    [PSCustomObject]@{
+                        title  = "$($_.Title)"
+                        date   = if ($_.Date) { $_.Date.ToString("dd/MM/yyyy HH:mm") } else { "" }
+                        result = if ($resultMap.ContainsKey([int]$_.ResultCode)) { $resultMap[[int]$_.ResultCode] } else { "Unknown" }
+                    }
+                } | Sort-Object date -Descending)
+            }
+        } catch { }
+
         $devErrors = @()
         try {
             $devErrors = @(Get-CimInstance Win32_PNPEntity -ErrorAction Stop | Where-Object { $_.ConfigManagerErrorCode -ne 0 } | ForEach-Object {
@@ -2120,6 +2190,9 @@ function reliabilityexport {
         $netJson = if ($net) { (ConvertTo-Json $net -Compress -Depth 4).Replace('</', '<\/') } else { 'null' }
         $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
         $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $wuHistoryJson = if ($wuHistory.Count -gt 0) { (ConvertTo-Json @($wuHistory) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus }
+        $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
         $devErrorsJson = if ($devErrors.Count -gt 0) { (ConvertTo-Json @($devErrors) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $audioJson = if ($audio) { (ConvertTo-Json $audio -Compress).Replace('</', '<\/') } else { 'null' }
         $memuseJson = if ($memuse) { (ConvertTo-Json $memuse -Compress).Replace('</', '<\/') } else { 'null' }
@@ -2132,7 +2205,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
     }
     catch {
