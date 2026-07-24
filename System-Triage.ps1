@@ -169,7 +169,7 @@ body.tab-dumps #dumpsView{display:block}
 .sorth:hover{color:var(--text)}
 #procSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:6px}
 #procSearch:focus{outline:none;border-color:var(--dim)}
-#progSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;font-family:inherit;width:260px;margin-bottom:10px}
+#progSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:10px}
 #hfSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:10px}
 #hfSearch:focus{outline:none;border-color:var(--dim)}
 #progSearch:focus{outline:none;border-color:var(--dim)}
@@ -723,13 +723,14 @@ function renderAppsList(programs){
   if(ps)ps.oninput=e=>{PG_.q=e.target.value.toLowerCase();PG_.page=1;renderProgList();};
   renderProgList();
 }
+const WH_={page:1};
 function renderUpdates(){
   const v=document.getElementById('updatesView');
   let h='';
   const w=WINUPDATE;
   if(w){
     h+='<div class="spec-section"><h2>Windows Update status</h2><dl class="kv">';
-    h+='<dt>Pending reboot</dt><dd style="color:'+(w.pendingReboot?'var(--warn)':'var(--ok)')+'">'+(w.pendingReboot?'Yes':'No')+'</dd>';
+    h+='<dt>Pending Reboot?</dt><dd style="color:'+(w.pendingReboot?'var(--warn)':'var(--ok)')+'">'+(w.pendingReboot?'Yes':'No')+'</dd>';
     if(w.serviceStatus)h+='<dt>Windows Update service</dt><dd style="color:'+(w.serviceStatus==='Running'?'var(--ok)':'var(--warn)')+'">'+esc(w.serviceStatus)+'</dd>';
     h+='</dl></div>';
   }
@@ -737,22 +738,29 @@ function renderUpdates(){
     const failCount=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
     h+='<div class="spec-section"><h2>Recent update history ('+WUHISTORY.length+')</h2>';
     if(failCount)h+='<div style="color:var(--warn);font-size:14px;margin-bottom:12px">'+failCount+' update'+(failCount>1?'s':'')+' did not complete successfully</div>';
-    h+='<dl class="kv">';
-    WUHISTORY.forEach(u=>{
-      const col=u.result==='Succeeded'?'var(--ok)':(u.result==='Failed'||u.result==='Cancelled')?'var(--err)':'var(--warn)';
-      h+='<dt>'+esc(u.date)+'</dt><dd>'+esc(u.title)+' <span style="color:'+col+'">('+esc(u.result)+')</span></dd>';
-    });
-    h+='</dl></div>';
+    h+='<dl class="kv" id="wuHistList"></dl><div class="pager" id="wuHistPager"></div></div>';
   }
   if(HOTFIXES.length){
     h+='<div class="spec-section"><h2>Installed updates ('+HOTFIXES.length+')</h2>'+
       '<input id="hfSearch" type="text" placeholder="Filter updates\u2026">'+
-      '<div id="hfList"></div><div class="pager" id="hfPager"></div></div>';
+      '<dl class="kv" id="hfList"></dl><div class="pager" id="hfPager"></div></div>';
   }
   v.innerHTML=h||'<div class="spec-section"><h2>Windows Updates</h2><div style="color:var(--faint)">No update data embedded.</div></div>';
   const hf=document.getElementById('hfSearch');
   if(hf)hf.oninput=e=>{HF_.q=e.target.value.toLowerCase();HF_.page=1;renderHfList();};
   renderHfList();
+  renderWuHistList();
+}
+function renderWuHistList(){
+  const el=document.getElementById('wuHistList');if(!el)return;
+  const SZ=15,pages=Math.max(1,Math.ceil(WUHISTORY.length/SZ));
+  if(WH_.page>pages)WH_.page=pages;
+  const slice=WUHISTORY.slice((WH_.page-1)*SZ,WH_.page*SZ);
+  el.innerHTML=slice.map(u=>{
+    const col=u.result==='Succeeded'?'var(--ok)':(u.result==='Failed'||u.result==='Cancelled')?'var(--err)':'var(--warn)';
+    return '<dt>'+esc(u.date)+'</dt><dd>'+esc(u.title)+' <span style="color:'+col+'">('+esc(u.result)+')</span></dd>';
+  }).join('')||'<dd style="color:var(--faint)">No update history.</dd>';
+  pager(document.getElementById('wuHistPager'),WH_.page,pages,WUHISTORY.length,slice.length,g=>{WH_.page+=g;renderWuHistList();});
 }
 function renderExtensions(){
   const v=document.getElementById('extensionsView');
@@ -762,13 +770,14 @@ function renderExtensions(){
   }
   const byBrowser={};
   SECURITY.extensions.forEach(e=>{(byBrowser[e.browser]=byBrowser[e.browser]||[]).push(e.name);});
-  let h='<div class="spec-section"><h2>Browser extensions ('+SECURITY.extensions.length+')</h2>';
-  Object.keys(byBrowser).forEach(b=>{
+  let h='<div class="spec-section"><h2>Browser extensions ('+SECURITY.extensions.length+')</h2><div class="drive-grid">';
+  Object.keys(byBrowser).sort().forEach(b=>{
     const names=[...new Set(byBrowser[b])].sort((a,c)=>a.localeCompare(c,undefined,{sensitivity:'base'}));
-    h+='<div style="margin-bottom:10px"><div class="sev-head" style="color:var(--dim)">'+esc(b)+' ('+names.length+')</div>'+
+    h+='<div class="drive"><h3>'+esc(b)+'</h3>'+
+      '<div class="sub">'+names.length+' extension'+(names.length>1?'s':'')+'</div>'+
       '<div style="color:var(--dim);font-size:14px;line-height:1.8">'+names.map(esc).join('<br>')+'</div></div>';
   });
-  h+='</div>';
+  h+='</div></div>';
   v.innerHTML=h;
 }
 function pager(el,page,pages,total,shown,onGo){
@@ -806,10 +815,10 @@ const HF_={q:'',page:1};
 function renderHfList(){
   const el=document.getElementById('hfList');if(!el)return;
   const rows=HOTFIXES.filter(h=>!HF_.q||(h.id+' '+h.desc).toLowerCase().includes(HF_.q));
-  const SZ=50,pages=Math.max(1,Math.ceil(rows.length/SZ));
+  const SZ=15,pages=Math.max(1,Math.ceil(rows.length/SZ));
   if(HF_.page>pages)HF_.page=pages;
   const slice=rows.slice((HF_.page-1)*SZ,HF_.page*SZ);
-  el.innerHTML=slice.map(h=>'<div>'+esc(h.id)+(h.desc?' <span style="color:var(--faint)">'+esc(h.desc)+'</span>':'')+(h.date?' <span class="mono" style="color:var(--faint)">'+esc(h.date)+'</span>':'')+'</div>').join('')||'<div style="color:var(--faint)">No matches.</div>';
+  el.innerHTML=slice.map(h=>'<dt>'+esc(h.date||'')+'</dt><dd>'+esc(h.id)+(h.desc?' <span style="color:var(--faint)">'+esc(h.desc)+'</span>':'')+'</dd>').join('')||'<dd style="color:var(--faint)">No matches.</dd>';
   pager(document.getElementById('hfPager'),HF_.page,pages,rows.length,slice.length,g=>{HF_.page+=g;renderHfList();});
 }
 function smartProbs(d){
@@ -863,7 +872,8 @@ function renderSummary(){
   const cpu=specVal(sp.info,'CPU Name');
   if(cpu)pairs.push(['CPU', esc(cpu.trim())]);
   if(GPUS.length||DISPLAYS.length){
-    pairs.push(['GPU'+(GPUS.length>1?'s':''), (GPUS.length||DISPLAYS.length? (new Set(DISPLAYS.length?DISPLAYS.map(d=>d.gpu):GPUS.map(g=>g.name))).size:0)+' detected <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
+    const gpuNames=[...new Set(GPUS.length?GPUS.map(g=>g.name):DISPLAYS.map(d=>d.gpu))];
+    pairs.push(['GPU'+(gpuNames.length>1?'s':''), gpuNames.map(esc).join(', ')+' <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
   } else {
     const gpu=specVal(sp.info,'GPU');
     if(gpu)pairs.push(['GPU', esc(gpu)+' <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
@@ -1061,7 +1071,7 @@ function renderSecurity(){
     h+='<div class="spec-section"><h2>Defender exclusion alerts</h2><ul class="notes">'+SECURITY.exclFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
   }
   if(SECURITY.exclusions&&SECURITY.exclusions.length){
-    h+='<div class="spec-section"><h2>All Defender exclusions ('+SECURITY.exclusions.length+')</h2><div style="color:var(--dim);font-size:14px;line-height:1.8">'+SECURITY.exclusions.map(esc).join('<br>')+'</div></div>';
+    h+='<div class="spec-section"><h2>Defender Exclusions ('+SECURITY.exclusions.length+')</h2><div style="color:var(--dim);font-size:14px;line-height:1.8">'+SECURITY.exclusions.map(esc).join('<br>')+'</div></div>';
   }
   if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length){
     h+='<div class="spec-section"><h2>Hosts file</h2><div style="color:var(--dim);font-size:14px;margin-bottom:8px">'+SECURITY.hostsCustom+' custom entr'+(SECURITY.hostsCustom===1?'y':'ies')+' found.</div><ul class="notes">'+SECURITY.hostsFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
