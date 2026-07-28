@@ -133,10 +133,12 @@ body.tab-processes #processesView{display:block}
 body.tab-apps #appsView{display:block}
 body.tab-updates #updatesView{display:block}
 body.tab-extensions #extensionsView{display:block}
+body.tab-faq #faqView{display:block}
+body.tab-tools #toolsView{display:block}
 body.tab-dumps #dumpsView{display:block}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
@@ -236,12 +238,14 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .src{color:var(--dim);font-size:14px;margin-left:10px}
 .msg{grid-column:3;color:var(--dim);font-size:14px;line-height:1.5;padding:6px 0 2px;white-space:pre-wrap;display:none;word-break:break-word}
 .row.open .msg{display:block}
+.faq-row{grid-template-columns:12px 1fr}
+.faq-row .msg{grid-column:2}
 #empty{color:var(--faint);padding:40px 0;text-align:center;display:none}
 @media (max-width:600px){
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView{padding:24px 16px 48px}
+  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -283,6 +287,13 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
         <button class="tab" data-tab="apps">Installed Apps</button>
         <button class="tab" data-tab="updates">Windows Updates</button>
         <button class="tab" data-tab="extensions">Browser Extensions</button>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-title"><span>Resources</span><span class="chev">&#9660;</span></div>
+      <div class="nav-group-items">
+        <button class="tab" data-tab="faq">FAQ</button>
+        <button class="tab" data-tab="tools">Tools &amp; Utilities</button>
       </div>
     </div>
   </nav>
@@ -329,6 +340,8 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="appsView" class="view"></div>
 <div id="updatesView" class="view"></div>
 <div id="extensionsView" class="view"></div>
+<div id="faqView" class="view"></div>
+<div id="toolsView" class="view"><div class="spec-section"><h2>Diagnostics &amp; Monitoring</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.hwinfo.com/download/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">HWiNFO</a></h3><div class="sub" style="line-height:1.5">Real-time hardware sensor monitoring &mdash; temperatures, voltages, clock speeds, fan speeds.</div></div><div class="drive"><h3><a href="https://www.cpuid.com/softwares/cpu-z.html" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">CPU-Z</a></h3><div class="sub" style="line-height:1.5">Quick reference for CPU, motherboard, and RAM specifications.</div></div><div class="drive"><h3><a href="https://www.techpowerup.com/gpuz/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">GPU-Z</a></h3><div class="sub" style="line-height:1.5">CPU-Z's GPU-focused equivalent &mdash; driver version, VRAM, clocks, sensors.</div></div><div class="drive"><h3><a href="https://crystalmark.info/en/software/crystaldiskinfo/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">CrystalDiskInfo</a></h3><div class="sub" style="line-height:1.5">Drive health and SMART status at a glance.</div></div></div></div><div class="spec-section"><h2>Stability &amp; Stress Testing</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.memtest86.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">MemTest86</a></h3><div class="sub" style="line-height:1.5">Bootable RAM stability test, run outside Windows &mdash; the standard way to confirm or rule out bad memory.</div></div><div class="drive"><h3><a href="https://www.ocbase.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">OCCT</a></h3><div class="sub" style="line-height:1.5">Combined CPU/GPU/RAM stress test with built-in stability and error detection.</div></div><div class="drive"><h3><a href="https://geeks3d.com/furmark/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">FurMark</a></h3><div class="sub" style="line-height:1.5">GPU stress test &mdash; useful for spotting thermal throttling or instability under sustained load.</div></div></div></div><div class="spec-section"><h2>Crash Analysis</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.resplendence.com/whocrashed" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">WhoCrashed</a></h3><div class="sub" style="line-height:1.5">Plain-English analysis of minidump files &mdash; pairs directly with the .dmp files this tool collects.</div></div></div></div><div class="spec-section"><h2>Cleanup &amp; Disk Space</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.bleachbit.org/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">BleachBit</a></h3><div class="sub" style="line-height:1.5">Clears temporary files and caches to free up disk space.</div></div><div class="drive"><h3><a href="https://diskanalyzer.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">WizTree</a></h3><div class="sub" style="line-height:1.5">Visualises what's actually taking up space on a drive.</div></div></div></div><div class="spec-section"><h2>Driver Management</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.wagnardsoft.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Display Driver Uninstaller (DDU)</a></h3><div class="sub" style="line-height:1.5">Fully removes GPU drivers before a clean reinstall &mdash; the standard fix for driver-related instability.</div></div><div class="drive"><h3><a href="https://www.amd.com/en/support" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">AMD Drivers &amp; Support</a></h3><div class="sub" style="line-height:1.5">Official AMD driver downloads.</div></div><div class="drive"><h3><a href="https://www.nvidia.com/Download/index.aspx" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">NVIDIA Drivers &amp; Support</a></h3><div class="sub" style="line-height:1.5">Official NVIDIA driver downloads.</div></div><div class="drive"><h3><a href="https://www.intel.com/content/www/us/en/support/detect.html" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Intel Drivers &amp; Support</a></h3><div class="sub" style="line-height:1.5">Official Intel driver downloads.</div></div></div></div><div class="spec-section"><h2>Installation Media</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.microsoft.com/software-download/windows11" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Windows 11 Download</a></h3><div class="sub" style="line-height:1.5">Official Microsoft page for Windows 11 installation media.</div></div><div class="drive"><h3><a href="https://rufus.ie/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Rufus</a></h3><div class="sub" style="line-height:1.5">Creates bootable USB installers from a Windows ISO.</div></div></div></div><div class="spec-section"><h2>Motherboard / BIOS Vendor Support</h2><div class="drive-grid"><div class="drive"><h3><a href="https://www.asus.com/support/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">ASUS Support</a></h3><div class="sub" style="line-height:1.5">Official ASUS driver and BIOS downloads.</div></div><div class="drive"><h3><a href="https://www.msi.com/support/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">MSI Support</a></h3><div class="sub" style="line-height:1.5">Official MSI driver and BIOS downloads.</div></div><div class="drive"><h3><a href="https://www.gigabyte.com/Support" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Gigabyte Support</a></h3><div class="sub" style="line-height:1.5">Official Gigabyte driver and BIOS downloads.</div></div><div class="drive"><h3><a href="https://www.asrock.com/support/index.asp" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">ASRock Support</a></h3><div class="sub" style="line-height:1.5">Official ASRock driver and BIOS downloads.</div></div><div class="drive"><h3><a href="https://www.dell.com/support/home/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Dell Support</a></h3><div class="sub" style="line-height:1.5">Official Dell driver and BIOS downloads (by service tag).</div></div><div class="drive"><h3><a href="https://support.hp.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">HP Support</a></h3><div class="sub" style="line-height:1.5">Official HP driver and BIOS downloads.</div></div><div class="drive"><h3><a href="https://support.lenovo.com/" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">Lenovo Support</a></h3><div class="sub" style="line-height:1.5">Official Lenovo driver and BIOS downloads.</div></div></div></div></div>
 <div id="dumpsView" class="view"></div>
 
 </main>
@@ -686,6 +699,7 @@ function renderSpecs(){
   renderProcesses();
   renderExtensions();
   renderUpdates();
+  renderFAQ();
 }
 const PS_={q:'',page:1,key:'mem',dir:-1}, PG_={q:'',page:1};
 let PROGS_ALL=[];
@@ -762,6 +776,70 @@ function renderWuHistList(){
   }).join('')||'<dd style="color:var(--faint)">No update history.</dd>';
   pager(document.getElementById('wuHistPager'),WH_.page,pages,WUHISTORY.length,slice.length,g=>{WH_.page+=g;renderWuHistList();});
 }
+const FAQ_DATA=[
+{id:'app-crashes',q:"What does \u2018Application crashes\u2019 mean?",a:"This counts how many times a program on your PC has crashed and forced Windows to close it, based on Windows' own Reliability History. Occasional crashes are normal, especially in games or browsers. A rising number \u2014 especially if they're all the same program, or all mention the same driver file \u2014 usually points to that specific program, a graphics driver, or a plugin/mod rather than Windows itself.",tools:["WhoCrashed","Display Driver Uninstaller (DDU)"]},
+{id:'unexpected-shutdown',q:"What does \u2018Unexpected shutdown\u2019 mean?",a:"Windows didn't shut down properly last time \u2014 it never received the normal \u2018the user is turning off the PC\u2019 signal. This can be caused by a full system crash (a \u2018blue screen\u2019), a power cut, someone holding the power button, or the PC freezing solid and being force-restarted. If a specific bugcheck code is shown, that's the technical reason Windows recorded, and it can point toward whether this is a hardware, driver, or Windows problem.",tools:["WhoCrashed","OCCT","MemTest86","Display Driver Uninstaller (DDU)"]},
+{id:'memory-dump',q:"What is a \u2018Memory dump\u2019?",a:"When Windows crashes badly enough (a \u2018blue screen\u2019), it can save a snapshot of exactly what the computer was doing at that moment to a file. That file is included in the zip this tool creates. It's the single most useful piece of evidence for figuring out precisely what caused a crash.",tools:["WhoCrashed"]},
+{id:'whea',q:"What is a \u2018Fatal hardware error (WHEA)\u2019?",a:"WHEA is Windows' hardware error reporting system. A \u2018fatal\u2019 WHEA error means a core piece of hardware \u2014 usually the CPU, memory controller, or a PCIe device \u2014 reported a serious problem Windows couldn't recover from, and the machine likely crashed or rebooted as a result. This is a stronger signal than most crash types that something is physically wrong or unstable, often an overclock, degraded hardware, or insufficient voltage, rather than a software issue.",tools:["OCCT","MemTest86","HWiNFO"]},
+{id:'disk-smart',q:"What do the drive/SMART warnings mean?",a:"Drives constantly track their own health statistics (SMART data). This flag lists specific problems the drive itself has reported, such as reallocated sectors (damaged areas it's had to work around), pending or uncorrectable sectors (data that couldn't be read reliably), or a high UltraDMA CRC error count (usually a loose or failing cable, not the drive). If a drive predicts its own failure, back up anything important from it as soon as possible.",tools:["CrystalDiskInfo"]},
+{id:'dirty-bit',q:"What does \u2018dirty bit set\u2019 mean?",a:"This means Windows flagged a drive as not having been cleanly unmounted \u2014 usually caused by the same unexpected shutdown or crash reported elsewhere in this report. It's a marker for Windows to check that drive's filesystem for errors next time it gets the chance. On its own it isn't necessarily a sign of a failing drive.",tools:[]},
+{id:'device-manager-errors',q:"What are \u2018Device Manager errors\u2019?",a:"Windows found a piece of hardware but couldn't properly load a driver for it, or the device itself reported a problem. This usually means a missing, outdated, or corrupted driver \u2014 occasionally a genuine hardware fault.",tools:["AMD Drivers & Support","NVIDIA Drivers & Support","Intel Drivers & Support"]},
+{id:'mbr-secureboot',q:"What does \u2018System disk uses MBR partitioning\u2019 mean?",a:"Windows drives use one of two partitioning styles: the older MBR or the newer GPT. Secure Boot \u2014 a feature that helps stop malware loading before Windows starts \u2014 requires GPT. If the main drive is MBR, Secure Boot can't be turned on without converting the drive or doing a clean reinstall, which is a bigger job best not attempted without guidance.",tools:[]},
+{id:'pending-reboot',q:"What does \u2018pending reboot\u2019 mean?",a:"Windows or an update has made changes that only take full effect after a restart, and it's currently waiting on one. Until then the system can behave oddly and further updates may queue up behind it. A normal restart resolves this.",tools:[]},
+{id:'wu-service',q:"What does \u2018Windows Update service is stopped/disabled\u2019 mean?",a:"The background service that lets Windows check for and install updates isn't running. If it's disabled, Windows won't be able to update at all until it's turned back on, which can leave the system missing important security fixes over time.",tools:[]},
+{id:'wu-failed',q:"What does \u2018Windows Updates did not complete successfully\u2019 mean?",a:"One or more recent update attempts failed partway through rather than installing cleanly. This can happen for lots of reasons \u2014 a bad download, low disk space, corrupted update files, or a conflict with other software \u2014 and can sometimes leave a PC feeling unstable or repeatedly nagging about the same update.",tools:["Windows 11 Download"]},
+{id:'ram-speed',q:"What does \u2018RAM configured at X MT/s, rated Y MT/s\u2019 mean?",a:"Your memory is capable of running faster than it currently is. This almost always means XMP (Intel) or EXPO (AMD) \u2014 a one-click profile in the BIOS that runs RAM at its advertised speed \u2014 isn't enabled, so it's running at a slower default speed instead. This isn't dangerous, but it does mean the RAM isn't performing the way it was bought to.",tools:["CPU-Z"]},
+{id:'antivirus-conflict',q:"What does \u2018Multiple real-time antivirus products active\u2019 mean?",a:"More than one antivirus program is trying to actively scan the system at the same time. This is a common, often-overlooked cause of slowdowns, false-positive quarantines, and general instability, since the two programs can end up fighting over the same files.",tools:[]},
+{id:'defender-rtp',q:"What does \u2018Windows Defender real-time protection is disabled\u2019 mean?",a:"Windows' built-in antivirus isn't actively scanning for threats. This can be intentional if another antivirus is installed, or it can be accidental \u2014 malware sometimes disables it deliberately to avoid detection.",tools:[]},
+{id:'firewall-disabled',q:"What does \u2018Firewall disabled on: [profile]\u2019 mean?",a:"Windows Firewall isn't active on one or more network profiles (Domain, Private, or Public), leaving the system more exposed to unwanted network connections.",tools:[]},
+{id:'stalled-services',q:"What does \u2018Automatic services not running\u2019 mean?",a:"Some background services are set to start automatically with Windows but currently aren't running. Sometimes this is harmless, but it can also point to something failing silently in the background \u2014 check the Security tab for which specific services are affected.",tools:[]},
+{id:'defender-threats',q:"What are \u2018threat detections recorded by Windows Defender\u2019?",a:"Windows Defender has previously found and acted on something it identified as malware, a virus, or another threat on this PC. This is historical \u2014 it doesn't necessarily mean anything is currently infected \u2014 but repeated or recent detections are worth taking seriously.",tools:[]},
+{id:'defender-exclusions',q:"What are \u2018risky Defender exclusions\u2019?",a:"An exclusion tells Windows Defender to skip scanning a specific file, folder, or file type. Excluding a game folder is common and usually fine. Excluding an entire drive, a broad system folder, or all .exe files is far more dangerous, since it means malware placed there would never be scanned at all. Check the Security tab for exactly what's excluded.",tools:[]},
+{id:'hosts-redirect',q:"What does \u2018Hosts file redirects a known update/security domain\u2019 mean?",a:"The hosts file is a small system file that can override where certain web addresses point. This flag means an update- or security-related address \u2014 like Windows Update or an antivirus vendor \u2014 has been redirected elsewhere. Sometimes this is done deliberately to block updates, but it's also a technique malware uses to stop antivirus software updating itself.",tools:[]},
+{id:'startup-flagged',q:"What are \u2018flagged startup entries\u2019?",a:"These are programs set to launch automatically with Windows that either run from a Temp folder or don't have a valid digital signature. Neither is automatically a problem \u2014 plenty of legitimate small or hobbyist tools are unsigned \u2014 but it's exactly the pattern malware persistence uses, so anything unfamiliar here is worth a closer look.",tools:[]},
+{id:'gpu-tdr',q:"What does \u2018display driver timeout/reset\u2019 mean?",a:"The graphics driver stopped responding briefly and Windows had to recover it (often called a \u2018TDR\u2019 event). This usually shows up as a brief flicker or freeze rather than a full crash, though it can escalate to one. Common causes are an unstable GPU overclock, an outdated or corrupted graphics driver, or the GPU overheating under load.",tools:["Display Driver Uninstaller (DDU)","FurMark","HWiNFO"]},
+{id:'livekernelevent',q:"What is a \u2018LiveKernelEvent\u2019?",a:"Windows' record of a serious problem severe enough to be crash-like, but that the system managed to recover from without a full restart \u2014 most often tied to a graphics driver failing and recovering. Frequent LiveKernelEvents point to the same kinds of causes as display driver timeouts.",tools:["Display Driver Uninstaller (DDU)","FurMark","HWiNFO"]},
+{id:'wifi-signal',q:"What does \u2018Wi-Fi signal at X%\u2019 mean?",a:"The wireless connection's signal strength was weak at the moment this report was generated. A weak signal can cause slow speeds, dropped connections, and higher ping in games, and is usually down to distance from the router, walls/obstructions, or interference from other devices.",tools:[]},
+{id:'commit-charge',q:"What does \u2018Commit charge at X% of limit\u2019 mean?",a:"This measures how much memory \u2014 RAM plus the page file combined \u2014 the system had committed to running programs at the moment this report was generated. Running close to the limit can cause slowdowns, stuttering, or \u2018out of memory\u2019 errors, and often points to either too little RAM for the workload or a page file set too small.",tools:["HWiNFO"]},
+{id:'software-anticheat',q:"What does flagging anti-cheat / kernel driver software mean?",a:"Anti-cheat systems like Vanguard, Easy Anti-Cheat, and BattlEye run at a very deep level in Windows (a \u2018kernel driver\u2019) to detect cheating in games. That deep access makes them a common \u2014 though not the only \u2014 suspect when troubleshooting crashes tied to a specific game. This is a factual note that it's installed, not a claim that it's causing a problem.",tools:[]},
+{id:'software-overclock',q:"What does flagging overclocking/monitoring tools mean?",a:"Tools like MSI Afterburner, RTSS, Intel XTU, and Ryzen Master can adjust CPU/GPU clock speeds, voltages, and power limits beyond default settings. If a system is unstable, an aggressive overclock applied through one of these is a common and easy-to-test cause.",tools:["OCCT"]},
+{id:'software-rgb',q:"What does flagging RGB/peripheral suites mean?",a:"Software like Corsair iCUE, Razer Synapse, Logitech G HUB, and similar RGB/peripheral control suites has a real history of causing background crashes, high idle CPU/RAM usage, and driver conflicts \u2014 even though each individual program is legitimate.",tools:[]},
+{id:'software-audio',q:"What does flagging audio/overlay software mean?",a:"Tools like Nahimic, GeForce Experience, Xbox Game Bar, and Streamlabs OBS can conflict with each other or with games, particularly when more than one is trying to add an overlay at the same time.",tools:[]},
+{id:'software-network',q:"What does flagging network software mean?",a:"Software like Killer Network Manager or Hola VPN has a known history of causing latency spikes, packet loss, or other connectivity problems on some systems.",tools:[]},
+{id:'software-bloatware',q:"What does \u2018Potential bloatware/PUP\u2019 mean?",a:"This flags software with a track record of being unwanted, low-value, or actively harmful to performance \u2014 things like registry \u2018cleaners\u2019, aggressive PC \u2018optimizer\u2019 tools, or trial antivirus suites that came pre-installed. None of these are viruses, but removing them is often one of the most effective ways to speed up a slow PC.",tools:[]},
+];
+function renderFAQ(){
+  const v=document.getElementById('faqView');
+  let h='<div class="spec-section"><h2>Frequently Asked Questions</h2>'+
+    '<div style="color:var(--dim);font-size:14px;margin-bottom:16px">Click any question to expand it. Flagged items in General Notes link straight here.</div>';
+  FAQ_DATA.forEach(f=>{
+    h+='<div class="row faq-row" id="faq-'+f.id+'"><span class="dot d-info"></span>'+
+      '<span class="title">'+esc(f.q)+'</span>'+
+      '<div class="msg">'+esc(f.a)+
+      (f.tools.length?'<div style="margin-top:10px;color:var(--dim)">Helpful tools: '+f.tools.map(esc).join(', ')+' <span style="color:var(--faint)">(see Tools &amp; Utilities)</span></div>':'')+
+      '</div></div>';
+  });
+  h+='</div>';
+  v.innerHTML=h;
+  v.querySelectorAll('.faq-row').forEach(r=>r.onclick=()=>r.classList.toggle('open'));
+}
+function goFaq(id){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab==='faq'));
+  document.body.className='tab-faq';
+  setTimeout(()=>{
+    const el=document.getElementById('faq-'+id);
+    if(!el)return;
+    el.classList.add('open');
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.outline='2px solid var(--info)';
+    setTimeout(()=>{el.style.outline='';},1600);
+  },30);
+  return false;
+}
+function flagLink(faqId,html){
+  return '<a href="#" class="faq-link" onclick="return goFaq(\''+faqId+'\')" style="color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+html+'</a>';
+}
+
 function renderExtensions(){
   const v=document.getElementById('extensionsView');
   if(!SECURITY||!SECURITY.extensions||!SECURITY.extensions.length){
@@ -914,7 +992,7 @@ function renderSummary(){
   const crashes=events.filter(e=>e.cat==='err'&&/faulting application/i.test(e.m)).length;
   const shutdowns=events.filter(e=>/unexpected/i.test(e.m)&&e.s==='EventLog').length;
   const notes=[];
-  notes.push(crashes?'<span class="r"><b>'+crashes+'</b> Application crash'+(crashes>1?'es':'')+'</span>':'<span class="g">No application crashes</span>');
+  notes.push(crashes?flagLink('app-crashes','<span class="r"><b>'+crashes+'</b> Application crash'+(crashes>1?'es':'')+'</span>'):'<span class="g">No application crashes</span>');
   // Unexpected shutdowns: reliability history (6008-derived) and Kernel-Power 41 record the
   // same incident. Report one merged line, using the larger count if they disagree.
   const kp41ev=SYSEVT.filter(r=>String(r.id)==='41');
@@ -930,28 +1008,28 @@ function renderSummary(){
     }else{
       detail='reliability history only \u2014 outside event log window';
     }
-    notes.push('<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>');
+    notes.push(flagLink('unexpected-shutdown','<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>'));
   }else{
     notes.push('<span class="g">No unexpected shutdowns</span>');
   }
-  if(DUMPS.length)notes.push('<span class="y"><b>'+DUMPS.length+'</b> Memory dump'+(DUMPS.length>1?'s':'')+' collected</span> <span style="color:var(--faint)">(in zip)</span>');
+  if(DUMPS.length)notes.push(flagLink('memory-dump','<span class="y"><b>'+DUMPS.length+'</b> Memory dump'+(DUMPS.length>1?'s':'')+' collected</span> <span style="color:var(--faint)">(in zip)</span>'));
   const wheaFatal=SYSEVT.filter(r=>/WHEA/i.test(r.prov)&&['18','46'].includes(String(r.id))).length;
-  if(wheaFatal)notes.push('<span class="r"><b>'+wheaFatal+'</b> Fatal hardware error'+(wheaFatal>1?'s':'')+' (WHEA)</span>');
+  if(wheaFatal)notes.push(flagLink('whea','<span class="r"><b>'+wheaFatal+'</b> Fatal hardware error'+(wheaFatal>1?'s':'')+' (WHEA)</span>'));
   SMART.forEach(d=>{
     const probs=smartProbs(d);
-    if(probs.length)notes.push('<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>');
+    if(probs.length)notes.push(flagLink('disk-smart','<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>'));
   });
-  DIRTY.forEach(v=>notes.push('<span class="y">Volume '+esc(v)+' has its dirty bit set</span>'));
-  if(DEVERR.length)notes.push('<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>');
+  DIRTY.forEach(v=>notes.push(flagLink('dirty-bit','<span class="y">Volume '+esc(v)+' has its dirty bit set</span>')));
+  if(DEVERR.length)notes.push(flagLink('device-manager-errors','<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>'));
   const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
-  if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push('<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>');
-  if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push('<span class="y">System has a pending reboot (Windows Update or servicing)</span>');
-  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push('<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>');
+  if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push(flagLink('mbr-secureboot','<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>'));
+  if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push(flagLink('pending-reboot','<span class="y">System has a pending reboot (Windows Update or servicing)</span>'));
+  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push(flagLink('wu-service','<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>'));
   const wuFails=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
-  if(wuFails)notes.push('<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully (see Windows Updates tab)</span>');
+  if(wuFails)notes.push(flagLink('wu-failed','<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully (see Windows Updates tab)</span>'));
   if(RAM.length){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
-    if(slow.length)notes.push('<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>');
+    if(slow.length)notes.push(flagLink('ram-speed','<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>'));
   }
   // Known software flags: anti-cheat/kernel drivers, OC & monitoring tools, RGB/peripheral suites, bloatware/PUPs
   const SOFT_FLAGS=[
@@ -993,38 +1071,39 @@ function renderSummary(){
   const avStr=specVal(sp.info,'Antivirus');
   if(avStr){
     const avList=avStr.split(',').map(s=>s.trim()).filter(Boolean);
-    if(avList.length>1)notes.push('<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>');
+    if(avList.length>1)notes.push(flagLink('antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
   }
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
-    notes.push('<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>');
+    const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware'};
+    notes.push(flagLink(SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
   });
 
   if(SECURITY){
-    if(SECURITY.defender&&SECURITY.defender.rtp!=='True')notes.push('<span class="r">Windows Defender real-time protection is disabled</span>');
+    if(SECURITY.defender&&SECURITY.defender.rtp!=='True')notes.push(flagLink('defender-rtp','<span class="r">Windows Defender real-time protection is disabled</span>'));
     if(SECURITY.firewall&&SECURITY.firewall.some(f=>f.enabled!=='True')){
       const off=SECURITY.firewall.filter(f=>f.enabled!=='True').map(f=>f.profile);
-      notes.push('<span class="r">Firewall disabled on: '+esc(off.join(', '))+'</span>');
+      notes.push(flagLink('firewall-disabled','<span class="r">Firewall disabled on: '+esc(off.join(', '))+'</span>'));
     }
-    if(SECURITY.stalledServices&&SECURITY.stalledServices.length)notes.push('<span class="y"><b>'+SECURITY.stalledServices.length+'</b> Automatic service'+(SECURITY.stalledServices.length>1?'s':'')+' not running (see Security tab)</span>');
-    if(SECURITY.threats&&SECURITY.threats.length)notes.push('<span class="r"><b>'+SECURITY.threats.length+'</b> threat detection'+(SECURITY.threats.length>1?'s':'')+' recorded by Windows Defender</span>');
-    if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push('<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+' (see Security tab)</span>');
-    if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push('<span class="y">Hosts file redirects a known update/security domain (see Security tab)</span>');
-    if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push('<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+' (see Security tab)</span>');
+    if(SECURITY.stalledServices&&SECURITY.stalledServices.length)notes.push(flagLink('stalled-services','<span class="y"><b>'+SECURITY.stalledServices.length+'</b> Automatic service'+(SECURITY.stalledServices.length>1?'s':'')+' not running (see Security tab)</span>'));
+    if(SECURITY.threats&&SECURITY.threats.length)notes.push(flagLink('defender-threats','<span class="r"><b>'+SECURITY.threats.length+'</b> threat detection'+(SECURITY.threats.length>1?'s':'')+' recorded by Windows Defender</span>'));
+    if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push(flagLink('defender-exclusions','<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+' (see Security tab)</span>'));
+    if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push(flagLink('hosts-redirect','<span class="y">Hosts file redirects a known update/security domain (see Security tab)</span>'));
+    if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push(flagLink('startup-flagged','<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+' (see Security tab)</span>'));
   }
   const gpuDrvRe=/nvlddmkm|amdwddmg|amdkmdag|atikmdag/i;
   const tdrEvents=SYSEVT.filter(r=>String(r.id)==='4101'||gpuDrvRe.test(r.prov)||gpuDrvRe.test(r.msg||''));
   if(tdrEvents.length){
     const drv=[...new Set(tdrEvents.map(r=>{const m2=(r.prov+' '+(r.msg||'')).match(gpuDrvRe);return m2?m2[0].toLowerCase():null;}).filter(Boolean))];
-    notes.push('<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>');
+    notes.push(flagLink('gpu-tdr','<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>'));
   }
   const lke=RAW.filter(r=>/LiveKernelEvent/i.test(r.m||'')).length;
-  if(lke)notes.push('<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>');
+  if(lke)notes.push(flagLink('livekernelevent','<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>'));
   if(NET&&NET.wifi&&NET.wifi.signal){
     const sig=parseInt(NET.wifi.signal)||0;
-    if(sig&&sig<50)notes.push('<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>');
+    if(sig&&sig<50)notes.push(flagLink('wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
   }
-  if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push('<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>');
+  if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(flagLink('commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
   nEl.innerHTML=notes.length?'<ul class="notes">'+notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>':'';
