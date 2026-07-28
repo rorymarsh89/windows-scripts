@@ -594,7 +594,7 @@ function renderSpecs(){
   let h='';
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
-    const SHOWN=['OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','Ram Capacity','RAM Speed'];
+    const SHOWN=['OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
       h+='<dt>'+esc(k)+'</dt><dd'+(off?' class="flag-off"':'')+'>'+esc(val)+'</dd>';
@@ -882,6 +882,21 @@ function renderSummary(){
   if(mb)pairs.push(['Motherboard', esc(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim())]);
   const bdate=specVal(sp.info,'BIOS Date');
   if(bdate)pairs.push(['BIOS date', esc(bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''))]);
+  const bver=specVal(sp.info,'BIOS Version');
+  if(bver||mb){
+    const val=bver?esc(bver):'';
+    // A few vendors have a reliable model-search URL; everyone else falls back to a plain web
+    // search, which reliably lands on the right support page without needing per-vendor scraping.
+    const mfrL=(mbMfr||'').toLowerCase();
+    const q=encodeURIComponent(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+(mb||'')).trim()+' bios update download');
+    let url='https://www.google.com/search?q='+q;
+    if(mb){
+      if(/asus/.test(mfrL))url='https://www.asus.com/support/AllSupport/?keyword='+encodeURIComponent(mb);
+      else if(/msi|micro-star/.test(mfrL))url='https://www.msi.com/Search?searchKeyword='+encodeURIComponent(mb);
+      else if(/gigabyte/.test(mfrL))url='https://www.gigabyte.com/Search?search='+encodeURIComponent(mb);
+    }
+    pairs.push(['BIOS updates', (val?val+' \u2014 ':'')+'<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--info)">Check for updates</a>']);
+  }
   if(RAM.length){
     const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
     const conf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
@@ -1124,30 +1139,36 @@ function renderGPU(){
 }
 function renderMemory(){
   const v=document.getElementById('memoryView');
-  if(!RAM.length){
-    v.innerHTML='<div class="spec-section"><h2>Memory modules</h2><div style="color:var(--faint)">No memory module data embedded.</div></div>';
-    return;
+  let h='';
+  if(RAM.length){
+    h+='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2><div class="drive-grid">';
+    RAM.forEach(m=>{
+      h+='<div class="drive"><h3>'+esc(m.slot)+'</h3>'+
+        '<div class="sub">'+esc(m.mfr||'')+'</div>'+
+        '<dl class="kv smart-kv">'+
+        '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
+        '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
+        (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
+        (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
+        '</dl></div>';
+    });
+    h+='</div></div>';
   }
-  let h='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2><div class="drive-grid">';
-  RAM.forEach(m=>{
-    h+='<div class="drive"><h3>'+esc(m.slot)+'</h3>'+
-      '<div class="sub">'+esc(m.mfr||'')+'</div>'+
-      '<dl class="kv smart-kv">'+
-      '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
-      '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
-      (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
-      (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
-      '</dl></div>';
-  });
-  h+='</div></div>';
   if(MEMUSE&&MEMUSE.pt){
-    const pct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
-    h+='<div class="spec-section"><h2>Memory usage at capture</h2><dl class="kv">'+
-      '<dt>Physical memory used</dt><dd>'+MEMUSE.pu.toFixed(1)+' / '+MEMUSE.pt.toFixed(1)+' GB ('+pct+'%)</dd>';
-    if(MEMUSE.ct)h+='<dt>Commit charge</dt><dd>'+MEMUSE.cu.toFixed(1)+' / '+MEMUSE.ct.toFixed(1)+' GB ('+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'%)</dd>';
-    h+='</dl></div>';
+    const physPct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
+    h+='<div class="spec-section"><h2>Memory usage at capture</h2><div class="drive-grid">';
+    h+='<div class="drive"><h3>Physical Memory</h3>'+
+      '<div class="meter'+(physPct>85?' low':'')+'"><div style="width:'+Math.min(physPct,100)+'%"></div></div>'+
+      '<div class="use mono">'+MEMUSE.pu.toFixed(1)+' GB used of '+MEMUSE.pt.toFixed(1)+' GB ('+physPct+'%)</div></div>';
+    if(MEMUSE.ct){
+      const commitPct=Math.round(MEMUSE.cu/MEMUSE.ct*100);
+      h+='<div class="drive"><h3>Commit Charge</h3>'+
+        '<div class="meter'+(commitPct>90?' low':'')+'"><div style="width:'+Math.min(commitPct,100)+'%"></div></div>'+
+        '<div class="use mono">'+MEMUSE.cu.toFixed(1)+' GB used of '+MEMUSE.ct.toFixed(1)+' GB ('+commitPct+'%)</div></div>';
+    }
+    h+='</div></div>';
   }
-  v.innerHTML=h;
+  v.innerHTML=h||'<div class="spec-section"><h2>Memory</h2><div style="color:var(--faint)">No memory data embedded.</div></div>';
 }
 function renderNet(){
   const v=document.getElementById('netView');
