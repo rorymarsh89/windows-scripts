@@ -239,6 +239,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .msg{grid-column:3;color:var(--dim);font-size:14px;line-height:1.5;padding:6px 0 2px;white-space:pre-wrap;display:none;word-break:break-word}
 .row.open .msg{display:block}
 .faq-row{grid-template-columns:12px 1fr}
+.faq-row .msg{cursor:text;user-select:text}
 .faq-row .msg{grid-column:2}
 #empty{color:var(--faint);padding:40px 0;text-align:center;display:none}
 @media (max-width:600px){
@@ -290,7 +291,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       </div>
     </div>
     <div class="nav-group">
-      <div class="nav-group-title"><span>Resources</span><span class="chev">&#9660;</span></div>
+      <div class="nav-group-title"><span>Help</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
         <button class="tab" data-tab="faq">FAQ</button>
         <button class="tab" data-tab="tools">Tools &amp; Utilities</button>
@@ -367,6 +368,7 @@ const MEMUSE = /*__MEMUSE__*/null;
 const NET = /*__NET__*/null;
 const SECURITY = /*__SECURITY__*/null;
 const HOTFIXES = /*__HOTFIXES__*/[];
+const WINDOWSOLD = /*__WINDOWSOLD__*/null;
 const DEVERR = /*__DEVERR__*/[];
 const AUDIO = /*__AUDIO__*/null;
 const VER = /*__VER__*/"";
@@ -608,9 +610,11 @@ function renderSpecs(){
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
     const SHOWN=['OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
+    const FAQ_KEY={'Secure Boot State':'secure-boot','TPM Status':'tpm'};
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
-      h+='<dt>'+esc(k)+'</dt><dd'+(off?' class="flag-off"':'')+'>'+esc(val)+'</dd>';
+      const label=FAQ_KEY[k]?flagLink(FAQ_KEY[k],esc(k)):esc(k);
+      h+='<dt>'+label+'</dt><dd'+(off?' class="flag-off"':'')+'>'+esc(val)+'</dd>';
     });
     h+='</dl></div>';
   }
@@ -806,6 +810,9 @@ const FAQ_DATA=[
 {id:'software-rgb',q:"What does flagging RGB/peripheral suites mean?",a:"Software like Corsair iCUE, Razer Synapse, Logitech G HUB, and similar RGB/peripheral control suites has a real history of causing background crashes, high idle CPU/RAM usage, and driver conflicts \u2014 even though each individual program is legitimate.",tools:[]},
 {id:'software-audio',q:"What does flagging audio/overlay software mean?",a:"Tools like Nahimic, GeForce Experience, Xbox Game Bar, and Streamlabs OBS can conflict with each other or with games, particularly when more than one is trying to add an overlay at the same time.",tools:[]},
 {id:'software-network',q:"What does flagging network software mean?",a:"Software like Killer Network Manager or Hola VPN has a known history of causing latency spikes, packet loss, or other connectivity problems on some systems.",tools:[]},
+{id:'windows-old',q:"What does a \u2018Windows.old\u2019 folder mean?",a:"Windows.old is a backup of the previous Windows installation, automatically created when Windows is upgraded in place or reset while keeping personal files. It lets Windows roll back to the previous version for about 10 days before it's automatically deleted to free up space, though it can stick around longer if that cleanup didn't run. Its presence is a useful sign that this installation is newer than the hardware \u2014 handy context if a problem only started recently. It doesn't cover every case, though: a full wipe-and-reinstall or a reset that removes everything doesn't leave a Windows.old folder behind at all, so its absence doesn't rule out a recent reset.",tools:[]},
+{id:'secure-boot',q:"What is Secure Boot, and why does it matter?",a:"Secure Boot is a security feature that checks the software involved in starting Windows hasn't been tampered with, before the operating system even loads. It helps stop a specific but nasty category of malware (called bootkits or rootkits) that tries to run before Windows \u2014 and before any antivirus \u2014 gets a chance to load. Microsoft requires it for Windows 11, and leaving it disabled removes a real layer of protection for no real-world upside on most PCs. It requires the system disk to use GPT partitioning \u2014 see the note about MBR partitioning in this report if that's relevant.",tools:[]},
+{id:'tpm',q:"What is a TPM, and why does it matter?",a:"A TPM (Trusted Platform Module) is a small, dedicated security chip \u2014 or a feature built into the CPU (fTPM) on newer systems \u2014 that securely stores encryption keys and other sensitive data separately from the rest of the PC. It's what Windows 11 relies on for BitLocker drive encryption and for meeting its own minimum security requirements. If it's disabled, Windows Hello, BitLocker, and some newer Windows security features either can't be used or fall back to a weaker mode. It can usually be turned on in the BIOS/UEFI settings (often listed as \u2018TPM\u2019, \u2018fTPM\u2019, \u2018PTT\u2019, or \u2018Security Device\u2019).",tools:[]},
 {id:'software-bloatware',q:"What does \u2018Potential bloatware/PUP\u2019 mean?",a:"This flags software with a track record of being unwanted, low-value, or actively harmful to performance \u2014 things like registry \u2018cleaners\u2019, aggressive PC \u2018optimizer\u2019 tools, or trial antivirus suites that came pre-installed. None of these are viruses, but removing them is often one of the most effective ways to speed up a slow PC.",tools:[]},
 ];
 function renderFAQ(){
@@ -821,7 +828,7 @@ function renderFAQ(){
   });
   h+='</div>';
   v.innerHTML=h;
-  v.querySelectorAll('.faq-row').forEach(r=>r.onclick=()=>r.classList.toggle('open'));
+  v.querySelectorAll('.faq-row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg'))return; r.classList.toggle('open'); });
 }
 function goFaq(id){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab==='faq'));
@@ -1104,6 +1111,7 @@ function renderSummary(){
     if(sig&&sig<50)notes.push(flagLink('wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
   }
   if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(flagLink('commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
+  if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present \u2014 Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
   nEl.innerHTML=notes.length?'<ul class="notes">'+notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>':'';
@@ -1832,6 +1840,18 @@ function reliabilityexport {
         } catch { }
 
         Write-Host "      - Hotfixes, Device Manager and audio devices" -ForegroundColor DarkGray
+        # Windows.old: left behind after an in-place upgrade or a "Reset this PC" that kept files.
+        # Presence + date is a useful proxy for "this OS install is newer than the hardware", but it's
+        # not a reliable way to detect every reset path (a full wipe-and-reinstall leaves no trace here).
+        $windowsOld = $null
+        try {
+            $woPath = "$env:SystemDrive\Windows.old"
+            if (Test-Path $woPath -PathType Container) {
+                $woDate = (Get-Item $woPath -ErrorAction Stop).LastWriteTime.ToString("dd/MM/yyyy")
+                $windowsOld = [PSCustomObject]@{ present = $true; date = $woDate }
+            }
+        } catch { }
+
         $hotfixes = @()
         try {
             $hotfixes = @(Get-HotFix -ErrorAction Stop | Sort-Object InstalledOn -Descending | ForEach-Object {
@@ -2298,6 +2318,7 @@ function reliabilityexport {
         $netJson = if ($net) { (ConvertTo-Json $net -Compress -Depth 4).Replace('</', '<\/') } else { 'null' }
         $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
         $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $windowsOldJson = if ($windowsOld) { (ConvertTo-Json $windowsOld -Compress).Replace('</', '<\/') } else { 'null' }
         $wuHistoryJson = if ($wuHistory.Count -gt 0) { (ConvertTo-Json @($wuHistory) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus }
         $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
@@ -2313,7 +2334,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
