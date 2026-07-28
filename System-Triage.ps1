@@ -362,6 +362,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <script>
 const RAW = /*__DATA__*/[];
+let SPECS_PROGRAMS=[];
 const SPECS = /*__SPECS__*/"";
 const DUMPS = /*__DUMPS__*/[];
 const SYSEVT = /*__SYSEVT__*/[];
@@ -371,6 +372,7 @@ const DISKLAYOUT = /*__DISKLAYOUT__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
 const HAGS = /*__HAGS__*/null;
+const ISLAPTOP = /*__ISLAPTOP__*/false;
 const WUHISTORY = /*__WUHISTORY__*/[];
 const WINUPDATE = /*__WINUPDATE__*/null;
 const MONS = /*__MONS__*/[];
@@ -614,10 +616,6 @@ function splitOnce(text,re){
 function renderSpecs(){
   const sp=parseSpecs(SPECS);
   const v=document.getElementById('specsContent');
-  if(!sp.info.length&&!sp.drives.length&&!sp.programs.length){
-    v.innerHTML='';
-    return;
-  }
   let h='';
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
@@ -711,11 +709,7 @@ function renderSpecs(){
   }
   v.innerHTML=h;
   document.getElementById('drivesView').innerHTML=dh||'<div class="spec-section"><h2>Drives</h2><div style="color:var(--faint)">No drive data embedded.</div></div>';
-  renderAppsList(sp.programs);
-  renderProcesses();
-  renderExtensions();
-  renderUpdates();
-  renderFAQ();
+  return sp.programs;
 }
 const PS_={q:'',page:1,key:'mem',dir:-1}, PG_={q:'',page:1};
 let PROGS_ALL=[];
@@ -825,6 +819,9 @@ const FAQ_DATA=[
 {id:'windows-old',q:"Windows.old Folder",a:"Windows.old is a backup of the previous Windows installation, automatically created when Windows is upgraded in place or reset while keeping personal files. It lets Windows roll back to the previous version for about 10 days before it's automatically deleted to free up space, though it can stick around longer if that cleanup didn't run.<br><br>Its presence is a useful sign that this installation is newer than the hardware, which is handy context if a problem only started recently. It doesn't cover every case, though: a full wipe-and-reinstall or a reset that removes everything doesn't leave a Windows.old folder behind at all, so its absence doesn't rule out a recent reset.",tools:[]},
 {id:'secure-boot',q:"Secure Boot",a:"Secure Boot is a security feature that checks the software involved in starting Windows hasn't been tampered with, before the operating system even loads. It helps stop a specific but nasty category of malware (called bootkits or rootkits) that tries to run before Windows, and before any antivirus, gets a chance to load.<br><br>Microsoft requires it for Windows 11, and leaving it disabled removes a real layer of protection for no real-world upside on most PCs. It requires the system disk to use GPT partitioning. See the note about MBR partitioning in this report if that's relevant.",tools:[]},
 {id:'tpm',q:"TPM",a:"A TPM (Trusted Platform Module) is a small, dedicated security chip, or a feature built into the CPU (fTPM) on newer systems, that securely stores encryption keys and other sensitive data separately from the rest of the PC. It's what Windows 11 relies on for BitLocker drive encryption and for meeting its own minimum security requirements.<br><br>If it's disabled, Windows Hello, BitLocker, and some newer Windows security features either can't be used or fall back to a weaker mode. It can usually be turned on in the BIOS/UEFI settings (often listed as 'TPM', 'fTPM', 'PTT', or 'Security Device').",tools:[]},
+{id:'wrong-gpu-slot',q:"Display on the Wrong GPU",a:"This PC has a dedicated graphics card, but the monitor cable is plugged into the motherboard's video output instead of the graphics card's. That routes everything through the slower integrated graphics built into the CPU, so the dedicated GPU sits there unused."
+  +"<br><br>This is a very common cable mistake, especially after a fresh build or a cable getting knocked loose. The desktop will still work and look normal, but games and demanding programs will run far below the performance the GPU should be giving."
+  +"<br><br>The fix is simple: move the monitor cable to one of the ports on the graphics card itself, usually found at the bottom of the case where the card's bracket is, rather than the ports built into the motherboard I/O panel at the top.",tools:["GPU-Z"]},
 {id:'software-bloatware',q:"Bloatware / PUPs",a:"This flags software with a track record of being unwanted, low-value, or actively harmful to performance: things like registry 'cleaners', aggressive PC 'optimizer' tools, or trial antivirus suites that came pre-installed. None of these are viruses, but removing them is often one of the most effective ways to speed up a slow PC.",tools:[]},
 ];
 function renderFAQ(){
@@ -1131,6 +1128,19 @@ function renderSummary(){
     if(sig&&sig<50)notes.push(flagLink('wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
   }
   if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(flagLink('commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
+  // Display connected to the integrated GPU while a dedicated GPU sits unused - the classic
+  // "wrong slot" cable mistake. Desktops only: laptops normally route the built-in panel
+  // through the iGPU by design, which is correct there, not a mistake.
+  if(!ISLAPTOP&&GPUS.length>1){
+    const isIGPU=g=>/Intel\(R\)?\s*(UHD|HD|Iris)/i.test(g.name)||/^AMD Radeon(\(TM\))?\s*Graphics$/i.test(g.name.trim());
+    const isDGPU=g=>/NVIDIA|GeForce|RTX|GTX|Quadro|Radeon\s*(RX|VII|Pro\s*W)/i.test(g.name);
+    const igpu=GPUS.find(isIGPU), dgpu=GPUS.find(isDGPU);
+    if(igpu&&dgpu){
+      const igpuActive=DISPLAYS.some(d=>d.gpu===igpu.name)||igpu.hres>0;
+      const dgpuActive=DISPLAYS.some(d=>d.gpu===dgpu.name)||dgpu.hres>0;
+      if(igpuActive&&!dgpuActive)notes.push(flagLink('wrong-gpu-slot','<span class="y">Display is connected to the integrated GPU ('+esc(igpu.name)+'), not the dedicated GPU ('+esc(dgpu.name)+')</span>'));
+    }
+  }
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
@@ -1344,7 +1354,7 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 document.querySelectorAll('.nav-group-title:not(.static)').forEach(g=>g.onclick=()=>{
   g.closest('.nav-group').classList.toggle('collapsed');
 });
-renderSpecs();
+SPECS_PROGRAMS=SPECS_PROGRAMS=renderSpecs();
 load(RAW);
 renderSummary();
 renderSys();
@@ -1353,6 +1363,11 @@ renderNet();
 renderGPU();
 renderMemory();
 renderSecurity();
+renderAppsList(SPECS_PROGRAMS);
+renderProcesses();
+renderExtensions();
+renderUpdates();
+renderFAQ();
 document.getElementById('pageFoot').textContent=(GEN?'Generated '+GEN+' · ':'')+'PCHH Triage'+(VER?' v'+VER:'')+' · Author: Rory (ctrl.alt.repeat)';
 </script>
 </body>
@@ -1934,6 +1949,15 @@ function reliabilityexport {
         } catch { }
 
         # Hardware-accelerated GPU Scheduling (system-wide setting, not per-adapter)
+        # Desktop vs laptop: a battery is the simplest reliable signal. This gates the
+        # "display on wrong GPU" check below, since laptops normally route the built-in
+        # panel through the integrated GPU by design, which isn't a mistake there.
+        $isLaptop = $false
+        try {
+            $batt = Get-CimInstance Win32_Battery -ErrorAction Stop
+            if ($batt) { $isLaptop = $true }
+        } catch { }
+
         $hagsEnabled = $null
         try {
             $hw = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -ErrorAction Stop).HwSchMode
@@ -2332,6 +2356,7 @@ function reliabilityexport {
         $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
+        $isLaptopJson = if ($isLaptop) { 'true' } else { 'false' }
         $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $displaysJson = if ($displays.Count -gt 0) { (ConvertTo-Json @($displays) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $procsJson = if ($procs.Count -gt 0) { (ConvertTo-Json @($procs) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -2354,7 +2379,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
