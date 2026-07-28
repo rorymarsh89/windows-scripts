@@ -1281,13 +1281,8 @@ function dmpcheck {
     Write-Host ""
     Write-Host "[1/4] Collecting system specs.." -ForegroundColor Blue
 
-    $limit = (Get-Date).AddDays(-60)
-
-    Get-ChildItem -Path $env:systemroot -Filter "MEMORY.dmp" -File | Remove-Item  -Force -Recurse -ErrorAction SilentlyContinue > $null 2>&1
-
+    # Detect minidumps only - files on the user's PC are never deleted by this script.
     if (Test-Path $minidump) {
-        Get-ChildItem -Path $source -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit } | Remove-Item -Force -ErrorAction SilentlyContinue > $null 2>&1
-
         if (Test-Path $source) {
             $dmpfound = $true
         }
@@ -1576,20 +1571,23 @@ function reliabilityexport {
     Write-Host ""
     Write-Host "[3/4] Collecting diagnostics.." -ForegroundColor Blue
 
-    try {
         Write-Host "      - Reliability history" -ForegroundColor DarkGray
-        $recs = Get-CimInstance Win32_ReliabilityRecords -ErrorAction Stop | ForEach-Object {
-            [PSCustomObject]@{
-                t = $_.TimeGenerated.ToString("dd/MM/yyyy HH:mm:ss")
-                s = $_.SourceName
-                e = "$($_.EventIdentifier)"
-                p = $_.ProductName
-                m = $_.Message
-            }
+        $recs = @()
+        try {
+            $recs = @(Get-CimInstance Win32_ReliabilityRecords -ErrorAction Stop | ForEach-Object {
+                [PSCustomObject]@{
+                    t = $_.TimeGenerated.ToString("dd/MM/yyyy HH:mm:ss")
+                    s = $_.SourceName
+                    e = "$($_.EventIdentifier)"
+                    p = $_.ProductName
+                    m = $_.Message
+                }
+            })
+            # CSV copy for sharing
+            $recs | Export-Csv $reliability_csv_path -NoTypeInformation -Encoding UTF8
+        } catch {
+            Write-Host "      Could not read reliability history - continuing with the rest of the report." -ForegroundColor Yellow
         }
-
-        # CSV copy for sharing
-        $recs | Export-Csv $reliability_csv_path -NoTypeInformation -Encoding UTF8
 
         # Curated system events for the viewer
         Write-Host "      - Notable system events" -ForegroundColor DarkGray
@@ -1681,7 +1679,7 @@ function reliabilityexport {
                         'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' { "EFI System Partition"; break }
                         'e3c9e316-0b5c-4db8-817d-f92df00215ae' { "Microsoft Reserved"; break }
                         'de94bba4-06d1-4d40-a16a-bfd50179d6ac' { "Recovery"; break }
-                        '^27$'                                 { "Recovery (MBR)"; break }
+                        '^7$'                                   { "Recovery (MBR)"; break }
                         default { if ($p.DriveLetter) { "Data" } else { "System" } }
                     }
                     [PSCustomObject]@{
@@ -2216,12 +2214,11 @@ function reliabilityexport {
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
         $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
-        Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
-    }
-    catch {
-        $errors.reliability = $true
-        functionerror
-    }
+        try {
+            Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
+        } catch {
+            Write-Host "      Could not write the HTML report - the other collected files are still available." -ForegroundColor Yellow
+        }
 
     Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
     Write-Host " Diagnostics collected"
@@ -2241,7 +2238,10 @@ function compression {
     $filesToCompress = @($infofile, $sys_eventlog_path, $reliability_csv_path, $reliability_html_path)
 
     if ($dmpfound) {
-        $filesToCompress += Get-ChildItem -Path $source
+        # Only include dumps from the last 60 days in the zip - older ones are left alone on disk
+        # rather than deleted, in case they're needed for deeper investigation later.
+        $dmpLimit = (Get-Date).AddDays(-60)
+        $filesToCompress += Get-ChildItem -Path $source -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -ge $dmpLimit }
     }
 
     try {
@@ -2301,14 +2301,9 @@ function functionerror {
     elseif ($errors.fileCreate -eq "true") {
         Write-Host "There was an error while creating files.."
     }
-    elseif ($errors.reliability -eq "true") {
-        Write-Host " There was an error while grabbing reliability history.."
-    }
 
     Write-Host -NoNewline -ForegroundColor White "Error:"
     Write-Host " $_" -ForegroundColor Red
-
-    Remove-Item -Path $infofile, $sys_eventlog_path, $reliability_csv_path, $reliability_html_path -Force -Recurse -ErrorAction SilentlyContinue > $null 2>&1
 
     endmessage
 }
@@ -2328,4 +2323,3 @@ function endmessage {
 }
 
 dmpcheck
-
