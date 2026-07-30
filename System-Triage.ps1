@@ -124,6 +124,7 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 body.tab-summary #summaryView{display:block}
 body.tab-rel #relView{display:block}
 body.tab-sys #sysView{display:block}
+body.tab-shutdowns #shutdownsView{display:block}
 body.tab-drives #drivesView{display:block}
 body.tab-gpu #gpuView{display:block}
 body.tab-memory #memoryView{display:block}
@@ -138,12 +139,13 @@ body.tab-tools #toolsView{display:block}
 body.tab-dumps #dumpsView{display:block}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
 .spec-section h2{font-size:14px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .kv{display:grid;grid-template-columns:210px 1fr;gap:7px 16px;font-size:15px}
+#wuHistList,#hfList{grid-template-columns:145px 1fr}
 .kv dt{color:var(--dim)}
 .kv dd{word-break:break-word}
 .kv dd.flag-off{color:var(--warn)}
@@ -187,10 +189,8 @@ body.tab-dumps #dumpsView{display:block}
 #hfSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:10px}
 #hfSearch:focus{outline:none;border-color:var(--dim)}
 #progSearch:focus{outline:none;border-color:var(--dim)}
-#progList{columns:3;column-gap:24px;font-size:14.5px;line-height:1.9;color:var(--dim)}
-#progList div{break-inside:avoid}
-@media (max-width:900px){#progList{columns:2}}
-@media (max-width:600px){#progList{columns:1}.kv{grid-template-columns:1fr;gap:0}.kv dt{margin-top:8px}}
+.prog-row{padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px}
+@media (max-width:600px){.kv{grid-template-columns:1fr;gap:0}.kv dt{margin-top:8px}}
 h1{font-size:24px;font-weight:600;letter-spacing:.01em}
 #range{color:var(--dim);font-size:14px}
 #drop{display:block;margin:0 0 16px;font-size:12px;color:var(--faint);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;text-align:center}
@@ -258,7 +258,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
+  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -280,6 +280,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       <div class="nav-group-items">
         <button class="tab" data-tab="rel">Reliability History</button>
         <button class="tab" data-tab="sys">Event Viewer</button>
+        <button class="tab" data-tab="shutdowns">Unexpected Shutdowns</button>
         <button class="tab" data-tab="dumps" id="dumpsTab" style="display:none">Memory Dumps</button>
       </div>
     </div>
@@ -317,8 +318,8 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- System Summary</span></h1>
 
 <div id="summaryView" class="view">
-  <div class="spec-section"><h2>System Specs</h2><div id="summary"></div><div id="specsContent"></div></div>
   <div class="spec-section"><h2>General Notes</h2><div id="notesBody"></div></div>
+  <div class="spec-section"><h2>System Specs</h2><div id="summary"></div><div id="specsContent"></div></div>
 </div>
 
 <div id="relView" class="view">
@@ -344,6 +345,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 </div>
 
 <div id="sysView" class="view"></div>
+<div id="shutdownsView" class="view"></div>
 <div id="drivesView" class="view"></div>
 <div id="gpuView" class="view"></div>
 <div id="memoryView" class="view"></div>
@@ -403,7 +405,10 @@ function parseDate(s){
 function classify(r){
   const src=r.s, msg=(r.m||'').toLowerCase();
   if(src==='Application Error'||src==='Windows Error Reporting'||/bugcheck/i.test(src)) return 'err';
-  if(src==='EventLog') return /unexpected/.test(msg)?'err':'warn';
+  // SourceName 'EventLog' within reliability history is specifically Windows' own unexpected-
+  // shutdown marker - no need to also match the English word "unexpected" in the message,
+  // which is localized and would misclassify this as a lower severity on non-English systems.
+  if(src==='EventLog') return 'err';
   if(/fail|error status: 1|not.*success/i.test(msg) && !/status: 0/.test(msg)) return 'warn';
   return 'info';
 }
@@ -514,7 +519,7 @@ function render(){
           '<span class="dot d-'+e.cat+'"></span>'+
           '<span class="title">'+esc(e.p||'(unnamed)')+'<span class="src">'+summary(e)+'</span></span>'+
           '<div class="msg mono">'+esc(e.m)+'</div>';
-        row.onclick=()=>row.classList.toggle('open');
+        row.onclick=(e)=>{ if(e.target.closest('.msg'))return; row.classList.toggle('open'); };
         list.appendChild(row);
       });
     });
@@ -524,8 +529,8 @@ function render(){
 function summary(e){
   const msg=(e.m||'').toLowerCase();
   if(e.cat==='err'){
-    if(/faulting application/.test(msg))return 'Stopped working';
-    if(/unexpected/.test(msg))return 'Windows was not properly shut down';
+    if(e.s==='Application Error')return 'Stopped working';
+    if(e.s==='EventLog')return 'Windows was not properly shut down';
     return 'Critical event';
   }
   if(e.s==='Microsoft-Windows-WindowsUpdateClient')
@@ -605,6 +610,10 @@ function parseSpecs(text){
     if(!t||t==='DisplayName'||/^-+$/.test(t))return;
     out.programs.push(t);
   });
+  // The registry scan reads both the 32-bit and 64-bit Uninstall keys, so the same shared
+  // redistributable (e.g. a .NET or Visual C++ runtime) commonly appears in both and shows up
+  // twice with an identical name - dedupe before sorting so the count reflects reality.
+  out.programs=[...new Set(out.programs)];
   out.programs.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
   return out;
 }
@@ -644,7 +653,7 @@ function renderSpecs(){
       const pctFree=total?Math.round(free/total*100):0, pctUsed=100-pctFree;
       const name=d['Drive Name']&&d['Drive Name']!=='No Name Found'?d['Drive Name']:'';
       dh+='<div class="drive"><h3>'+esc(d['Drive Label']||'?')+(name?' <span style="color:var(--dim);font-weight:400">'+esc(name)+'</span>':'')+
-        (d['Windows Drive']==='True'?' <span style="color:var(--info);font-size:11px">Windows</span>':'')+'</h3>'+
+        (d['Windows Drive']==='True'?' <span style="color:var(--dim);font-weight:400">Windows</span>':'')+'</h3>'+
         '<div class="sub">'+esc(d['Drive Type']||'Unknown')+' · '+esc(d['Drive Status']||'Unknown')+'</div>'+
         (DIRTY.some(v=>String(d['Drive Label']||'').toUpperCase().startsWith(v.toUpperCase()))?'<div style="color:var(--warn);font-size:13.5px;margin-bottom:6px">Dirty bit set</div>':'')+
         '<div class="meter'+(pctFree<15?' low':'')+'"><div style="width:'+pctUsed+'%"></div></div>'+
@@ -741,6 +750,7 @@ function renderAppsList(programs){
   v.innerHTML=PROGS_ALL.length?
     '<div class="spec-section"><h2>Installed programs ('+PROGS_ALL.length+')</h2>'+
     '<input id="progSearch" type="text" placeholder="Filter programs\u2026">'+
+    '<div class="proc-head"><span>Program<span class="arrow"></span></span></div>'+
     '<div id="progList"></div><div class="pager" id="progPager"></div></div>'
     :'<div class="spec-section"><h2>Installed Apps</h2><div style="color:var(--faint)">No data embedded.</div></div>';
   const ps=document.getElementById('progSearch');
@@ -802,7 +812,6 @@ const FAQ_DATA=[
 {id:'antivirus-conflict',q:"Multiple Antivirus Programs",a:"More than one antivirus program is trying to actively scan the system at the same time. This is a common, often-overlooked cause of slowdowns, false-positive quarantines, and general instability, since the two programs can end up fighting over the same files.",tools:[]},
 {id:'defender-rtp',q:"Defender Real-Time Protection",a:"Windows' built-in antivirus isn't actively scanning for threats. This can be intentional if another antivirus is installed, or it can be accidental. Malware sometimes disables it deliberately to avoid detection.",tools:[]},
 {id:'firewall-disabled',q:"Firewall Disabled",a:"Windows Firewall isn't active on one or more network profiles (Domain, Private, or Public), leaving the system more exposed to unwanted network connections.",tools:[]},
-{id:'stalled-services',q:"Automatic Services Not Running",a:"Some background services are set to start automatically with Windows but currently aren't running. Sometimes this is harmless, but it can also point to something failing silently in the background.<br><br>Check the Security tab for which specific services are affected.",tools:[]},
 {id:'defender-threats',q:"Defender Threat Detections",a:"Windows Defender has previously found and acted on something it identified as malware, a virus, or another threat on this PC. This is historical. It doesn't necessarily mean anything is currently infected, but repeated or recent detections are worth taking seriously.",tools:[]},
 {id:'defender-exclusions',q:"Risky Defender Exclusions",a:"An exclusion tells Windows Defender to skip scanning a specific file, folder, or file type. Excluding a game folder is common and usually fine.<br><br>Excluding an entire drive, a broad system folder, or all .exe files is far more dangerous, since it means malware placed there would never be scanned at all. Check the Security tab for exactly what's excluded.",tools:[]},
 {id:'hosts-redirect',q:"Hosts File Redirects",a:"The hosts file is a small system text file that can override where certain web addresses point. This flag means an update- or security-related address, like Windows Update or an antivirus vendor, has been redirected elsewhere. Sometimes this is done deliberately to block updates, but it's also a technique malware uses to stop antivirus software updating itself.<br><br>It's also common to find the hosts file modified when the user (or someone else) has installed cracked software, since some software relies on connecting to license server websites to 'check' that they're licensed.",tools:[]},
@@ -877,6 +886,11 @@ function tabLink(tabId,label){
 function flagLink(faqId,html){
   return '<a href="#" class="faq-link" onclick="return goFaq(\''+faqId+'\')" style="color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+html+'</a>';
 }
+function dataLink(tabId,faqId,html){
+  const main='<a href="#" onclick="return goTab(\''+tabId+'\')" style="color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+html+'</a>';
+  const info=faqId?' <a href="#" onclick="return goFaq(\''+faqId+'\')" title="What does this mean?" style="color:var(--faint);text-decoration:none;cursor:pointer;font-size:12px">(?)</a>':'';
+  return main+info;
+}
 
 function renderExtensions(){
   const v=document.getElementById('extensionsView');
@@ -924,7 +938,7 @@ function renderProgList(){
   const SZ=60,pages=Math.max(1,Math.ceil(rows.length/SZ));
   if(PG_.page>pages)PG_.page=pages;
   const slice=rows.slice((PG_.page-1)*SZ,PG_.page*SZ);
-  el.innerHTML=slice.map(p=>'<div>'+esc(p)+'</div>').join('')||'<div style="color:var(--faint)">No matches.</div>';
+  el.innerHTML=slice.map(p=>'<div class="prog-row">'+esc(p)+'</div>').join('')||'<div style="color:var(--faint)">No matches.</div>';
   pager(document.getElementById('progPager'),PG_.page,pages,rows.length,slice.length,g=>{PG_.page+=g;renderProgList();});
 }
 const HF_={q:'',page:1};
@@ -1011,7 +1025,7 @@ function renderSummary(){
       else if(/msi|micro-star/.test(mfrL))url='https://www.msi.com/Search?searchKeyword='+encodeURIComponent(mb);
       else if(/gigabyte/.test(mfrL))url='https://www.gigabyte.com/Search?search='+encodeURIComponent(mb);
     }
-    pairs.push(['BIOS updates', (val?val+' \u00b7 ':'')+'<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--info)">Check for updates</a>']);
+    pairs.push(['BIOS version', (val?val+' \u00b7 ':'')+'<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--info)">Check for updates</a>']);
   }
   if(RAM.length){
     const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
@@ -1027,10 +1041,14 @@ function renderSummary(){
       ' <span style="color:var(--faint)">at time of capture</span>']);
     if(MEMUSE.ct)pairs.push(['Commit charge', MEMUSE.cu.toFixed(1)+' / '+MEMUSE.ct.toFixed(1)+' GB ('+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'%)']);
   }
-  const crashes=events.filter(e=>e.cat==='err'&&/faulting application/i.test(e.m)).length;
-  const shutdowns=events.filter(e=>/unexpected/i.test(e.m)&&e.s==='EventLog').length;
+  // SourceName is a fixed internal identifier and stays in English regardless of the system's
+  // display language - unlike the message text, which is fully localized. Counting by source
+  // alone (rather than also requiring the English phrase "faulting application" in the message)
+  // means this stays accurate on non-English Windows installs instead of silently reading 0.
+  const crashes=events.filter(e=>e.cat==='err'&&e.s==='Application Error').length;
+  const shutdowns=events.filter(e=>e.s==='EventLog').length;
   const notes=[];
-  notes.push(crashes?flagLink('app-crashes','<span class="r"><b>'+crashes+'</b> Application crash'+(crashes>1?'es':'')+'</span>'):'<span class="g">No application crashes</span>');
+  notes.push(crashes?dataLink('rel','app-crashes','<span class="r"><b>'+crashes+'</b> Application crash'+(crashes>1?'es':'')+'</span>'):'<span class="g">No application crashes</span>');
   // Unexpected shutdowns: reliability history (6008-derived) and Kernel-Power 41 record the
   // same incident. Report one merged line, using the larger count if they disagree.
   const kp41ev=SYSEVT.filter(r=>String(r.id)==='41');
@@ -1046,28 +1064,28 @@ function renderSummary(){
     }else{
       detail='reliability history only (outside event log window)';
     }
-    notes.push(flagLink('unexpected-shutdown','<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>'));
+    notes.push(dataLink('shutdowns','unexpected-shutdown','<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>'));
   }else{
     notes.push('<span class="g">No unexpected shutdowns</span>');
   }
-  if(DUMPS.length)notes.push(flagLink('memory-dump','<span class="y"><b>'+DUMPS.length+'</b> Memory dump'+(DUMPS.length>1?'s':'')+' collected</span> <span style="color:var(--faint)">(in zip)</span>'));
+  if(DUMPS.length)notes.push(dataLink('dumps','memory-dump','<span class="y"><b>'+DUMPS.length+'</b> Memory dump'+(DUMPS.length>1?'s':'')+' collected</span> <span style="color:var(--faint)">(in zip)</span>'));
   const wheaFatal=SYSEVT.filter(r=>/WHEA/i.test(r.prov)&&['18','46'].includes(String(r.id))).length;
-  if(wheaFatal)notes.push(flagLink('whea','<span class="r"><b>'+wheaFatal+'</b> Fatal hardware error'+(wheaFatal>1?'s':'')+' (WHEA)</span>'));
+  if(wheaFatal)notes.push(dataLink('sys','whea','<span class="r"><b>'+wheaFatal+'</b> Fatal hardware error'+(wheaFatal>1?'s':'')+' (WHEA)</span>'));
   SMART.forEach(d=>{
     const probs=smartProbs(d);
-    if(probs.length)notes.push(flagLink('disk-smart','<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>'));
+    if(probs.length)notes.push(dataLink('drives','disk-smart','<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>'));
   });
-  DIRTY.forEach(v=>notes.push(flagLink('dirty-bit','<span class="y">Volume '+esc(v)+' has its dirty bit set</span>')));
+  DIRTY.forEach(v=>notes.push(dataLink('drives','dirty-bit','<span class="y">Volume '+esc(v)+' has its dirty bit set</span>')));
   if(DEVERR.length)notes.push(flagLink('device-manager-errors','<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>'));
   const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
-  if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push(flagLink('mbr-secureboot','<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>'));
-  if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push(flagLink('pending-reboot','<span class="y">System has a pending reboot (Windows Update or servicing)</span>'));
-  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push(flagLink('wu-service','<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>'));
+  if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push(dataLink('drives','mbr-secureboot','<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>'));
+  if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push(dataLink('updates','pending-reboot','<span class="y">System has a pending reboot (Windows Update or servicing)</span>'));
+  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push(dataLink('updates','wu-service','<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>'));
   const wuFails=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
-  if(wuFails)notes.push(flagLink('wu-failed','<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully (see Windows Updates tab)</span>'));
+  if(wuFails)notes.push(dataLink('updates','wu-failed','<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully</span>'));
   if(RAM.length){
     const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
-    if(slow.length)notes.push(flagLink('ram-speed','<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>'));
+    if(slow.length)notes.push(dataLink('memory','ram-speed','<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>'));
   }
   // Known software flags: anti-cheat/kernel drivers, OC & monitoring tools, RGB/peripheral suites, bloatware/PUPs
   const SOFT_FLAGS=[
@@ -1100,8 +1118,22 @@ function renderSummary(){
     {re:/streamlabs/i,           label:'Streamlabs OBS',             grp:'audio'},
     {re:/hola vpn/i,             label:'Hola VPN',                   grp:'net'},
     {re:/killer network|killer control center/i, label:'Killer Network Manager', grp:'net'},
+    {re:/teamviewer/i,           label:'TeamViewer',                 grp:'remote'},
+    {re:/anydesk/i,              label:'AnyDesk',                    grp:'remote'},
+    {re:/screenconnect|connectwise control|connectwise screenconnect/i, label:'ScreenConnect', grp:'remote'},
+    {re:/splashtop/i,            label:'Splashtop',                  grp:'remote'},
+    {re:/logmein/i,              label:'LogMeIn',                    grp:'remote'},
+    {re:/rustdesk/i,             label:'RustDesk',                   grp:'remote'},
+    {re:/dameware/i,             label:'DameWare',                   grp:'remote'},
+    {re:/(tight|ultra|real)?vnc (server|viewer|connect)|^vnc\b/i, label:'VNC', grp:'remote'},
+    {re:/nomachine/i,            label:'NoMachine',                  grp:'remote'},
+    {re:/gotomypc|gotoassist/i,  label:'GoTo Assist/MyPC',           grp:'remote'},
+    {re:/ammyy admin/i,          label:'Ammyy Admin',                grp:'remote'},
+    {re:/supremo/i,              label:'Supremo',                    grp:'remote'},
+    {re:/zoho assist/i,          label:'Zoho Assist',                grp:'remote'},
+    {re:/chrome remote desktop/i,label:'Chrome Remote Desktop',      grp:'remote'},
   ];
-  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP'};
+  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP',remote:'Remote access software'};
   const foundSoft={};
   (sp.programs||[]).forEach(p=>{
     SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
@@ -1109,39 +1141,38 @@ function renderSummary(){
   const avStr=specVal(sp.info,'Antivirus');
   if(avStr){
     const avList=avStr.split(',').map(s=>s.trim()).filter(Boolean);
-    if(avList.length>1)notes.push(flagLink('antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
+    if(avList.length>1)notes.push(dataLink('security','antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
   }
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
     const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware'};
-    notes.push(flagLink(SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
+    notes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'||grp==='remote'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
   });
 
   if(SECURITY){
-    if(SECURITY.defender&&SECURITY.defender.rtp!=='True')notes.push(flagLink('defender-rtp','<span class="r">Windows Defender real-time protection is disabled</span>'));
+    if(SECURITY.defender&&SECURITY.defender.rtp!=='True')notes.push(dataLink('security','defender-rtp','<span class="r">Windows Defender real-time protection is disabled</span>'));
     if(SECURITY.firewall&&SECURITY.firewall.some(f=>f.enabled!=='True')){
       const off=SECURITY.firewall.filter(f=>f.enabled!=='True').map(f=>f.profile);
-      notes.push(flagLink('firewall-disabled','<span class="r">Firewall disabled on: '+esc(off.join(', '))+'</span>'));
+      notes.push(dataLink('security','firewall-disabled','<span class="r">Firewall disabled on: '+esc(off.join(', '))+'</span>'));
     }
-    if(SECURITY.stalledServices&&SECURITY.stalledServices.length)notes.push(flagLink('stalled-services','<span class="y"><b>'+SECURITY.stalledServices.length+'</b> Automatic service'+(SECURITY.stalledServices.length>1?'s':'')+' not running (see Security tab)</span>'));
-    if(SECURITY.threats&&SECURITY.threats.length)notes.push(flagLink('defender-threats','<span class="r"><b>'+SECURITY.threats.length+'</b> threat detection'+(SECURITY.threats.length>1?'s':'')+' recorded by Windows Defender</span>'));
-    if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push(flagLink('defender-exclusions','<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+' (see Security tab)</span>'));
-    if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push(flagLink('hosts-redirect','<span class="y">Hosts file redirects a known update/security domain (see Security tab)</span>'));
-    if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push(flagLink('startup-flagged','<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+' (see Security tab)</span>'));
+    if(SECURITY.threats&&SECURITY.threats.length)notes.push(dataLink('security','defender-threats','<span class="r"><b>'+SECURITY.threats.length+'</b> threat detection'+(SECURITY.threats.length>1?'s':'')+' recorded by Windows Defender</span>'));
+    if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push(dataLink('security','defender-exclusions','<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+'</span>'));
+    if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push(dataLink('security','hosts-redirect','<span class="y">Hosts file redirects a known update/security domain</span>'));
+    if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push(dataLink('security','startup-flagged','<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+'</span>'));
   }
   const gpuDrvRe=/nvlddmkm|amdwddmg|amdkmdag|atikmdag/i;
   const tdrEvents=SYSEVT.filter(r=>String(r.id)==='4101'||gpuDrvRe.test(r.prov)||gpuDrvRe.test(r.msg||''));
   if(tdrEvents.length){
     const drv=[...new Set(tdrEvents.map(r=>{const m2=(r.prov+' '+(r.msg||'')).match(gpuDrvRe);return m2?m2[0].toLowerCase():null;}).filter(Boolean))];
-    notes.push(flagLink('gpu-tdr','<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>'));
+    notes.push(dataLink('sys','gpu-tdr','<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>'));
   }
   const lke=RAW.filter(r=>/LiveKernelEvent/i.test(r.m||'')).length;
-  if(lke)notes.push(flagLink('livekernelevent','<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>'));
+  if(lke)notes.push(dataLink('rel','livekernelevent','<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>'));
   if(NET&&NET.wifi&&NET.wifi.signal){
     const sig=parseInt(NET.wifi.signal)||0;
-    if(sig&&sig<50)notes.push(flagLink('wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
+    if(sig&&sig<50)notes.push(dataLink('net','wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
   }
-  if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(flagLink('commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
+  if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(dataLink('memory','commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
   // Display connected to the integrated GPU while a dedicated GPU sits unused - the classic
   // "wrong slot" cable mistake. Desktops only: laptops normally route the built-in panel
   // through the iGPU by design, which is correct there, not a mistake.
@@ -1152,7 +1183,7 @@ function renderSummary(){
     if(igpu&&dgpu){
       const igpuActive=DISPLAYS.some(d=>d.gpu===igpu.name)||igpu.hres>0;
       const dgpuActive=DISPLAYS.some(d=>d.gpu===dgpu.name)||dgpu.hres>0;
-      if(igpuActive&&!dgpuActive)notes.push(flagLink('wrong-gpu-slot','<span class="y">Display is connected to the integrated GPU ('+esc(igpu.name)+'), not the dedicated GPU ('+esc(dgpu.name)+')</span>'));
+      if(igpuActive&&!dgpuActive)notes.push(dataLink('gpu','wrong-gpu-slot','<span class="y">Display is connected to the integrated GPU ('+esc(igpu.name)+'), not the dedicated GPU ('+esc(dgpu.name)+')</span>'));
     }
   }
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
@@ -1183,7 +1214,45 @@ function renderSys(){
       '<div class="msg mono">'+esc(e.msg||'')+'</div></div>';
   });
   v.innerHTML=h;
-  v.querySelectorAll('.row').forEach(r=>r.onclick=()=>r.classList.toggle('open'));
+  v.querySelectorAll('.row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg'))return; r.classList.toggle('open'); });
+}
+function renderShutdowns(){
+  const v=document.getElementById('shutdownsView');
+  const BC_NAMES={ '278':'VIDEO_TDR_FAILURE','279':'VIDEO_TDR_TIMEOUT_DETECTED','281':'VIDEO_SCHEDULER_INTERNAL_ERROR','321':'VIDEO_ENGINE_TIMEOUT_DETECTED','322':'VIDEO_TDR_APPLICATION_BLOCKED' };
+  // Kernel-Power (event 41) carries a bugcheck code when one was recorded; reliability history's
+  // 'EventLog' source marks the same kind of incident but never carries a bugcheck, and can reach
+  // further back than the System log (which is size-capped). Merge both, preferring the bugcheck
+  // when the same incident appears in both.
+  const kp41=SYSEVT.filter(r=>String(r.id)==='41').map(r=>{
+    const dt=parseDate(r.t);
+    const bc=(r.bc&&String(r.bc)!=='0')?String(r.bc):'';
+    return {d:dt,bc,src:'Kernel-Power (event 41)'};
+  }).filter(x=>x.d);
+  const relOnly=events.filter(e=>e.s==='EventLog').map(e=>({d:e.d,bc:'',src:'Reliability history'}));
+  const all=[...kp41,...relOnly].sort((a,b)=>b.d-a.d);
+  const merged=[];
+  all.forEach(item=>{
+    const dup=merged.find(m=>Math.abs(m.d-item.d)<2*60*1000);
+    if(dup){
+      if(!dup.bc&&item.bc)dup.bc=item.bc;
+      if(!dup.src.includes(item.src))dup.src+=' + '+item.src;
+    }else merged.push({...item});
+  });
+  if(!merged.length){
+    v.innerHTML='<div class="spec-section"><h2>Unexpected Shutdowns</h2><div class="sys-ok">\u2713 No unexpected shutdowns found.</div></div>';
+    return;
+  }
+  let h='<div class="spec-section"><h2>Unexpected Shutdowns ('+merged.length+')</h2>'+
+    '<div class="sys-note">A shutdown Windows never got a clean "powering off" signal for &mdash; caused by a crash, power loss, a hard reset, or a freeze that needed a force restart.</div>'+
+    '<dl class="kv">';
+  merged.forEach(x=>{
+    const bcLabel=x.bc?('0x'+parseInt(x.bc).toString(16).toUpperCase()+(BC_NAMES[x.bc]?' '+BC_NAMES[x.bc]:'')):'';
+    h+='<dt class="mono">'+esc(fmtDay(x.d.toISOString().slice(0,10)))+', '+esc(fmtTime(x.d))+'</dt>'+
+      '<dd>'+(bcLabel?'<span class="r">Bugcheck '+esc(bcLabel)+'</span>':'<span style="color:var(--faint)">No bugcheck (power loss, hard reset, or hang)</span>')+
+      ' <span style="color:var(--faint);font-size:13px">('+esc(x.src)+')</span></dd>';
+  });
+  h+='</dl></div>';
+  v.innerHTML=h;
 }
 function renderSecurity(){
   const v=document.getElementById('securityView');
@@ -1227,11 +1296,6 @@ function renderSecurity(){
   if(SECURITY.startupFlags&&SECURITY.startupFlags.length){
     h+='<div class="spec-section"><h2>Startup entries flagged</h2><ul class="notes">'+SECURITY.startupFlags.map(f=>'<li><span class="y">'+esc(f)+'</span></li>').join('')+'</ul></div>';
   }
-  if(SECURITY.stalledServices&&SECURITY.stalledServices.length){
-    h+='<div class="spec-section"><h2>Automatic services not running ('+SECURITY.stalledServices.length+')</h2><dl class="kv">';
-    SECURITY.stalledServices.forEach(s=>{h+='<dt>'+esc(s.name)+'</dt><dd style="color:var(--warn)">'+esc(s.state)+'</dd>';});
-    h+='</dl></div>';
-  }
   v.innerHTML=h||'<div class="spec-section"><h2>Security</h2><div style="color:var(--faint)">No security data embedded.</div></div>';
 }
 function renderGPU(){
@@ -1258,7 +1322,7 @@ function renderGPU(){
     const dispRows=displays.filter(d=>d.mon||d.mode);
     const fallbackMons=(!Object.keys(byGpu).length && MONS.length)?MONS:[];
     if(dispRows.length||fallbackMons.length){
-      h+='<div class="sev-head" style="color:var(--dim);padding-top:4px">Connected Display'+((dispRows.length+fallbackMons.length)>1?'s':'')+'</div><dl class="kv smart-kv">';
+      h+='<div class="sev-head" style="color:var(--dim);padding:12px 0 5px 0">Connected Display'+((dispRows.length+fallbackMons.length)>1?'s':'')+'</div><dl class="kv smart-kv" style="font-size:15.5px">';
       dispRows.forEach(d=>{h+='<dt>'+esc(d.mon||'Display')+'</dt><dd>'+esc(d.mode||'')+'</dd>';});
       fallbackMons.forEach(m=>{h+='<dt>Connected Display</dt><dd>'+esc(m)+'</dd>';});
       h+='</dl>';
@@ -1372,6 +1436,7 @@ SPECS_PROGRAMS=SPECS_PROGRAMS=renderSpecs();
 load(RAW);
 renderSummary();
 renderSys();
+renderShutdowns();
 renderDumps();
 renderNet();
 renderGPU();
@@ -1515,7 +1580,7 @@ function fileadd {
     $pgfilesize = $pgfile.AllocatedBaseSize
 
     $installedMemory = Get-WmiObject Win32_ComputerSystem | Select-Object -ExpandProperty TotalPhysicalMemory
-    $ramSpeed = Get-WmiObject Win32_PhysicalMemory | Select-Object -ExpandProperty Speed
+    $ramSpeed = ((Get-WmiObject Win32_PhysicalMemory | Select-Object -ExpandProperty Speed | Sort-Object -Unique) -join '/')
 
     $secureBootState = if ($secureBoot -match "True") { "Enabled" } elseif ($secureBoot -match "False") { "Disabled" } elseif ($secCompat -eq "$true") { "Not Supported" }
     $fastbootState = if ($fastboot -eq "1") { "Enabled" } else { "Disabled" }
@@ -1548,7 +1613,10 @@ function fileadd {
     specs "`nRam Capacity: $([math]::Round($installedMemory/1GB)) GB"
     specs "RAM Speed: $ramSpeed MT/s"
 
-    $drives = Get-WmiObject Win32_LogicalDisk | ForEach-Object {
+    # DriveType=3 is 'Local Fixed Disk' - this excludes network/cloud-sync virtual mounts (like
+    # Google Drive's virtual drive letter), removable media, and optical drives, all of which can
+    # otherwise show up with misleading or borrowed capacity figures that aren't real storage.
+    $drives = Get-WmiObject Win32_LogicalDisk -Filter "DriveType=3" | ForEach-Object {
         $logicalDisk = $_
         $windowsDrive = $logicalDisk.DeviceID.TrimEnd(':')
 
@@ -1583,7 +1651,7 @@ function fileadd {
         }
 
         [PSCustomObject]@{
-            'Drive Label'         = $logicalDisk.DeviceID + '\'
+            'Drive Label'         = $logicalDisk.DeviceID
             'Drive Name'          = if (-not [string]::IsNullOrEmpty($logicalDisk.VolumeName)) { $logicalDisk.VolumeName } else { 'No Name Found' }
             'Drive Status'        = "$operationalStatus, $healthStatus"
             'Windows Drive'       = ($logicalDisk.DeviceID -eq "$env:SystemDrive")
@@ -1832,11 +1900,22 @@ function reliabilityexport {
                 $disk = $_
                 $parts = @(Get-Partition -DiskNumber $disk.Number -ErrorAction SilentlyContinue | Sort-Object PartitionNumber | ForEach-Object {
                     $p = $_
+                    # MBR type 7 (0x07) just means "NTFS/exFAT/HPFS partition" - it's used by every
+                    # NTFS partition on an MBR disk (C:, D:, a hidden recovery partition, all of them),
+                    # so it is NOT a reliable recovery indicator on its own and must not be labelled as
+                    # such. The real signal for a hidden MBR partition is type+0x10 (23/0x17 for hidden
+                    # NTFS), which combined with no drive letter and a small size is what Windows itself
+                    # uses for its own WinRE partitions.
+                    $sizeGBraw = $p.Size / 1GB
                     $typeLabel = switch -Regex ("$($p.GptType)$($p.MbrType)") {
                         'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' { "EFI System Partition"; break }
                         'e3c9e316-0b5c-4db8-817d-f92df00215ae' { "Microsoft Reserved"; break }
                         'de94bba4-06d1-4d40-a16a-bfd50179d6ac' { "Recovery"; break }
-                        '^7$'                                   { "Recovery (MBR)"; break }
+                        '^23$' {
+                            if (-not $p.DriveLetter -and $sizeGBraw -lt 10) { "Recovery (MBR)" }
+                            elseif ($p.DriveLetter) { "Data" } else { "System" }
+                            break
+                        }
                         default { if ($p.DriveLetter) { "Data" } else { "System" } }
                     }
                     [PSCustomObject]@{
@@ -1856,9 +1935,30 @@ function reliabilityexport {
         } catch { }
 
         # Per-stick RAM info (slots, part numbers, rated vs configured speed)
+        # Win32_PhysicalMemory.Manufacturer is unreliable - it identifies the silicon fab (or just
+        # says "Unknown"), not the kit brand printed on the box, since brands like G.Skill/Corsair/
+        # Kingston/Crucial buy chips and program their own part number into SPD but don't always set
+        # the manufacturer string. The part number prefix is usually a much better brand signal.
+        $ramBrandByPrefix = @(
+            @{ p = 'F[1-5]-';        b = 'G.Skill' },
+            @{ p = 'CM[KWTRJUZ]';    b = 'Corsair' },
+            @{ p = '(KHX|KF4|KF3|KVR)'; b = 'Kingston / HyperX' },
+            @{ p = '(BLS|BLM|CT\d)'; b = 'Crucial' },
+            @{ p = '(TLZ|TED4|TF\d|TPD4)'; b = 'Team Group' },
+            @{ p = 'M[3478][45AB]'; b = 'Samsung' },
+            @{ p = 'HMA|HMT';       b = 'SK Hynix' },
+            @{ p = 'MTA|MT\d{2}';  b = 'Micron' }
+        )
+        function Resolve-RamBrand($mfr, $pn) {
+            if ($mfr -and $mfr -notmatch '^(Unknown|Undefined|To Be Filled|0*)$') { return $mfr }
+            foreach ($entry in $ramBrandByPrefix) {
+                if ($pn -match $entry.p) { return "$($entry.b) (identified from part number)" }
+            }
+            return $mfr
+        }
         $ram = @()
         try {
-            $ram = @(Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop | ForEach-Object {
+            $rawRam = @(Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop | ForEach-Object {
                 [PSCustomObject]@{
                     slot  = "$($_.DeviceLocator)"
                     mfr   = "$($_.Manufacturer)".Trim()
@@ -1866,6 +1966,27 @@ function reliabilityexport {
                     cap   = "$([math]::Round($_.Capacity / 1GB))"
                     rated = if ($_.Speed) { "$($_.Speed)" } else { "" }
                     conf  = if ($_.ConfiguredClockSpeed) { "$($_.ConfiguredClockSpeed)" } else { "" }
+                }
+            })
+            # Some boards report an identical, non-unique DeviceLocator for every slot - append a
+            # position number in that case so sticks are still visually distinguishable in the report.
+            $slotSeen = @{}
+            $rawRam | ForEach-Object { $slotSeen[$_.slot] = ($slotSeen[$_.slot] + 1) }
+            $slotIndex = @{}
+            $ram = @($rawRam | ForEach-Object {
+                $mfrResolved = Resolve-RamBrand $_.mfr $_.pn
+                $displaySlot = $_.slot
+                if ($slotSeen[$_.slot] -gt 1) {
+                    $slotIndex[$_.slot] = ($slotIndex[$_.slot] + 1)
+                    $displaySlot = "$($_.slot) (position $($slotIndex[$_.slot]))"
+                }
+                [PSCustomObject]@{
+                    slot  = $displaySlot
+                    mfr   = $mfrResolved
+                    pn    = $_.pn
+                    cap   = $_.cap
+                    rated = $_.rated
+                    conf  = $_.conf
                 }
             })
         } catch { }
@@ -2317,24 +2438,39 @@ function reliabilityexport {
                 }
             })
             $wifi = $null
+            # Signal strength via WMI rather than parsing 'netsh wlan show interfaces' text output -
+            # netsh's field labels (Signal/Band/Channel/etc) are localized by Windows' own display
+            # language, so text-matching them only works on English-language systems. This WMI class
+            # returns the raw numeric value regardless of system language.
+            $wifiSignalPct = $null
+            try {
+                $sig = Get-CimInstance -Namespace root\wmi -ClassName MSNdis_80211_ReceivedSignalStrength -ErrorAction Stop | Select-Object -First 1
+                if ($sig) { $wifiSignalPct = [int]$sig.Ndis80211ReceivedSignalStrength }
+            } catch { }
+
+            # The supplementary fields (band/channel/radio type/rates/auth) don't have as clean a
+            # locale-independent source, so these remain best-effort via netsh and may come back
+            # empty on a non-English system. Signal strength - the one this tool actually acts on -
+            # no longer depends on that.
             $wl = netsh wlan show interfaces 2>$null
+            $wf = @{}
             if ($wl) {
-                $wf = @{}
                 foreach ($line in $wl) {
                     if ($line -match '^\s*(Radio type|Band|Channel|Signal|Authentication|Receive rate \(Mbps\)|Transmit rate \(Mbps\))\s*:\s*(.+)$') {
                         $wf[$Matches[1]] = $Matches[2].Trim()
                     }
                 }
-                if ($wf['Signal']) {
-                    $wifi = [PSCustomObject]@{
-                        signal  = "$($wf['Signal'])"
-                        band    = "$($wf['Band'])"
-                        channel = "$($wf['Channel'])"
-                        radio   = "$($wf['Radio type'])"
-                        auth    = "$($wf['Authentication'])"
-                        rx      = "$($wf['Receive rate (Mbps)'])"
-                        tx      = "$($wf['Transmit rate (Mbps)'])"
-                    }
+            }
+            $signalDisplay = if ($null -ne $wifiSignalPct) { "$wifiSignalPct%" } elseif ($wf['Signal']) { $wf['Signal'] } else { $null }
+            if ($signalDisplay) {
+                $wifi = [PSCustomObject]@{
+                    signal  = "$signalDisplay"
+                    band    = "$($wf['Band'])"
+                    channel = "$($wf['Channel'])"
+                    radio   = "$($wf['Radio type'])"
+                    auth    = "$($wf['Authentication'])"
+                    rx      = "$($wf['Receive rate (Mbps)'])"
+                    tx      = "$($wf['Transmit rate (Mbps)'])"
                 }
             }
             $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi }
