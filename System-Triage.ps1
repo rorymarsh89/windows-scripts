@@ -114,12 +114,14 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 .summary-kv{grid-template-columns:165px 1fr;margin-bottom:4px}
 .summary-kv dt{color:var(--dim)}
 .summary-kv dd b{font-weight:500}
-#summary .notes-head{color:var(--faint);font-size:14px;text-transform:uppercase;letter-spacing:.08em;font-weight:500;margin-top:12px}
-.notes{margin:4px 0 0 2px;padding-left:18px}
+.notes-head{color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.notes-group{margin-bottom:18px}
+.notes-group:last-child{margin-bottom:0}
+.notes{margin:6px 0 0 2px;padding-left:18px}
 .notes li{margin:3px 0;color:var(--text)}
-#summary .g{color:var(--ok)}
-#summary .r{color:var(--err)}
-#summary .y{color:var(--warn)}
+.g{color:var(--ok)}
+.r{color:var(--err)}
+.y{color:var(--warn)}
 .view{display:none}
 body.tab-summary #summaryView{display:block}
 body.tab-rel #relView{display:block}
@@ -174,7 +176,7 @@ body.tab-dumps #dumpsView{display:block}
 .smart-kv dt{color:var(--dim)}
 .smart-kv dd{text-align:right;font-family:'IBM Plex Mono',monospace}
 .proc-head{display:grid;grid-template-columns:1fr 110px 110px;color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line);margin-top:8px}
-.proc-row{display:grid;grid-template-columns:1fr 110px 110px;padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px}
+.proc-row{display:grid;grid-template-columns:1fr 110px 110px;padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px;font-family:'Albert Sans',sans-serif;color:var(--text)}
 .proc-row span:nth-child(2),.proc-row span:nth-child(3),.proc-head span:nth-child(2),.proc-head span:nth-child(3){text-align:right}
 .pager{display:flex;gap:12px;align-items:center;margin-top:12px}
 .pg-btn{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--dim);font-family:inherit;font-size:14px;padding:6px 14px;cursor:pointer}
@@ -189,7 +191,7 @@ body.tab-dumps #dumpsView{display:block}
 #hfSearch{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 12px;font-size:14px;font-family:inherit;width:260px;margin-bottom:10px}
 #hfSearch:focus{outline:none;border-color:var(--dim)}
 #progSearch:focus{outline:none;border-color:var(--dim)}
-.prog-row{padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px}
+.prog-row{padding:5px 4px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent);font-size:14.5px;font-family:'Albert Sans',sans-serif;color:var(--text)}
 @media (max-width:600px){.kv{grid-template-columns:1fr;gap:0}.kv dt{margin-top:8px}}
 h1{font-size:24px;font-weight:600;letter-spacing:.01em}
 #range{color:var(--dim);font-size:14px}
@@ -324,7 +326,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <div id="relView" class="view">
 <div id="timeline">
-  <div id="tlHead"><span id="tlRange" class="mono"></span><span id="tlHint">Click a bar to see that day's events. Use the arrows to move back a week.</span></div>
+  <div id="tlHead"><span id="tlRange" class="mono"></span><span id="tlHint">Click a bar to see that day's events. Use the arrows to move back a month.</span></div>
   <div id="tl-inner">
     <button id="tlPrev" class="tl-nav" title="Earlier">&#8249;</button>
     <div id="tl-main"><div id="bars"></div><div id="axis"></div></div>
@@ -414,8 +416,8 @@ function classify(r){
 }
 const CATNAMES={err:'Critical events',warn:'Warnings',info:'Informational events'};
 
-let events=[], state={cats:new Set(['err','warn','info']), q:'', day:null, tlEnd:null};
-const TL_WIN=7;
+let events=[], state={cats:new Set(['err','warn']), q:'', day:null, tlEnd:null};
+const TL_WIN=30;
 
 function load(raw){
   events = raw.map(r=>{
@@ -505,7 +507,7 @@ function render(){
   const ICONS={err:'\u274C\uFE0E',warn:'\u26A0\uFE0E',info:'\u2139\uFE0E'};
   dayGroups.forEach((groups,dayKey)=>{
     const h=document.createElement('div');h.className='day-head';
-    h.textContent='Reliability details for: '+fmtDay(dayKey);
+    h.textContent=fmtDay(dayKey);
     list.appendChild(h);
     ['err','warn','info'].forEach(cat=>{
       const evs=groups[cat];
@@ -1003,10 +1005,10 @@ function renderSummary(){
   if(cpu)pairs.push(['CPU', esc(cpu.trim())]);
   if(GPUS.length||DISPLAYS.length){
     const gpuNames=[...new Set(GPUS.length?GPUS.map(g=>g.name):DISPLAYS.map(d=>d.gpu))];
-    pairs.push(['GPU'+(gpuNames.length>1?'s':''), gpuNames.map(esc).join(', ')+' <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
+    pairs.push(['GPU'+(gpuNames.length>1?'s':''), gpuNames.map(esc).join(', ')]);
   } else {
     const gpu=specVal(sp.info,'GPU');
-    if(gpu)pairs.push(['GPU', esc(gpu)+' <span style="color:var(--faint)">(see Hardware \u203a GPU)</span>']);
+    if(gpu)pairs.push(['GPU', esc(gpu)]);
   }
   const mb=specVal(sp.info,'Motherboard'), mbMfr=specVal(sp.info,'Motherboard Manufacturer');
   if(mb)pairs.push(['Motherboard', esc(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim())]);
@@ -1030,7 +1032,7 @@ function renderSummary(){
   if(RAM.length){
     const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
     const conf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
-    pairs.push(['Memory', totGB+' GB total'+(conf?' @ '+esc(conf)+' MT/s':'')+' <span style="color:var(--faint)">(see Hardware \u203a Memory)</span>']);
+    pairs.push(['Memory', totGB+' GB total'+(conf?' @ '+esc(conf)+' MT/s':'')]);
   } else {
     const rc=specVal(sp.info,'Ram Capacity');
     if(rc)pairs.push(['Memory', esc(rc)]);
@@ -1189,7 +1191,19 @@ function renderSummary(){
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
-  nEl.innerHTML=notes.length?'<ul class="notes">'+notes.map(n=>'<li>'+n+'</li>').join('')+'</ul>':'';
+  const NOTE_GROUPS=[
+    {label:'Critical',   test:n=>/class="r"/.test(n)},
+    {label:'Warnings',   test:n=>/class="y"/.test(n)},
+    {label:'Informational', test:n=>!/class="[ry]"/.test(n)&&!/class="g"/.test(n)},
+    {label:'All good',   test:n=>/class="g"/.test(n)},
+  ];
+  let notesHtml='';
+  NOTE_GROUPS.forEach(g=>{
+    const items=notes.filter(g.test);
+    if(!items.length)return;
+    notesHtml+='<div class="notes-group"><div class="notes-head">'+g.label+'</div><ul class="notes">'+items.map(n=>'<li>'+n+'</li>').join('')+'</ul></div>';
+  });
+  nEl.innerHTML=notesHtml;
 }
 function sysCat(lvl){return lvl<=2?'err':lvl===3?'warn':'info';}
 function renderSys(){
@@ -1226,7 +1240,7 @@ function renderShutdowns(){
   const kp41=SYSEVT.filter(r=>String(r.id)==='41').map(r=>{
     const dt=parseDate(r.t);
     const bc=(r.bc&&String(r.bc)!=='0')?String(r.bc):'';
-    return {d:dt,bc,src:'Kernel-Power (event 41)'};
+    return {d:dt,bc,src:'Kernel-Power'};
   }).filter(x=>x.d);
   const relOnly=events.filter(e=>e.s==='EventLog').map(e=>({d:e.d,bc:'',src:'Reliability history'}));
   const all=[...kp41,...relOnly].sort((a,b)=>b.d-a.d);
@@ -1248,8 +1262,8 @@ function renderShutdowns(){
   merged.forEach(x=>{
     const bcLabel=x.bc?('0x'+parseInt(x.bc).toString(16).toUpperCase()+(BC_NAMES[x.bc]?' '+BC_NAMES[x.bc]:'')):'';
     h+='<dt class="mono">'+esc(fmtDay(x.d.toISOString().slice(0,10)))+', '+esc(fmtTime(x.d))+'</dt>'+
-      '<dd>'+(bcLabel?'<span class="r">Bugcheck '+esc(bcLabel)+'</span>':'<span style="color:var(--faint)">No bugcheck (power loss, hard reset, or hang)</span>')+
-      ' <span style="color:var(--faint);font-size:13px">('+esc(x.src)+')</span></dd>';
+      '<dd>'+(bcLabel?'<span class="r">Bugcheck '+esc(bcLabel)+'</span>':'<span style="color:var(--faint)">No bugcheck &mdash; power loss, hard reset, or hang</span>')+
+      ' <span style="color:var(--faint);font-size:13px">\u00b7 '+esc(x.src)+'</span></dd>';
   });
   h+='</dl></div>';
   v.innerHTML=h;
@@ -1268,6 +1282,7 @@ function renderSecurity(){
     if(d.lastQuick)h+='<dt>Last quick scan</dt><dd>'+esc(d.lastQuick)+'</dd>';
     if(d.lastFull)h+='<dt>Last full scan</dt><dd>'+esc(d.lastFull)+'</dd>';
     if(d.sigAge)h+='<dt>Signature age</dt><dd>'+esc(d.sigAge)+' day'+(d.sigAge==='1'?'':'s')+'</dd>';
+    if(d.sigVersion)h+='<dt>Security intelligence version</dt><dd class="mono">'+esc(d.sigVersion)+'</dd>';
     h+='</dl></div>';
   }
   if(SECURITY.firewall&&SECURITY.firewall.length){
@@ -2024,7 +2039,7 @@ function reliabilityexport {
 
         $hotfixes = @()
         try {
-            $hotfixes = @(Get-HotFix -ErrorAction Stop | Sort-Object InstalledOn -Descending | ForEach-Object {
+            $hotfixes = @(Get-HotFix -ErrorAction Stop | Where-Object { $_.Description -notmatch 'Security Intelligence Update' -and $_.HotFixID -ne 'KB2267602' } | Sort-Object InstalledOn -Descending | ForEach-Object {
                 [PSCustomObject]@{
                     id   = "$($_.HotFixID)"
                     desc = "$($_.Description)"
@@ -2052,7 +2067,9 @@ function reliabilityexport {
         $wuServiceStatus = ""
         try { $wuServiceStatus = "$((Get-Service -Name wuauserv -ErrorAction Stop).Status)" } catch { }
 
-        # Recent Windows Update history, including FAILED/pending attempts that Get-HotFix cannot show
+        # Recent Windows Update history, including FAILED/pending attempts that Get-HotFix cannot show.
+        # Defender's daily "Security Intelligence Update" entries can dominate the most recent history,
+        # so pull a wider raw window before filtering them out and capping the final list.
         $wuHistory = @()
         try {
             $session = New-Object -ComObject Microsoft.Update.Session
@@ -2060,7 +2077,7 @@ function reliabilityexport {
             $historyCount = $searcher.GetTotalHistoryCount()
             if ($historyCount -gt 0) {
                 $resultMap = @{ 1 = "In progress"; 2 = "Succeeded"; 3 = "Succeeded with errors"; 4 = "Failed"; 5 = "Cancelled" }
-                $wuHistory = @($searcher.QueryHistory(0, [Math]::Min($historyCount, 40)) | ForEach-Object {
+                $wuHistory = @($searcher.QueryHistory(0, [Math]::Min($historyCount, 200)) | Where-Object { $_.Title -notmatch 'Security Intelligence Update' } | Select-Object -First 40 | ForEach-Object {
                     [PSCustomObject]@{
                         title  = "$($_.Title)"
                         date   = if ($_.Date) { $_.Date.ToString("dd/MM/yyyy HH:mm") } else { "" }
