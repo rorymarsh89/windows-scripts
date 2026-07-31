@@ -684,7 +684,7 @@ function renderSpecs(){
     const smartByDisk={};
     SMART.forEach(d=>{smartByDisk[String(d.disk)]=d;});
     const disksSorted=[...DISKLAYOUT].sort((a,b)=>(+a.disk)-(+b.disk));
-    dh+='<div class="spec-section"><h2>Disk layout</h2><div class="drive-grid">';
+    dh+='<div class="spec-section"><h2>Disk layout</h2>';
     const TYPE_COLOR={'EFI System Partition':'var(--info)','Recovery':'var(--warn)','Recovery (MBR)':'var(--warn)','Microsoft Reserved':'var(--faint)','Data':'var(--ok)','System':'var(--dim)'};
     disksSorted.forEach(dk=>{
       const total=dk.partitions.reduce((a,p)=>a+p.sizeGB,0)||dk.sizeGB||1;
@@ -692,7 +692,7 @@ function renderSpecs(){
       const probs=sm?smartProbs(sm):[];
       const bad=probs.length>0;
       const healthLabel=sm&&sm.health?sm.health+(sm.op&&sm.op!=='OK'&&sm.op!==sm.health?' ('+sm.op+')':''):'';
-      dh+='<div class="drive'+(bad?' smart-bad':'')+'"'+(bad?' style="cursor:pointer" onclick="openSmartModal(\''+esc(dk.disk)+'\')"':'')+'>';
+      dh+='<div class="drive'+(bad?' smart-bad':'')+'" style="margin-bottom:14px'+(bad?';cursor:pointer':'')+'"'+(bad?' onclick="openSmartModal(\''+esc(dk.disk)+'\')"':'')+'>';
       dh+='<h3>Disk '+esc(dk.disk)+(sm&&sm.name?' <span style="color:var(--dim);font-weight:400">'+esc(sm.name)+'</span>':'')+'</h3>';
       dh+='<div class="sub">'+esc(dk.style||'Unknown')+' \u00b7 '+dk.sizeGB+' GB'+(sm&&sm.bus?' \u00b7 '+esc(sm.bus):'')+
         (healthLabel?' \u00b7 <span style="color:'+(bad?'var(--err)':'var(--ok)')+'">'+esc(healthLabel)+'</span>':'')+'</div>'+
@@ -709,7 +709,7 @@ function renderSpecs(){
       });
       dh+='</dl></div>';
     });
-    dh+='</div></div>';
+    dh+='</div>';
     const alerts=[];
     SMART.forEach(d=>{
       const probs=smartProbs(d);
@@ -1655,7 +1655,7 @@ function dmpcheck {
     # Detect minidumps only - files on the user's PC are never deleted by this script.
     if (Test-Path $minidump) {
         if (Test-Path $source) {
-            $dmpfound = $true
+            $script:dmpfound = $true
         }
     }
     
@@ -2890,7 +2890,7 @@ function eof {
     Write-Host "  Want to see the report yourself? Open the zip and" -ForegroundColor Gray
     Write-Host "  double-click triage-report.html - it opens in your browser." -ForegroundColor Gray
     Start-Process explorer.exe -ArgumentList $File
-    $eofcomplete = $true
+    $script:eofcomplete = $true
 
     endmessage
 }
