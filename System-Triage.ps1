@@ -326,7 +326,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <div id="relView" class="view">
 <div id="timeline">
-  <div id="tlHead"><span id="tlRange" class="mono"></span><span id="tlHint">Click a bar to see that day's events. Use the arrows to move back a month.</span></div>
+  <div id="tlHead"><span id="tlRange" class="mono"></span><span id="tlHint">Click a bar to see that day's events. Use the arrows to move back two weeks.</span></div>
   <div id="tl-inner">
     <button id="tlPrev" class="tl-nav" title="Earlier">&#8249;</button>
     <div id="tl-main"><div id="bars"></div><div id="axis"></div></div>
@@ -387,6 +387,7 @@ const NET = /*__NET__*/null;
 const SECURITY = /*__SECURITY__*/null;
 const HOTFIXES = /*__HOTFIXES__*/[];
 const WINDOWSOLD = /*__WINDOWSOLD__*/null;
+const CBS = /*__CBS__*/null;
 const DEVERR = /*__DEVERR__*/[];
 const AUDIO = /*__AUDIO__*/null;
 const VER = /*__VER__*/"";
@@ -417,7 +418,7 @@ function classify(r){
 const CATNAMES={err:'Critical events',warn:'Warnings',info:'Informational events'};
 
 let events=[], state={cats:new Set(['err','warn']), q:'', day:null, tlEnd:null};
-const TL_WIN=30;
+const TL_WIN=14;
 
 function load(raw){
   events = raw.map(r=>{
@@ -429,7 +430,8 @@ function load(raw){
   render();
 }
 
-function fmtDay(k){const d=new Date(k);return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
+function fmtDay(k){const d=new Date(k);const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');return dd+'/'+mm+'/'+d.getFullYear();}
+function fmtDayShort(k){const d=new Date(k);return d.getDate()+'/'+(d.getMonth()+1);}
 function fmtTime(d){return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
 
 function render(){
@@ -483,13 +485,11 @@ function render(){
   });
   const axis=document.getElementById('axis');
   axis.innerHTML=days.map(k=>{
-    const d=new Date(k);
-    return '<span class="axis-lab'+(state.day===k?' active':'')+'">'+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})+'</span>';
+    return '<span class="axis-lab'+(state.day===k?' active':'')+'">'+fmtDayShort(k)+'</span>';
   }).join('');
   const rEl=document.getElementById('tlRange');
   if(days.length){
-    const a=new Date(days[0]),b2=new Date(days[days.length-1]);
-    rEl.textContent=a.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2013 '+b2.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    rEl.textContent=fmtDay(days[0])+' \u2013 '+fmtDay(days[days.length-1]);
   }
 
   const cd=document.getElementById('clearDay');
@@ -630,7 +630,7 @@ function renderSpecs(){
   let h='';
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
-    const SHOWN=['OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
+    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
     const FAQ_KEY={'Secure Boot State':'secure-boot','TPM Status':'tpm'};
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
@@ -643,8 +643,36 @@ function renderSpecs(){
     h+='<div class="spec-section"><h2>Audio</h2><dl class="kv"><dt>Default playback device</dt><dd>'+esc(AUDIO.playback)+'</dd></dl></div>';
   }
   if(DEVERR.length){
-    h+='<div class="spec-section"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
-    DEVERR.forEach(e=>{h+='<dt>'+esc(e.name)+'</dt><dd style="color:var(--err)">Error code '+esc(e.code)+'</dd>';});
+    h+='<div class="spec-section" id="devErrSection"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
+    const DEVERR_CODES={
+      '1':'Device not configured correctly',
+      '3':'Driver may be corrupted, or system is low on resources',
+      '10':'Device cannot start',
+      '12':'Not enough free resources',
+      '14':'Device needs a restart to work',
+      '18':'Drivers need reinstalling',
+      '19':'Registry entries for the device are corrupted',
+      '21':'Windows is in the process of removing the device',
+      '22':'Device is disabled',
+      '24':'Device not present, not working, or missing drivers',
+      '28':'Drivers are not installed',
+      '29':'Disabled by firmware \u2014 didn\u2019t give the device resources',
+      '31':'Windows cannot load the drivers',
+      '32':'Driver service is disabled',
+      '37':'Driver returned a failure',
+      '39':'Driver is missing or corrupted',
+      '41':'Driver loaded but can\u2019t find the device',
+      '42':'Duplicate device found',
+      '43':'Device reported a problem',
+      '44':'An application or driver stopped the device',
+      '45':'Device not currently connected',
+      '48':'A previous driver for this device is blocked from loading',
+      '52':'Drivers aren\u2019t digitally signed',
+    };
+    DEVERR.forEach(e=>{
+      const desc=DEVERR_CODES[String(e.code)];
+      h+='<dt>'+esc(e.name)+'</dt><dd style="color:var(--err)">Error code '+esc(e.code)+(desc?' <span style="color:var(--faint)">\u2014 '+desc+'</span>':'')+'</dd>';
+    });
     h+='</dl></div>';
   }
   let dh='';
@@ -813,12 +841,16 @@ const FAQ_DATA=[
 {id:'ram-speed',q:"RAM Speed (XMP/EXPO)",a:"Your memory (RAM) is capable of running faster than it currently is. This almost always means that a feature called XMP (Intel) or EXPO (AMD) isn't enabled.<br><br>XMP/EXPO is a one-click profile in the BIOS that allows your RAM to run at its advertised speed. When it's disabled, your RAM will default to a lower speed. Enabling it isn't overclocking, and isn't dangerous. We'd recommend enabling it, which can be done through your BIOS. If you're unsure how to do that, you can ask one of our advisors for more help.<br><br><i>Note: some systems can struggle to run RAM at its full advertised speed for various reasons, which is why it isn't enabled by default. When this happens, it can sometimes help to disable it, to prevent system instability or crashes.</i><br><br>This isn't dangerous either way, but running below the rated speed does mean the RAM isn't performing the way it was bought to.",tools:["CPU-Z"]},
 {id:'antivirus-conflict',q:"Multiple Antivirus Programs",a:"More than one antivirus program is trying to actively scan the system at the same time. This is a common, often-overlooked cause of slowdowns, false-positive quarantines, and general instability, since the two programs can end up fighting over the same files.",tools:[]},
 {id:'defender-rtp',q:"Defender Real-Time Protection",a:"Windows' built-in antivirus isn't actively scanning for threats. This can be intentional if another antivirus is installed, or it can be accidental. Malware sometimes disables it deliberately to avoid detection.",tools:[]},
+{id:'bitlocker-on',q:"BitLocker Enabled",a:"The system drive is encrypted with BitLocker. This is worth knowing before any wipe, reset, reinstall, or drive removal &mdash; without the recovery key, an encrypted drive that gets locked out (for example, after a motherboard or TPM change) cannot be read or recovered.<br><br>If a wipe or reset is planned, confirm the recovery key is backed up somewhere accessible (Microsoft account, Active Directory, or a printed/saved copy) before proceeding.",tools:[]},
 {id:'firewall-disabled',q:"Firewall Disabled",a:"Windows Firewall isn't active on one or more network profiles (Domain, Private, or Public), leaving the system more exposed to unwanted network connections.",tools:[]},
 {id:'defender-threats',q:"Defender Threat Detections",a:"Windows Defender has previously found and acted on something it identified as malware, a virus, or another threat on this PC. This is historical. It doesn't necessarily mean anything is currently infected, but repeated or recent detections are worth taking seriously.",tools:[]},
 {id:'defender-exclusions',q:"Risky Defender Exclusions",a:"An exclusion tells Windows Defender to skip scanning a specific file, folder, or file type. Excluding a game folder is common and usually fine.<br><br>Excluding an entire drive, a broad system folder, or all .exe files is far more dangerous, since it means malware placed there would never be scanned at all. Check the Security tab for exactly what's excluded.",tools:[]},
+{id:'rdp-enabled',q:"Remote Desktop (RDP) Enabled",a:"Remote Desktop lets someone log into this PC over the network as if sitting at it. It's useful for legitimate remote access, but it's also a common target for attackers, especially if the PC is reachable from the internet or has a weak password.<br><br>The signed-in account type matters here too: a local account only needs its own password, while a Microsoft or Entra ID account can be backed by MFA. If this wasn't set up intentionally, it's worth disabling. If it's needed, make sure Network Level Authentication is required and the account used has a strong password.",tools:[]},
 {id:'hosts-redirect',q:"Hosts File Redirects",a:"The hosts file is a small system text file that can override where certain web addresses point. This flag means an update- or security-related address, like Windows Update or an antivirus vendor, has been redirected elsewhere. Sometimes this is done deliberately to block updates, but it's also a technique malware uses to stop antivirus software updating itself.<br><br>It's also common to find the hosts file modified when the user (or someone else) has installed cracked software, since some software relies on connecting to license server websites to 'check' that they're licensed.",tools:[]},
 {id:'startup-flagged',q:"Flagged Startup Entries",a:"These are programs set to launch automatically with Windows that either run from a Temp folder or don't have a valid digital signature. Neither is automatically a problem. Plenty of legitimate small or hobbyist tools are unsigned, but it's exactly the pattern malware persistence uses, so anything unfamiliar here is worth a closer look.",tools:[]},
 {id:'gpu-tdr',q:"Display Driver Timeout (TDR)",a:"The graphics driver stopped responding briefly and Windows had to recover it (often called a TDR event). This usually shows up as a brief flicker or freeze rather than a full crash, though it can escalate to one.<br><br>Common causes are an unstable GPU overclock, an outdated or corrupted graphics driver, or the GPU overheating under load.",tools:["Display Driver Uninstaller (DDU)","FurMark","HWiNFO"]},
+{id:'high-uptime',q:"Long System Uptime",a:"The PC hasn't been restarted in over a week. This is common and not inherently a problem, but pending Windows/driver updates won't take effect until a reboot, and memory leaks or resource creep in long-running processes become more likely to cause slowdowns the longer a session goes on.<br><br>If something on this PC is running slow or behaving oddly, a restart is a cheap first thing to try before digging further.",tools:[]},
+{id:'cbs-corruption',q:"Unresolved Component Corruption (CBS.log)",a:"CBS.log records Windows' component servicing activity, including any system file repairs. A 'Cannot repair member' entry means a corrupted system file was found during a check (from Windows Update, an in-place upgrade, or a manual sfc/DISM run) that couldn't be automatically fixed.<br><br>This can cause update failures, missing features, or general instability depending on what's affected. Running <span class=\"mono\">sfc /scannow</span> followed by <span class=\"mono\">DISM /Online /Cleanup-Image /RestoreHealth</span> is the standard next step; if DISM can't find a good copy of the file locally it will need a network connection or Windows installation media to pull one from.",tools:["sfc /scannow","DISM"]},
 {id:'livekernelevent',q:"LiveKernelEvent",a:"Windows' record of a serious problem severe enough to be crash-like, but that the system managed to recover from without a full restart, most often tied to a graphics driver failing and recovering.<br><br>Frequent LiveKernelEvents point to the same kinds of causes as display driver timeouts.",tools:["Display Driver Uninstaller (DDU)","FurMark","HWiNFO"]},
 {id:'wifi-signal',q:"Weak Wi-Fi Signal",a:"The wireless connection's signal strength was weak at the moment this report was generated. A weak signal can cause slow speeds, dropped connections, and higher ping in games, and is usually down to distance from the router, walls/obstructions, or interference from other devices.",tools:[]},
 {id:'commit-charge',q:"Commit Charge",a:"This measures how much memory (RAM plus the page file combined) the system had committed to running programs at the moment this report was generated.<br><br>Running close to the limit can cause slowdowns, stuttering, or 'out of memory' errors, and often points to either too little RAM for the workload or a page file set too small.",tools:["HWiNFO"]},
@@ -884,6 +916,22 @@ function toolLink(name){
 }
 function tabLink(tabId,label){
   return '<a href="#" onclick="return goTab(\'' + tabId + '\')" style="color:var(--info);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+label+'</a>';
+}
+function goAnchor(tabId,anchorId){
+  goTab(tabId);
+  setTimeout(()=>{
+    const el=document.getElementById(anchorId);
+    if(!el)return;
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.outline='2px solid var(--info)';
+    setTimeout(()=>{el.style.outline='';},1600);
+  },30);
+  return false;
+}
+function anchorLink(tabId,anchorId,faqId,html){
+  const main='<a href="#" onclick="return goAnchor(\''+tabId+'\',\''+anchorId+'\')" style="color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+html+'</a>';
+  const info=faqId?' <a href="#" onclick="return goFaq(\''+faqId+'\')" title="What does this mean?" style="color:var(--faint);text-decoration:none;cursor:pointer;font-size:12px">(?)</a>':'';
+  return main+info;
 }
 function flagLink(faqId,html){
   return '<a href="#" class="faq-link" onclick="return goFaq(\''+faqId+'\')" style="color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer">'+html+'</a>';
@@ -989,10 +1037,18 @@ function friendlyDriver(gpuName,ver,radeon){
   return ver;
 }
 function specVal(info,key){const f=info.find(([k])=>k===key);return f?f[1]:null;}
+function realSpec(v){
+  if(!v)return '';
+  if(/^(system manufacturer|system product name|to be filled by o\.e\.m\.?|default string|not applicable|unknown|n\/a)$/i.test(v.trim()))return '';
+  return v;
+}
 function renderSummary(){
   const sp=parseSpecs(SPECS);
   const el=document.getElementById('summary');
   const pairs=[];
+  const sysName=specVal(sp.info,'System Name'), sysMfr=realSpec(specVal(sp.info,'Manufacturer')), sysModel=realSpec(specVal(sp.info,'Model'));
+  if(sysName)pairs.push(['System name', esc(sysName)]);
+  if(sysMfr||sysModel)pairs.push(['Manufacturer / Model', esc([sysMfr,sysModel].filter(Boolean).join(' \u00b7 '))]);
   const os=specVal(sp.info,'OS'), build=specVal(sp.info,'Build'), up=specVal(sp.info,'System Uptime');
   const WINVER={ '26200':'25H2','26100':'24H2','22631':'23H2','22621':'22H2','22000':'21H2','19045':'22H2','19044':'21H2' };
   if(os){
@@ -1056,17 +1112,7 @@ function renderSummary(){
   const kp41ev=SYSEVT.filter(r=>String(r.id)==='41');
   const shutdownCount=Math.max(shutdowns,kp41ev.length);
   if(shutdownCount){
-    const BC_NAMES={ '278':'0x116 VIDEO_TDR_FAILURE','279':'0x117 VIDEO_TDR_TIMEOUT_DETECTED','281':'0x119 VIDEO_SCHEDULER_INTERNAL_ERROR','321':'0x141 VIDEO_ENGINE_TIMEOUT_DETECTED','322':'0x142 VIDEO_TDR_APPLICATION_BLOCKED' };
-    const bcs=[...new Set(kp41ev.map(r=>String(r.bc||'')).filter(b=>b&&b!=='0'))];
-    let detail;
-    if(bcs.length){
-      detail='bugcheck '+bcs.map(b=>BC_NAMES[b]||('code '+b)).join(', ');
-    }else if(kp41ev.length){
-      detail='no bugcheck (power loss, hard reset, or hang)';
-    }else{
-      detail='reliability history only (outside event log window)';
-    }
-    notes.push(dataLink('shutdowns','unexpected-shutdown','<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span> <span style="color:var(--faint)">('+esc(detail)+')</span>'));
+    notes.push(dataLink('shutdowns','unexpected-shutdown','<span class="r"><b>'+shutdownCount+'</b> Unexpected shutdown'+(shutdownCount>1?'s':'')+'</span>'));
   }else{
     notes.push('<span class="g">No unexpected shutdowns</span>');
   }
@@ -1078,7 +1124,11 @@ function renderSummary(){
     if(probs.length)notes.push(dataLink('drives','disk-smart','<span class="r">Disk '+esc(d.disk)+' ('+esc(d.name)+'): '+esc(probs.join(', '))+'</span>'));
   });
   DIRTY.forEach(v=>notes.push(dataLink('drives','dirty-bit','<span class="y">Volume '+esc(v)+' has its dirty bit set</span>')));
-  if(DEVERR.length)notes.push(flagLink('device-manager-errors','<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span>'));
+  if(DEVERR.length){
+    const devNames=DEVERR.map(e=>e.name);
+    const shown=devNames.slice(0,3).join(', ')+(devNames.length>3?' +'+(devNames.length-3)+' more':'');
+    notes.push(anchorLink('summary','devErrSection','device-manager-errors','<span class="y"><b>'+DEVERR.length+'</b> device'+(DEVERR.length>1?'s':'')+' showing errors in Device Manager</span> <span style="color:var(--faint)">('+esc(shown)+')</span>'));
+  }
   const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
   if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push(dataLink('drives','mbr-secureboot','<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>'));
   if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push(dataLink('updates','pending-reboot','<span class="y">System has a pending reboot (Windows Update or servicing)</span>'));
@@ -1140,9 +1190,8 @@ function renderSummary(){
   (sp.programs||[]).forEach(p=>{
     SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
   });
-  const avStr=specVal(sp.info,'Antivirus');
-  if(avStr){
-    const avList=avStr.split(',').map(s=>s.trim()).filter(Boolean);
+  if(SECURITY&&SECURITY.avProducts&&SECURITY.avProducts.length){
+    const avList=SECURITY.avProducts.filter(a=>a.enabled).map(a=>a.name);
     if(avList.length>1)notes.push(dataLink('security','antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
   }
   Object.keys(foundSoft).forEach(grp=>{
@@ -1161,6 +1210,16 @@ function renderSummary(){
     if(SECURITY.exclFlags&&SECURITY.exclFlags.length)notes.push(dataLink('security','defender-exclusions','<span class="y"><b>'+SECURITY.exclFlags.length+'</b> risky Defender exclusion'+(SECURITY.exclFlags.length>1?'s':'')+'</span>'));
     if(SECURITY.hostsFlags&&SECURITY.hostsFlags.length)notes.push(dataLink('security','hosts-redirect','<span class="y">Hosts file redirects a known update/security domain</span>'));
     if(SECURITY.startupFlags&&SECURITY.startupFlags.length)notes.push(dataLink('security','startup-flagged','<span class="y"><b>'+SECURITY.startupFlags.length+'</b> flagged startup entr'+(SECURITY.startupFlags.length>1?'ies':'y')+'</span>'));
+    if(SECURITY.rdp&&SECURITY.rdp.enabled){
+      let extra=[];
+      if(SECURITY.rdp.nlaRequired===false)extra.push('Network Level Authentication is <b>off</b>');
+      if(SECURITY.acctType)extra.push(esc(SECURITY.acctType));
+      notes.push(dataLink('security','rdp-enabled','<span class="y">Remote Desktop (RDP) is enabled'+(extra.length?' &mdash; '+extra.join(', '):'')+'</span>'));
+    }
+    if(SECURITY.bitlocker&&SECURITY.bitlocker.length){
+      const osVol=SECURITY.bitlocker.find(b=>b.type==='OperatingSystem')||SECURITY.bitlocker.find(b=>b.drive==='C:');
+      if(osVol&&osVol.status==='On')notes.push(dataLink('security','bitlocker-on','<span class="y">BitLocker is enabled on the system drive &mdash; back up the recovery key before wiping or resetting</span>'));
+    }
   }
   const gpuDrvRe=/nvlddmkm|amdwddmg|amdkmdag|atikmdag/i;
   const tdrEvents=SYSEVT.filter(r=>String(r.id)==='4101'||gpuDrvRe.test(r.prov)||gpuDrvRe.test(r.msg||''));
@@ -1189,6 +1248,11 @@ function renderSummary(){
     }
   }
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
+  if(CBS&&CBS.unresolvedCount>0)notes.push(dataLink('sys','cbs-corruption','<span class="r"><b>'+CBS.unresolvedCount+'</b> unresolved component corruption entr'+(CBS.unresolvedCount>1?'ies':'y')+' in CBS.log</span>'));
+  if(up){
+    const upDays=parseInt((up.match(/^(\d+)\s*days?/i)||[])[1]||'0',10);
+    if(upDays>=7)notes.push(dataLink('sys','high-uptime','<span class="y">System has been running for <b>'+upDays+'</b> days without a restart</span>'));
+  }
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
   const NOTE_GROUPS=[
@@ -1240,7 +1304,7 @@ function renderShutdowns(){
   const kp41=SYSEVT.filter(r=>String(r.id)==='41').map(r=>{
     const dt=parseDate(r.t);
     const bc=(r.bc&&String(r.bc)!=='0')?String(r.bc):'';
-    return {d:dt,bc,src:'Kernel-Power'};
+    return {d:dt,bc,src:'Kernel-Power (41)'};
   }).filter(x=>x.d);
   const relOnly=events.filter(e=>e.s==='EventLog').map(e=>({d:e.d,bc:'',src:'Reliability history'}));
   const all=[...kp41,...relOnly].sort((a,b)=>b.d-a.d);
@@ -1275,6 +1339,13 @@ function renderSecurity(){
     return;
   }
   let h='';
+  if(SECURITY.avProducts&&SECURITY.avProducts.length){
+    h+='<div class="spec-section"><h2>Antivirus</h2><dl class="kv">';
+    SECURITY.avProducts.forEach(a=>{
+      h+='<dt>'+esc(a.name)+'</dt><dd style="color:'+(a.enabled?'var(--ok)':'var(--dim)')+'">'+(a.enabled?'Active':'Inactive')+'</dd>';
+    });
+    h+='</dl></div>';
+  }
   const d=SECURITY.defender;
   if(d){
     h+='<div class="spec-section"><h2>Windows Defender</h2><dl class="kv">';
@@ -1288,6 +1359,28 @@ function renderSecurity(){
   if(SECURITY.firewall&&SECURITY.firewall.length){
     h+='<div class="spec-section"><h2>Firewall</h2><dl class="kv">';
     SECURITY.firewall.forEach(f=>{h+='<dt>'+esc(f.profile)+'</dt><dd style="color:'+(f.enabled==='True'?'var(--ok)':'var(--err)')+'">'+(f.enabled==='True'?'Enabled':'Disabled')+'</dd>';});
+    h+='</dl></div>';
+  }
+  if(SECURITY.rdp||SECURITY.acctType){
+    h+='<div class="spec-section"><h2>Remote Desktop (RDP)</h2><dl class="kv">';
+    if(SECURITY.acctType)h+='<dt>Signed-in account</dt><dd>'+esc(SECURITY.acctType)+'</dd>';
+    if(SECURITY.rdp){
+      const r=SECURITY.rdp;
+      h+='<dt>Status</dt><dd style="color:'+(r.enabled?'var(--warn)':'var(--ok)')+'">'+(r.enabled?'Enabled':'Disabled')+'</dd>';
+      if(r.enabled){
+        h+='<dt>Service</dt><dd>'+esc(r.serviceStatus)+'</dd>';
+        if(r.nlaRequired!==null)h+='<dt>Network Level Authentication</dt><dd style="color:'+(r.nlaRequired?'var(--ok)':'var(--err)')+'">'+(r.nlaRequired?'Required':'Not required')+'</dd>';
+      }
+    }
+    h+='</dl></div>';
+  }
+  if(SECURITY.bitlocker&&SECURITY.bitlocker.length){
+    h+='<div class="spec-section"><h2>BitLocker</h2><dl class="kv">';
+    SECURITY.bitlocker.forEach(b=>{
+      const on=b.status==='On';
+      h+='<dt>'+esc(b.drive||'?')+(b.type?' <span style="color:var(--dim);font-weight:400">('+esc(b.type)+')</span>':'')+'</dt>'+
+        '<dd style="color:'+(on?'var(--ok)':'var(--err)')+'">'+(on?'Enabled':'Disabled')+'</dd>';
+    });
     h+='</dl></div>';
   }
   if(SECURITY.threats&&SECURITY.threats.length){
@@ -1550,6 +1643,10 @@ function fileadd {
     $cpuName = $cpu | Select-Object -ExpandProperty Name
     $cpuSpeed = $cpu | Select-Object -ExpandProperty MaxClockSpeed
     $gpu = Get-WmiObject Win32_VideoController | Select-Object -ExpandProperty Name
+    $compSys = Get-WmiObject Win32_ComputerSystem
+    $sysName = $env:COMPUTERNAME
+    $sysMfr = $compSys | Select-Object -ExpandProperty Manufacturer
+    $sysModel = $compSys | Select-Object -ExpandProperty Model
 
     if ((Get-Tpm).TpmEnabled -eq "True") {
         $tpmEnabled = "Enabled"
@@ -1584,7 +1681,6 @@ function fileadd {
     $osInstallDate = try { ([System.Management.ManagementDateTimeConverter]::ToDateTime($os.InstallDate)).ToString("dd/MM/yyyy") } catch { "" }
     $cpuCores = ($cpu | Select-Object -ExpandProperty NumberOfCores) -join "+"
     $cpuThreads = ($cpu | Select-Object -ExpandProperty ThreadCount) -join "+"
-    $avNames = try { (Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop | Select-Object -ExpandProperty displayName) -join ", " } catch { "" }
     $uacEnabled = try { if ((Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction Stop).EnableLUA -eq 1) { "Enabled" } else { "Disabled" } } catch { "" }
     $powerPlan = try { if ((powercfg /getactivescheme) -match '\((.+)\)\s*$') { $Matches[1] } else { "" } } catch { "" }
 
@@ -1600,7 +1696,10 @@ function fileadd {
     $secureBootState = if ($secureBoot -match "True") { "Enabled" } elseif ($secureBoot -match "False") { "Disabled" } elseif ($secCompat -eq "$true") { "Not Supported" }
     $fastbootState = if ($fastboot -eq "1") { "Enabled" } else { "Disabled" }
 
-    specs "CPU Name: $cpuName"
+    specs "System Name: $sysName"
+    specs "Manufacturer: $sysMfr"
+    specs "Model: $sysModel"
+    specs "`nCPU Name: $cpuName"
     specs "CPU Speed (MHz): $cpuSpeed"
     specs "GPU: $gpu"
     specs "`nTPM Status: $tpmEnabled"
@@ -1622,7 +1721,6 @@ function fileadd {
     specs "Fast Boot State: $fastbootState"
     specs "CPU Cores/Threads: ${cpuCores}C / ${cpuThreads}T"
     if ($osInstallDate) { specs "Windows Install Date: $osInstallDate" }
-    if ($avNames) { specs "Antivirus: $avNames" }
     if ($uacEnabled) { specs "UAC: $uacEnabled" }
     if ($powerPlan) { specs "Active Power Plan: $powerPlan" }
     specs "`nRam Capacity: $([math]::Round($installedMemory/1GB)) GB"
@@ -2037,6 +2135,27 @@ function reliabilityexport {
             }
         } catch { }
 
+        # CBS.log: read-only check for unresolved component corruption ("Cannot repair member" is the
+        # marker SFC leaves when it found damage it couldn't fix). We don't run a fresh sfc/DISM scan
+        # here - that takes minutes - we just read whatever CBS.log already has on disk.
+        $cbs = $null
+        try {
+            $cbsPath = "$env:SystemRoot\Logs\CBS\CBS.log"
+            if (Test-Path $cbsPath) {
+                $cbsLines = Get-Content -Path $cbsPath -ErrorAction Stop
+                $unresolved = @($cbsLines | Select-String -Pattern 'Cannot repair member')
+                $lastLine = $cbsLines | Select-Object -Last 1
+                $lastDate = $null
+                if ($lastLine -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})') {
+                    try { $lastDate = [datetime]::ParseExact($matches[1], 'yyyy-MM-dd HH:mm:ss', $null).ToString("dd/MM/yyyy HH:mm") } catch { }
+                }
+                $cbs = [PSCustomObject]@{
+                    unresolvedCount = $unresolved.Count
+                    lastActivity    = $lastDate
+                }
+            }
+        } catch { }
+
         $hotfixes = @()
         try {
             $hotfixes = @(Get-HotFix -ErrorAction Stop | Where-Object { $_.Description -notmatch 'Security Intelligence Update' -and $_.HotFixID -ne 'KB2267602' } | Sort-Object InstalledOn -Descending | ForEach-Object {
@@ -2195,6 +2314,17 @@ function reliabilityexport {
                 }
             } else { $null }
 
+            # Registered antivirus products (Windows Security Center) - name + real-time enabled state
+            $avProducts = @()
+            try {
+                $avProducts = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop | ForEach-Object {
+                    # productState is a bitmask; the middle byte's low nibble indicates enabled/disabled
+                    $stateHex = "{0:X6}" -f [int]$_.productState
+                    $enabled = $stateHex.Substring(2,2) -in @('10','11')
+                    [PSCustomObject]@{ name = "$($_.displayName)"; enabled = $enabled }
+                })
+            } catch { }
+
             $threats = @()
             try {
                 $threats = @(Get-MpThreatDetection -ErrorAction Stop | Select-Object -First 25 | ForEach-Object {
@@ -2278,6 +2408,35 @@ function reliabilityexport {
                 $firewall = @(Get-NetFirewallProfile -ErrorAction Stop | ForEach-Object {
                     [PSCustomObject]@{ profile = "$($_.Name)"; enabled = "$($_.Enabled)" }
                 })
+            } catch { }
+
+            # RDP (Remote Desktop) status: registry setting + listening service
+            $rdp = $null
+            try {
+                $deny = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -ErrorAction Stop).fDenyTSConnections
+                $enabled = ($deny -eq 0)
+                $svc = Get-Service -Name TermService -ErrorAction SilentlyContinue
+                $nla = $null
+                try {
+                    $nla = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -ErrorAction Stop).UserAuthentication
+                } catch { }
+                $rdp = [PSCustomObject]@{
+                    enabled       = $enabled
+                    serviceStatus = if ($svc) { "$($svc.Status)" } else { "Unknown" }
+                    nlaRequired   = if ($null -ne $nla) { ($nla -eq 1) } else { $null }
+                }
+            } catch { }
+
+            # Signed-in account type: Microsoft account, Domain-joined, or Local
+            $acctType = $null
+            try {
+                $curSid = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
+                if ($curSid -match '^S-1-12-1-') {
+                    $acctType = "Microsoft / Entra ID account"
+                } else {
+                    $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+                    $acctType = if ($cs.PartOfDomain) { "Domain account" } else { "Local account" }
+                }
             } catch { }
 
             # Scheduled Tasks: user-created, non-Microsoft, enabled - flag unsigned/Temp-run actions
@@ -2415,6 +2574,18 @@ function reliabilityexport {
                 }
             } catch { }
 
+            # BitLocker status per volume (drive letter, protection status)
+            $bitlocker = @()
+            try {
+                $bitlocker = @(Get-BitLockerVolume -ErrorAction Stop | ForEach-Object {
+                    [PSCustomObject]@{
+                        drive  = "$($_.MountPoint)"
+                        status = "$($_.ProtectionStatus)"
+                        type   = "$($_.VolumeType)"
+                    }
+                })
+            } catch { }
+
             $security = [PSCustomObject]@{
                 defender         = $defender
                 threats          = $threats
@@ -2426,6 +2597,10 @@ function reliabilityexport {
                 extensions       = $extensions
                 firewall         = $firewall
                 stalledServices  = $stalledServices
+                bitlocker        = $bitlocker
+                rdp              = $rdp
+                acctType         = $acctType
+                avProducts       = $avProducts
             }
         } catch { }
 
@@ -2531,6 +2706,7 @@ function reliabilityexport {
         $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
         $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $windowsOldJson = if ($windowsOld) { (ConvertTo-Json $windowsOld -Compress).Replace('</', '<\/') } else { 'null' }
+        $cbsJson = if ($cbs) { (ConvertTo-Json $cbs -Compress).Replace('</', '<\/') } else { 'null' }
         $wuHistoryJson = if ($wuHistory.Count -gt 0) { (ConvertTo-Json @($wuHistory) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus }
         $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
@@ -2546,7 +2722,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
