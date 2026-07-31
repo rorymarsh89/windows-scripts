@@ -552,7 +552,7 @@ function summary(e){
   }
   return esc(e.s);
 }
-function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 document.querySelectorAll('.chip[data-cat]').forEach(c=>c.onclick=()=>{
   const cat=c.dataset.cat;
