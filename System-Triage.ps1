@@ -131,6 +131,7 @@ body.tab-drives #drivesView{display:block}
 body.tab-gpu #gpuView{display:block}
 body.tab-memory #memoryView{display:block}
 body.tab-net #netView{display:block}
+body.tab-devices #devicesView{display:block}
 body.tab-security #securityView{display:block}
 body.tab-processes #processesView{display:block}
 body.tab-apps #appsView{display:block}
@@ -293,6 +294,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
         <button class="tab" data-tab="gpu">GPU and Display(s)</button>
         <button class="tab" data-tab="memory">Memory (RAM)</button>
         <button class="tab" data-tab="net">Network</button>
+        <button class="tab" data-tab="devices">Connected Devices</button>
       </div>
     </div>
     <div class="nav-group">
@@ -352,6 +354,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="gpuView" class="view"></div>
 <div id="memoryView" class="view"></div>
 <div id="netView" class="view"></div>
+<div id="devicesView" class="view"></div>
 <div id="securityView" class="view"></div>
 <div id="processesView" class="view"></div>
 <div id="appsView" class="view"></div>
@@ -390,6 +393,8 @@ const WINDOWSOLD = /*__WINDOWSOLD__*/null;
 const CBS = /*__CBS__*/null;
 const DEVERR = /*__DEVERR__*/[];
 const AUDIO = /*__AUDIO__*/null;
+const USBDEVS = /*__USB__*/[];
+const CAMERAS = /*__CAMERAS__*/[];
 const VER = /*__VER__*/"";
 const GEN = /*__GEN__*/"";
 
@@ -638,9 +643,6 @@ function renderSpecs(){
       h+='<dt>'+label+'</dt><dd'+(off?' class="flag-off"':'')+'>'+esc(val)+'</dd>';
     });
     h+='</dl></div>';
-  }
-  if(AUDIO&&AUDIO.playback){
-    h+='<div class="spec-section"><h2>Audio</h2><dl class="kv"><dt>Default playback device</dt><dd>'+esc(AUDIO.playback)+'</dd></dl></div>';
   }
   if(DEVERR.length){
     h+='<div class="spec-section" id="devErrSection"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
@@ -1524,6 +1526,44 @@ function renderNet(){
   }
   v.innerHTML=h;
 }
+function renderDevices(){
+  const v=document.getElementById('devicesView');
+  let h='';
+  if(AUDIO&&(AUDIO.playbackDevices&&AUDIO.playbackDevices.length||AUDIO.recordingDevices&&AUDIO.recordingDevices.length)){
+    const isVirtual=n=>/vb-audio|voicemeeter|cable (input|output)|virtual audio/i.test(n);
+    const devRow=d=>'<dt>'+esc(d.name)+(isVirtual(d.name)?' <span style="color:var(--info)">(virtual)</span>':'')+'</dt><dd style="color:'+(d.state==='Active'?'var(--ok)':'var(--dim)')+'">'+esc(d.state)+'</dd>';
+    h+='<div class="spec-section"><h2>Audio</h2>';
+    if(AUDIO.playbackDevices&&AUDIO.playbackDevices.length){
+      h+='<div style="color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px">Playback (output)</div><dl class="kv">';
+      AUDIO.playbackDevices.forEach(d=>{h+=devRow(d);});
+      h+='</dl>';
+    }
+    if(AUDIO.recordingDevices&&AUDIO.recordingDevices.length){
+      h+='<div style="color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 4px">Recording (input)</div><dl class="kv">';
+      AUDIO.recordingDevices.forEach(d=>{h+=devRow(d);});
+      h+='</dl>';
+    }
+    h+='</div>';
+  }
+  if(CAMERAS&&CAMERAS.length){
+    h+='<div class="spec-section"><h2>Webcams &amp; Capture Devices ('+CAMERAS.length+')</h2><dl class="kv">';
+    CAMERAS.forEach(c=>{
+      const ok=/^ok$/i.test(c.status);
+      h+='<dt>'+esc(c.name)+'</dt><dd style="color:'+(ok?'var(--ok)':'var(--warn)')+'">'+esc(c.status||'Unknown')+'</dd>';
+    });
+    h+='</dl></div>';
+  }
+  if(USBDEVS&&USBDEVS.length){
+    h+='<div class="spec-section"><h2>USB Devices ('+USBDEVS.length+')</h2><dl class="kv">';
+    USBDEVS.forEach(u=>{
+      const ok=/^ok$/i.test(u.status);
+      h+='<dt>'+esc(u.name)+'</dt><dd style="color:'+(ok?'var(--ok)':'var(--warn)')+'">'+esc(u.status||'Unknown')+'</dd>';
+    });
+    h+='</dl></div>';
+  }
+  if(!h)h='<div class="spec-section"><h2>Connected Devices</h2><div style="color:var(--faint)">No audio, webcam, or USB peripheral data was collected.</div></div>';
+  v.innerHTML=h;
+}
 function renderDumps(){
   if(!DUMPS.length)return;
   document.getElementById('dumpsTab').style.display='';
@@ -1547,6 +1587,7 @@ renderSys();
 renderShutdowns();
 renderDumps();
 renderNet();
+renderDevices();
 renderGPU();
 renderMemory();
 renderSecurity();
@@ -1641,7 +1682,6 @@ function fileadd {
     $secCompat = $false
     $cpu = Get-WmiObject Win32_Processor
     $cpuName = $cpu | Select-Object -ExpandProperty Name
-    $cpuSpeed = $cpu | Select-Object -ExpandProperty MaxClockSpeed
     $gpu = Get-WmiObject Win32_VideoController | Select-Object -ExpandProperty Name
     $compSys = Get-WmiObject Win32_ComputerSystem
     $sysName = $env:COMPUTERNAME
@@ -1668,8 +1708,6 @@ function fileadd {
     $os = Get-WmiObject Win32_OperatingSystem
     $osName = $os | Select-Object -ExpandProperty Caption
     $osVersion = $os | Select-Object -ExpandProperty Version
-    $bootDevice = $os | Select-Object -ExpandProperty BootDevice
-    $systemDirectory = $env:SystemDrive
     $secureBoot = try { Confirm-SecureBootUEFI } catch { $secCompat = $true }
     $fastboot = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name HiberbootEnabled).HiberbootEnabled
 
@@ -1700,12 +1738,7 @@ function fileadd {
     specs "Manufacturer: $sysMfr"
     specs "Model: $sysModel"
     specs "`nCPU Name: $cpuName"
-    specs "CPU Speed (MHz): $cpuSpeed"
     specs "GPU: $gpu"
-    specs "`nTPM Status: $tpmEnabled"
-    if ($tpmEnabled -eq "Enabled") {
-        specs "TPM Version: $tpmVersion"
-    }
     specs "`nMotherboard Manufacturer: $motherboardMfr"
     specs "Motherboard: $motherboardModel"
     specs "BIOS Version: $biosVersion"
@@ -1714,11 +1747,13 @@ function fileadd {
     specs "OS Version: $osVersion"
     specs "System Uptime: $($uptime.Days) days, $($uptime.Hours) hours, $($uptime.Minutes) minutes"
     specs "Build: $build"
-    specs "Page File Size: $pgfilesize MB"
-    specs "Boot Device: $bootDevice"
-    specs "System Directory: $systemDirectory\"
+    specs "`nTPM Status: $tpmEnabled"
+    if ($tpmEnabled -eq "Enabled") {
+        specs "TPM Version: $tpmVersion"
+    }
     specs "Secure Boot State: $secureBootState"
     specs "Fast Boot State: $fastbootState"
+    specs "Page File Size: $pgfilesize MB"
     specs "CPU Cores/Threads: ${cpuCores}C / ${cpuThreads}T"
     if ($osInstallDate) { specs "Windows Install Date: $osInstallDate" }
     if ($uacEnabled) { specs "UAC: $uacEnabled" }
@@ -2213,10 +2248,61 @@ function reliabilityexport {
             })
         } catch { }
 
+        # Full audio device list: Windows stores every render (output) and capture (input) endpoint,
+        # active or not, under these two documented registry trees. DeviceState is a standard MMDevice
+        # API value (1=Active, 2=Disabled, 4=Not present, 8=Unplugged). We don't attempt to mark which
+        # one is the "default" - that's set via an undocumented COM interface with no reliable registry
+        # read, so mislabelling it would be worse than leaving it out.
+        function Get-AudioEndpoints($direction) {
+            $out = @()
+            try {
+                $base = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\$direction"
+                Get-ChildItem -Path $base -ErrorAction Stop | ForEach-Object {
+                    $name = $null
+                    try {
+                        $name = (Get-ItemProperty -Path "$($_.PSPath)\Properties" -Name '{a45c254e-df1c-4efd-8020-67d146a850e0},2' -ErrorAction Stop).'{a45c254e-df1c-4efd-8020-67d146a850e0},2'
+                    } catch { }
+                    if ($name) {
+                        $stateVal = (Get-ItemProperty -Path $_.PSPath -Name 'DeviceState' -ErrorAction SilentlyContinue).DeviceState
+                        $state = switch ($stateVal) { 1 {"Active"} 2 {"Disabled"} 4 {"Not present"} 8 {"Unplugged"} default {"Unknown"} }
+                        $out += [PSCustomObject]@{ name = "$name"; state = $state }
+                    }
+                }
+            } catch { }
+            return $out
+        }
         $audio = $null
         try {
-            $playback = (Get-CimInstance Win32_SoundDevice -ErrorAction Stop | Where-Object { $_.Status -eq 'OK' } | Select-Object -First 1).Name
-            $audio = [PSCustomObject]@{ playback = "$playback" }
+            $playbackDevs  = @(Get-AudioEndpoints 'Render')
+            $recordingDevs = @(Get-AudioEndpoints 'Capture')
+            if ($playbackDevs.Count -or $recordingDevs.Count) {
+                $audio = [PSCustomObject]@{ playbackDevices = $playbackDevs; recordingDevices = $recordingDevs }
+            }
+        } catch { }
+
+        # Webcams / capture devices: PNPClass Camera covers modern USB Video Class webcams,
+        # Image covers older webcams and scanners/imaging devices.
+        $cameras = @()
+        try {
+            $cameras = @(Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object { $_.PNPClass -in @('Camera','Image') } | ForEach-Object {
+                [PSCustomObject]@{ name = "$($_.Name)"; status = "$($_.Status)" }
+            })
+        } catch { }
+
+        # Other connected USB peripherals: filtered to actual endpoint devices (mice, keyboards,
+        # controllers, capture cards, storage, audio interfaces, etc), excluding hub/composite-parent
+        # entries that don't mean anything to a person reading the report, and excluding cameras
+        # (shown separately above).
+        $usbDevices = @()
+        try {
+            $camNames = @($cameras | ForEach-Object { $_.name })
+            $usbDevices = @(Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object {
+                $_.PNPDeviceID -like 'USB*' -and
+                $_.Service -notin @('usbhub','USBHUB3','usbccgp','UMB','USBSTOR') -and
+                $_.Name -notin $camNames
+            } | ForEach-Object {
+                [PSCustomObject]@{ name = "$($_.Name)"; status = "$($_.Status)" }
+            })
         } catch { }
 
         # Hardware-accelerated GPU Scheduling (system-wide setting, not per-adapter)
@@ -2712,6 +2798,8 @@ function reliabilityexport {
         $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
         $devErrorsJson = if ($devErrors.Count -gt 0) { (ConvertTo-Json @($devErrors) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $audioJson = if ($audio) { (ConvertTo-Json $audio -Compress).Replace('</', '<\/') } else { 'null' }
+        $usbJson = (ConvertTo-Json @($usbDevices) -Compress).Replace('</', '<\/')
+        $camerasJson = (ConvertTo-Json @($cameras) -Compress).Replace('</', '<\/')
         $memuseJson = if ($memuse) { (ConvertTo-Json $memuse -Compress).Replace('</', '<\/') } else { 'null' }
         $ramJson = if ($ram.Count -gt 0) { (ConvertTo-Json @($ram) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $smartJson = if ($smart.Count -gt 0) { (ConvertTo-Json @($smart) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -2722,7 +2810,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
