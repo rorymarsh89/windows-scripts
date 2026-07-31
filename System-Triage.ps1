@@ -107,10 +107,7 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 #summary{padding:0;display:flex;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.55}
 
 
-#summary .sline{color:var(--dim)}
-#summary .sline b{color:inherit;font-weight:500}
 #summary .slabel{color:var(--dim)}
-#summary .sline{color:var(--text)}
 .summary-kv{grid-template-columns:165px 1fr;margin-bottom:4px}
 .summary-kv dt{color:var(--dim)}
 .summary-kv dd b{font-weight:500}
@@ -231,7 +228,6 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .chip.on{color:var(--text);border-color:var(--dim)}
 .chip.on.c-err{color:var(--err);border-color:var(--err)}
 .chip.on.c-warn{color:var(--warn);border-color:var(--warn)}
-.chip.on.c-ok{color:var(--ok);border-color:var(--ok)}
 .chip.on.c-info{color:var(--info);border-color:var(--info)}
 #search{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:9px 13px;font-size:14px;font-family:inherit;width:220px;margin-left:auto}
 #search:focus{outline:none;border-color:var(--dim)}
@@ -247,7 +243,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .row.open{background:var(--panel2)}
 .time{color:var(--faint);font-size:14px}
 .dot{width:8px;height:8px;border-radius:50%;align-self:center}
-.d-err{background:var(--err)}.d-warn{background:var(--warn)}.d-ok{background:var(--ok)}.d-info{background:var(--info)}
+.d-err{background:var(--err)}.d-warn{background:var(--warn)}.d-info{background:var(--info)}
 .title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.open .title{white-space:normal}
 .src{color:var(--dim);font-size:14px;margin-left:10px}
@@ -2281,27 +2277,36 @@ function reliabilityexport {
         } catch { }
 
         # Webcams / capture devices: PNPClass Camera covers modern USB Video Class webcams,
-        # Image covers older webcams and scanners/imaging devices.
+        # Image covers older webcams and scanners/imaging devices. -PresentOnly is the important
+        # part here: Win32_PnPEntity has no reliable "still actually plugged in" flag and happily
+        # lists devices that were unplugged or removed long ago ("ghost" devices). Get-PnpDevice's
+        # -PresentOnly switch is the documented, correct way to filter those out.
         $cameras = @()
         try {
-            $cameras = @(Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object { $_.PNPClass -in @('Camera','Image') } | ForEach-Object {
-                [PSCustomObject]@{ name = "$($_.Name)"; status = "$($_.Status)" }
+            $camRaw = @(Get-PnpDevice -PresentOnly -Class Camera,Image -ErrorAction Stop)
+            $cameras = @($camRaw | Group-Object FriendlyName,Status | ForEach-Object {
+                $g = $_.Group[0]
+                [PSCustomObject]@{ name = "$($g.FriendlyName)$(if($_.Count -gt 1){" (x$($_.Count))"})"; status = "$($g.Status)" }
             })
         } catch { }
 
         # Other connected USB peripherals: filtered to actual endpoint devices (mice, keyboards,
         # controllers, capture cards, storage, audio interfaces, etc), excluding hub/composite-parent
         # entries that don't mean anything to a person reading the report, and excluding cameras
-        # (shown separately above).
+        # (shown separately above). Identical repeats (e.g. several HID collections belonging to
+        # the same wireless dongle) are collapsed into one line with a count instead of one line each.
         $usbDevices = @()
         try {
-            $camNames = @($cameras | ForEach-Object { $_.name })
-            $usbDevices = @(Get-CimInstance Win32_PnPEntity -ErrorAction Stop | Where-Object {
-                $_.PNPDeviceID -like 'USB*' -and
+            $camNames = @($cameras | ForEach-Object { $_.name -replace ' \(x\d+\)$','' })
+            $usbRaw = @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object {
+                $_.InstanceId -like 'USB*' -and
+                $_.Class -ne 'USB' -and
                 $_.Service -notin @('usbhub','USBHUB3','usbccgp','UMB','USBSTOR') -and
-                $_.Name -notin $camNames
-            } | ForEach-Object {
-                [PSCustomObject]@{ name = "$($_.Name)"; status = "$($_.Status)" }
+                $_.FriendlyName -notin $camNames
+            })
+            $usbDevices = @($usbRaw | Group-Object FriendlyName,Status | ForEach-Object {
+                $g = $_.Group[0]
+                [PSCustomObject]@{ name = "$($g.FriendlyName)$(if($_.Count -gt 1){" (x$($_.Count))"})"; status = "$($g.Status)" }
             })
         } catch { }
 
@@ -2462,6 +2467,16 @@ function reliabilityexport {
 
             # Suspicious startup entries: no publisher/signature, or launching from Temp/AppData with odd naming
             $startupFlags = @()
+            function Test-SuspiciousStartupExe($exePath) {
+                if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { return @{ Suspicious = $true; Reason = "runs from Temp folder" } }
+                if (Test-Path $exePath -ErrorAction SilentlyContinue) {
+                    try {
+                        $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
+                        if ($sig.Status -ne 'Valid') { return @{ Suspicious = $true; Reason = "unsigned or invalid signature" } }
+                    } catch { }
+                }
+                return @{ Suspicious = $false; Reason = "" }
+            }
             try {
                 $runKeys = @(
                     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
@@ -2473,16 +2488,8 @@ function reliabilityexport {
                         $props.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
                             $val = "$($_.Value)"
                             $exePath = ($val -replace '^"?([^"]+\.exe)"?.*$', '$1')
-                            $suspicious = $false
-                            $reason = ""
-                            if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { $suspicious = $true; $reason = "runs from Temp folder" }
-                            elseif (Test-Path $exePath -ErrorAction SilentlyContinue) {
-                                try {
-                                    $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
-                                    if ($sig.Status -ne 'Valid') { $suspicious = $true; $reason = "unsigned or invalid signature" }
-                                } catch { }
-                            }
-                            if ($suspicious) { $startupFlags += "$($_.Name): $reason" }
+                            $check = Test-SuspiciousStartupExe $exePath
+                            if ($check.Suspicious) { $startupFlags += "$($_.Name): $($check.Reason)" }
                         }
                     }
                 }
@@ -2534,16 +2541,8 @@ function reliabilityexport {
                     $act = ($t.Actions | Where-Object { $_.Execute } | Select-Object -First 1).Execute
                     if (-not $act) { continue }
                     $exePath = $act -replace '^"?([^"]+)"?.*$', '$1'
-                    $suspicious = $false
-                    $reason = ""
-                    if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { $suspicious = $true; $reason = "runs from Temp folder" }
-                    elseif (Test-Path $exePath -ErrorAction SilentlyContinue) {
-                        try {
-                            $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
-                            if ($sig.Status -ne 'Valid') { $suspicious = $true; $reason = "unsigned or invalid signature" }
-                        } catch { }
-                    }
-                    if ($suspicious) { $startupFlags += "Scheduled task '$($t.TaskName)': $reason" }
+                    $check = Test-SuspiciousStartupExe $exePath
+                    if ($check.Suspicious) { $startupFlags += "Scheduled task '$($t.TaskName)': $($check.Reason)" }
                 }
             } catch { }
 
