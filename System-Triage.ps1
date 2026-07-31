@@ -143,6 +143,11 @@ body.tab-dumps #dumpsView{display:block}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:24px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 30px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:4px}
+.modal-close:hover{color:var(--text)}
 .spec-section h2{font-size:14px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .kv{display:grid;grid-template-columns:210px 1fr;gap:7px 16px;font-size:15px}
 #wuHistList,#hfList{grid-template-columns:145px 1fr}
@@ -361,6 +366,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="dumpsView" class="view"></div>
 
 </main>
+<div id="smartModal" class="modal-overlay"><div class="modal-box"><button class="modal-close" id="smartModalClose">&times;</button><div id="smartModalBody"></div></div></div>
 </div>
 
 <script>
@@ -674,27 +680,23 @@ function renderSpecs(){
     h+='</dl></div>';
   }
   let dh='';
-  if(sp.drives.length){
-    dh+='<div class="spec-section"><h2>Drives ('+sp.drives.length+')</h2><div class="drive-grid">';
-    sp.drives.forEach(d=>{
-      const total=parseFloat(d['Total Size (GB)'])||0, free=parseFloat(d['Free Space (GB)'])||0;
-      const pctFree=total?Math.round(free/total*100):0, pctUsed=100-pctFree;
-      const name=d['Drive Name']&&d['Drive Name']!=='No Name Found'?d['Drive Name']:'';
-      dh+='<div class="drive"><h3>'+esc(d['Drive Label']||'?')+(name?' <span style="color:var(--dim);font-weight:400">'+esc(name)+'</span>':'')+
-        (d['Windows Drive']==='True'?' <span style="color:var(--dim);font-weight:400">Windows</span>':'')+'</h3>'+
-        '<div class="sub">'+esc(d['Drive Type']||'Unknown')+' · '+esc(d['Drive Status']||'Unknown')+'</div>'+
-        (DIRTY.some(v=>String(d['Drive Label']||'').toUpperCase().startsWith(v.toUpperCase()))?'<div style="color:var(--warn);font-size:13.5px;margin-bottom:6px">Dirty bit set</div>':'')+
-        '<div class="meter'+(pctFree<15?' low':'')+'"><div style="width:'+pctUsed+'%"></div></div>'+
-        '<div class="use mono">'+free.toFixed(0)+' GB free of '+total.toFixed(0)+' GB ('+pctFree+'%)</div></div>';
-    });
-    dh+='</div></div>';
-  }
   if(DISKLAYOUT.length){
-    dh+='<div class="spec-section"><h2>Disk layout</h2>';
+    const smartByDisk={};
+    SMART.forEach(d=>{smartByDisk[String(d.disk)]=d;});
+    const disksSorted=[...DISKLAYOUT].sort((a,b)=>(+a.disk)-(+b.disk));
+    dh+='<div class="spec-section"><h2>Disk layout</h2><div class="drive-grid">';
     const TYPE_COLOR={'EFI System Partition':'var(--info)','Recovery':'var(--warn)','Recovery (MBR)':'var(--warn)','Microsoft Reserved':'var(--faint)','Data':'var(--ok)','System':'var(--dim)'};
-    DISKLAYOUT.forEach(dk=>{
+    disksSorted.forEach(dk=>{
       const total=dk.partitions.reduce((a,p)=>a+p.sizeGB,0)||dk.sizeGB||1;
-      dh+='<div class="drive" style="margin-bottom:14px"><h3>Disk '+dk.disk+' <span style="color:var(--dim);font-weight:400">'+esc(dk.style||'Unknown')+' \u00b7 '+dk.sizeGB+' GB</span></h3>';
+      const sm=smartByDisk[String(dk.disk)];
+      const probs=sm?smartProbs(sm):[];
+      const bad=probs.length>0;
+      const healthLabel=sm&&sm.health?sm.health+(sm.op&&sm.op!=='OK'&&sm.op!==sm.health?' ('+sm.op+')':''):'';
+      dh+='<div class="drive'+(bad?' smart-bad':'')+'"'+(bad?' style="cursor:pointer" onclick="openSmartModal(\''+esc(dk.disk)+'\')"':'')+'>';
+      dh+='<h3>Disk '+esc(dk.disk)+(sm&&sm.name?' <span style="color:var(--dim);font-weight:400">'+esc(sm.name)+'</span>':'')+'</h3>';
+      dh+='<div class="sub">'+esc(dk.style||'Unknown')+' \u00b7 '+dk.sizeGB+' GB'+(sm&&sm.bus?' \u00b7 '+esc(sm.bus):'')+
+        (healthLabel?' \u00b7 <span style="color:'+(bad?'var(--err)':'var(--ok)')+'">'+esc(healthLabel)+'</span>':'')+'</div>'+
+        (bad?'<div style="color:var(--err);font-size:13.5px;margin-bottom:6px">\u26a0 SMART warning &mdash; click for details</div>':'');
       dh+='<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin:10px 0;background:var(--panel2)">';
       dk.partitions.forEach(p=>{
         const pct=Math.max(1.5,(p.sizeGB/total*100));
@@ -706,32 +708,6 @@ function renderSpecs(){
         dh+='<dt><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+(TYPE_COLOR[p.type]||'var(--dim)')+';margin-right:6px"></span>'+esc(p.type)+(p.letter?' ('+esc(p.letter)+')':'')+'</dt><dd>'+p.sizeGB+' GB</dd>';
       });
       dh+='</dl></div>';
-    });
-    dh+='</div>';
-  }
-  if(SMART.length){
-    dh+='<div class="spec-section"><h2>SMART data</h2><div class="drive-grid">';
-    SMART.forEach(d=>{
-      const bad=(d.health&&d.health!=='Healthy')||(+d.reu>0)||(+d.weu>0)||(+d.rl>0)||(+d.pend>0)||(+d.unc>0)||(+d.crc>0)||d.pf==='1';
-      let rows='';
-      const add=(l,val)=>{if(val!=='')rows+='<dt>'+l+'</dt><dd>'+esc(val)+'</dd>';};
-      add('Health',d.health+(d.op&&d.op!=='OK'?' ('+d.op+')':''));
-      add('Temperature',d.temp?d.temp+'\u00b0C'+(d.tmax?' (max '+d.tmax+'\u00b0C)':''):'');
-      add('Power-on hours',d.hours);
-      add('Wear',d.wear?d.wear+'%':'');
-      add('Read errors (uncorrected)',d.reu);
-      add('Read errors (corrected)',d.rec);
-      add('Write errors (uncorrected)',d.weu);
-      add('Write errors (corrected)',d.wec);
-      add('Reallocated sectors',d.rl);
-      add('Pending sectors',d.pend);
-      add('Uncorrectable sectors',d.unc);
-      add('UltraDMA CRC errors',d.crc);
-      add('Command timeouts',d.cto);
-      if(d.pf==='1')rows+='<dt style="color:var(--err)">Failure predicted</dt><dd style="color:var(--err)">Yes (drive self-report)</dd>';
-      dh+='<div class="drive'+(bad?' smart-bad':'')+'"><h3>Disk '+esc(d.disk)+'<br><span style="color:var(--dim);font-weight:400;font-size:14px">'+esc(d.name)+'</span></h3>'+
-        '<div class="sub">'+esc(d.media||'Unknown')+(d.bus?' \u00b7 '+esc(d.bus):'')+'</div>'+
-        '<dl class="kv smart-kv">'+rows+'</dl></div>';
     });
     dh+='</div></div>';
     const alerts=[];
@@ -1011,6 +987,35 @@ function smartProbs(d){
   if(+d.weu>0)probs.push(d.weu+' uncorrected write errors');
   return probs;
 }
+function openSmartModal(diskNum){
+  const d=SMART.find(x=>String(x.disk)===String(diskNum));
+  if(!d)return;
+  let rows='';
+  const add=(l,val)=>{if(val!=='')rows+='<dt>'+l+'</dt><dd>'+esc(val)+'</dd>';};
+  add('Health',d.health+(d.op&&d.op!=='OK'?' ('+d.op+')':''));
+  add('Temperature',d.temp?d.temp+'\u00b0C'+(d.tmax?' (max '+d.tmax+'\u00b0C)':''):'');
+  add('Power-on hours',d.hours);
+  add('Wear',d.wear?d.wear+'%':'');
+  add('Read errors (uncorrected)',d.reu);
+  add('Read errors (corrected)',d.rec);
+  add('Write errors (uncorrected)',d.weu);
+  add('Write errors (corrected)',d.wec);
+  add('Reallocated sectors',d.rl);
+  add('Pending sectors',d.pend);
+  add('Uncorrectable sectors',d.unc);
+  add('UltraDMA CRC errors',d.crc);
+  add('Command timeouts',d.cto);
+  if(d.pf==='1')rows+='<dt style="color:var(--err)">Failure predicted</dt><dd style="color:var(--err)">Yes (drive self-report)</dd>';
+  document.getElementById('smartModalBody').innerHTML=
+    '<h2 style="margin:0 0 4px">Disk '+esc(d.disk)+'</h2>'+
+    '<div class="sub" style="margin-bottom:16px">'+esc(d.name)+(d.media?' \u00b7 '+esc(d.media):'')+(d.bus?' \u00b7 '+esc(d.bus):'')+'</div>'+
+    '<dl class="kv smart-kv">'+rows+'</dl>';
+  document.getElementById('smartModal').classList.add('open');
+}
+function closeSmartModal(){ document.getElementById('smartModal').classList.remove('open'); }
+document.getElementById('smartModalClose').onclick=closeSmartModal;
+document.getElementById('smartModal').onclick=e=>{ if(e.target.id==='smartModal')closeSmartModal(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeSmartModal(); });
 function friendlyMedia(m){
   const map={ '802.3':'Ethernet (802.3)', 'Native 802.11':'Wi-Fi (802.11)', '802.11':'Wi-Fi (802.11)', 'Bluetooth':'Bluetooth', 'WiMax':'WiMAX', 'Unspecified':'' };
   return map.hasOwnProperty(m)?map[m]:m;
@@ -1527,7 +1532,7 @@ function renderDevices(){
   let h='';
   if(AUDIO&&(AUDIO.playbackDevices&&AUDIO.playbackDevices.length||AUDIO.recordingDevices&&AUDIO.recordingDevices.length)){
     const isVirtual=n=>/vb-audio|voicemeeter|cable (input|output)|virtual audio/i.test(n);
-    const devRow=d=>'<dt>'+esc(d.name)+(isVirtual(d.name)?' <span style="color:var(--info)">(virtual)</span>':'')+'</dt><dd style="color:'+(d.state==='Active'?'var(--ok)':'var(--dim)')+'">'+esc(d.state)+'</dd>';
+    const devRow=d=>'<dt style="grid-column:1/-1">'+esc(d.name)+(isVirtual(d.name)?' <span style="color:var(--info)">(virtual)</span>':'')+'</dt>';
     h+='<div class="spec-section"><h2>Audio</h2>';
     if(AUDIO.playbackDevices&&AUDIO.playbackDevices.length){
       h+='<div style="color:var(--faint);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px">Playback (output)</div><dl class="kv">';
@@ -1550,10 +1555,9 @@ function renderDevices(){
     h+='</dl></div>';
   }
   if(USBDEVS&&USBDEVS.length){
-    h+='<div class="spec-section"><h2>USB Devices ('+USBDEVS.length+')</h2><dl class="kv">';
+    h+='<div class="spec-section"><h2>Peripherals ('+USBDEVS.length+')</h2><dl class="kv">';
     USBDEVS.forEach(u=>{
-      const ok=/^ok$/i.test(u.status);
-      h+='<dt>'+esc(u.name)+'</dt><dd style="color:'+(ok?'var(--ok)':'var(--warn)')+'">'+esc(u.status||'Unknown')+'</dd>';
+      h+='<dt style="grid-column:1/-1">'+esc(u.name)+'</dt>';
     });
     h+='</dl></div>';
   }
@@ -1806,6 +1810,11 @@ function fileadd {
             'Percentage Free (%)' = $percentageFree
         }
     }
+
+    # Win32_LogicalDisk enumerates by drive letter (C, D, E...), which doesn't necessarily match
+    # physical disk order - a drive letter on Disk 1 can easily sort before one on Disk 0. Sort by
+    # the actual disk number so the Drives tab always reads Disk 0, Disk 1, Disk 2... in order.
+    $drives = @($drives | Sort-Object { if ($_.'Drive ID' -is [int]) { $_.'Drive ID' } else { [int]::MaxValue } })
 
     specs "`n`nDrive Information:`n`n"
 
@@ -2269,8 +2278,8 @@ function reliabilityexport {
         }
         $audio = $null
         try {
-            $playbackDevs  = @(Get-AudioEndpoints 'Render')
-            $recordingDevs = @(Get-AudioEndpoints 'Capture')
+            $playbackDevs  = @(Get-AudioEndpoints 'Render'  | Where-Object { $_.state -eq 'Active' })
+            $recordingDevs = @(Get-AudioEndpoints 'Capture' | Where-Object { $_.state -eq 'Active' })
             if ($playbackDevs.Count -or $recordingDevs.Count) {
                 $audio = [PSCustomObject]@{ playbackDevices = $playbackDevs; recordingDevices = $recordingDevs }
             }
@@ -2301,10 +2310,11 @@ function reliabilityexport {
             $usbRaw = @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object {
                 $_.InstanceId -like 'USB*' -and
                 $_.Class -ne 'USB' -and
+                $_.Status -eq 'OK' -and
                 $_.Service -notin @('usbhub','USBHUB3','usbccgp','UMB','USBSTOR') -and
                 $_.FriendlyName -notin $camNames
             })
-            $usbDevices = @($usbRaw | Group-Object FriendlyName,Status | ForEach-Object {
+            $usbDevices = @($usbRaw | Group-Object FriendlyName | ForEach-Object {
                 $g = $_.Group[0]
                 [PSCustomObject]@{ name = "$($g.FriendlyName)$(if($_.Count -gt 1){" (x$($_.Count))"})"; status = "$($g.Status)" }
             })
