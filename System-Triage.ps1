@@ -50,9 +50,7 @@ $infofile = "$File\specs-programs.txt"
 
 $ziptar = "$File\PCHH-Triage_$random.zip"
 
-$sys_eventlog_path = "$File\system_eventlogs.evtx"
-
-$scriptVersion = "1.0"
+$scriptVersion = "1.1"
 $lookbackDays = 365   # match reliability history's ~1 year span; System log is size-capped anyway
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
@@ -126,6 +124,7 @@ body.tab-sys #sysView{display:block}
 body.tab-shutdowns #shutdownsView{display:block}
 body.tab-drives #drivesView{display:block}
 body.tab-gpu #gpuView{display:block}
+body.tab-temps #tempsView{display:block}
 body.tab-memory #memoryView{display:block}
 body.tab-net #netView{display:block}
 body.tab-devices #devicesView{display:block}
@@ -139,7 +138,7 @@ body.tab-tools #toolsView{display:block}
 body.tab-dumps #dumpsView{display:block}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#tempsView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
@@ -174,6 +173,12 @@ body.tab-dumps #dumpsView{display:block}
 .drive .meter div{height:100%;background:var(--info)}
 .drive .meter.low div{background:var(--warn)}
 .drive .use{color:var(--dim);font-size:14px}
+.temp-stats{display:flex;gap:16px;font-size:13.5px;color:var(--dim);margin-bottom:10px}
+.temp-stats b{color:var(--text);font-weight:600}
+.temp-stats .r{color:var(--err)}
+.temp-stats .y{color:var(--warn)}
+.temp-spark{width:100%;height:auto;display:block}
+.temp-note{color:var(--faint);font-size:13px;margin-bottom:16px}
 .drive.smart-bad{border-color:var(--err)}
 .smart-kv{grid-template-columns:1fr auto;font-size:14.5px;gap:7px 12px}
 .smart-kv dt{color:var(--dim)}
@@ -262,7 +267,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
+  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#tempsView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -293,6 +298,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       <div class="nav-group-items">
         <button class="tab" data-tab="drives">Drives</button>
         <button class="tab" data-tab="gpu">GPU and Display(s)</button>
+        <button class="tab" data-tab="temps">Temperatures</button>
         <button class="tab" data-tab="memory">Memory (RAM)</button>
         <button class="tab" data-tab="net">Network</button>
         <button class="tab" data-tab="devices">Connected Devices</button>
@@ -353,6 +359,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="shutdownsView" class="view"></div>
 <div id="drivesView" class="view"></div>
 <div id="gpuView" class="view"></div>
+<div id="tempsView" class="view"></div>
 <div id="memoryView" class="view"></div>
 <div id="netView" class="view"></div>
 <div id="devicesView" class="view"></div>
@@ -380,6 +387,7 @@ const DIRTY = /*__DIRTY__*/[];
 const DISKLAYOUT = /*__DISKLAYOUT__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
+const TEMPS = /*__TEMPS__*/[];
 const HAGS = /*__HAGS__*/null;
 const ISLAPTOP = /*__ISLAPTOP__*/false;
 const WUHISTORY = /*__WUHISTORY__*/[];
@@ -392,6 +400,8 @@ const NET = /*__NET__*/null;
 const SECURITY = /*__SECURITY__*/null;
 const HOTFIXES = /*__HOTFIXES__*/[];
 const WINDOWSOLD = /*__WINDOWSOLD__*/null;
+const POWERPLAN = /*__POWERPLAN__*/null;
+const GENFLAGS = /*__GENFLAGS__*/null;
 const CBS = /*__CBS__*/null;
 const DEVERR = /*__DEVERR__*/[];
 const AUDIO = /*__AUDIO__*/null;
@@ -413,13 +423,30 @@ function parseDate(s){
   return new Date(+y, mon-1, day, h, +mi, +se);
 }
 function classify(r){
-  const src=r.s, msg=(r.m||'').toLowerCase();
+  const src=r.s, msg=(r.m||'').trim();
   if(src==='Application Error'||src==='Windows Error Reporting'||/bugcheck/i.test(src)) return 'err';
   // SourceName 'EventLog' within reliability history is specifically Windows' own unexpected-
   // shutdown marker - no need to also match the English word "unexpected" in the message,
   // which is localized and would misclassify this as a lower severity on non-English systems.
   if(src==='EventLog') return 'err';
-  if(/fail|error status: 1|not.*success/i.test(msg) && !/status: 0/.test(msg)) return 'warn';
+  // MsiInstaller (1033 install / 1034 uninstall / 1035 reconfigure) and WindowsUpdateClient
+  // (19 success / 20 failure) always carry a numeric status/result code. SourceName and
+  // EventIdentifier are fixed internal identifiers - never localized - so gating on those and
+  // reading the trailing number in the message means this still works when the message text
+  // itself is in a language other than English, unlike matching English words like "fail" or
+  // "success or error status".
+  if(src==='MsiInstaller' && ['1033','1034','1035'].includes(r.e)){
+    const m=msg.match(/(\d+)\.?\s*$/);
+    if(m) return m[1]==='0' ? 'info' : 'warn';
+  }
+  if(src==='Microsoft-Windows-WindowsUpdateClient'){
+    if(r.e==='20') return 'warn';
+    if(r.e==='19') return 'info';
+  }
+  // Fallback for everything else: English keyword match on the message. Only reliable on
+  // English-language systems, but there's no locale-independent field to fall back to for the
+  // long tail of other SourceNames.
+  if(/fail|error status: 1|not.*success/i.test(msg.toLowerCase()) && !/status: 0/.test(msg)) return 'warn';
   return 'info';
 }
 const CATNAMES={err:'Critical events',warn:'Warnings',info:'Informational events'};
@@ -536,18 +563,20 @@ function render(){
   document.getElementById('empty').style.display=shown.length?'none':'block';
 }
 function summary(e){
-  const msg=(e.m||'').toLowerCase();
   if(e.cat==='err'){
     if(e.s==='Application Error')return 'Stopped working';
     if(e.s==='EventLog')return 'Windows was not properly shut down';
     return 'Critical event';
   }
+  // EventIdentifier (like SourceName) is a fixed internal code, never localized, so branching on
+  // it instead of matching English words in the message keeps these labels correct regardless of
+  // the system's display language.
   if(e.s==='Microsoft-Windows-WindowsUpdateClient')
-    return /success/.test(msg)?'Successful Windows Update':'Windows Update';
+    return e.e==='19'?'Successful Windows Update':'Windows Update';
   if(e.s==='MsiInstaller'){
-    if(/installed the product/.test(msg))return 'Successful application installation';
-    if(/removed the product/.test(msg))return 'Successful application removal';
-    if(/reconfigured/.test(msg))return 'Successful application reconfiguration';
+    if(e.e==='1033')return 'Successful application installation';
+    if(e.e==='1034')return 'Successful application removal';
+    if(e.e==='1035')return 'Successful application reconfiguration';
     return 'Application event';
   }
   return esc(e.s);
@@ -769,7 +798,7 @@ function renderUpdates(){
   if(w){
     h+='<div class="spec-section"><h2>Windows Update status</h2><dl class="kv">';
     h+='<dt>Pending Reboot?</dt><dd style="color:'+(w.pendingReboot?'var(--warn)':'var(--ok)')+'">'+(w.pendingReboot?'Yes':'No')+'</dd>';
-    if(w.serviceStatus)h+='<dt>Windows Update service</dt><dd style="color:'+(w.serviceStatus==='Running'?'var(--ok)':'var(--warn)')+'">'+esc(w.serviceStatus)+'</dd>';
+    if(w.serviceStatus)h+='<dt>Windows Update service</dt><dd style="color:'+(w.serviceStartType==='Disabled'?'var(--warn)':'var(--ok)')+'">'+esc(w.serviceStatus)+(w.serviceStartType?' <span style="color:var(--faint)">('+esc(w.serviceStartType)+')</span>':'')+'</dd>';
     h+='</dl></div>';
   }
   if(WUHISTORY.length){
@@ -810,7 +839,7 @@ const FAQ_DATA=[
 {id:'device-manager-errors',q:"Device Manager Errors",a:"Windows found a piece of hardware but couldn't properly load a driver for it, or the device itself reported a problem. This usually means a missing, outdated, or corrupted driver. Occasionally it's a genuine hardware fault.",tools:["AMD Drivers & Support","NVIDIA Drivers & Support","Intel Drivers & Support"]},
 {id:'mbr-secureboot',q:"MBR Partitioning",a:"Windows drives use one of two partitioning styles: MBR or the newer GPT. Secure Boot, a feature that helps stop malware loading before Windows starts, requires GPT.<br><br>If the main drive (the one with Windows installed on it) is MBR, Secure Boot can't be turned on without converting the drive or doing a clean reinstall of Windows, which is a bigger job and best not attempted without guidance.",tools:[]},
 {id:'pending-reboot',q:"Pending Reboot",a:"Windows or an update has made changes that only take full effect after a restart, and it's currently waiting on one. Until then the system can behave oddly and further updates may queue up behind it.<br><br>A normal restart resolves this.",tools:[]},
-{id:'wu-service',q:"Windows Update Service",a:"The background service that lets Windows check for and install updates isn't running. If it's disabled, Windows won't be able to update at all until it's turned back on, which can leave the system missing important security fixes over time.",tools:[]},
+{id:'wu-service',q:"Windows Update Service",a:"The background service that lets Windows check for and install updates is disabled. Normally it's set to start on demand (so it's often shown as 'Stopped' when idle - that's expected and not a problem), but 'Disabled' means it can't start at all, so Windows won't be able to update until it's turned back on.",tools:[]},
 {id:'wu-failed',q:"Failed Windows Updates",a:"One or more recent update attempts failed partway through rather than installing cleanly. This can happen for lots of reasons: a bad download, low disk space, corrupted update files, or a conflict with other software.<br><br>It can sometimes leave a PC feeling unstable or repeatedly nagging about the same update.",tools:["Windows 11 Download"]},
 {id:'ram-speed',q:"RAM Speed (XMP/EXPO)",a:"Your memory (RAM) is capable of running faster than it currently is. This almost always means that a feature called XMP (Intel) or EXPO (AMD) isn't enabled.<br><br>XMP/EXPO is a one-click profile in the BIOS that allows your RAM to run at its advertised speed. When it's disabled, your RAM will default to a lower speed. Enabling it isn't overclocking, and isn't dangerous. We'd recommend enabling it, which can be done through your BIOS. If you're unsure how to do that, you can ask one of our advisors for more help.<br><br><i>Note: some systems can struggle to run RAM at its full advertised speed for various reasons, which is why it isn't enabled by default. When this happens, it can sometimes help to disable it, to prevent system instability or crashes.</i><br><br>This isn't dangerous either way, but running below the rated speed does mean the RAM isn't performing the way it was bought to.",tools:["CPU-Z"]},
 {id:'antivirus-conflict',q:"Multiple Antivirus Programs",a:"More than one antivirus program is trying to actively scan the system at the same time. This is a common, often-overlooked cause of slowdowns, false-positive quarantines, and general instability, since the two programs can end up fighting over the same files.",tools:[]},
@@ -827,12 +856,14 @@ const FAQ_DATA=[
 {id:'cbs-corruption',q:"Unresolved Component Corruption (CBS.log)",a:"CBS.log records Windows' component servicing activity, including any system file repairs. A 'Cannot repair member' entry means a corrupted system file was found during a check (from Windows Update, an in-place upgrade, or a manual sfc/DISM run) that couldn't be automatically fixed.<br><br>This can cause update failures, missing features, or general instability depending on what's affected. Running <span class=\"mono\">sfc /scannow</span> followed by <span class=\"mono\">DISM /Online /Cleanup-Image /RestoreHealth</span> is the standard next step; if DISM can't find a good copy of the file locally it will need a network connection or Windows installation media to pull one from.",tools:["sfc /scannow","DISM"]},
 {id:'livekernelevent',q:"LiveKernelEvent",a:"Windows' record of a serious problem severe enough to be crash-like, but that the system managed to recover from without a full restart, most often tied to a graphics driver failing and recovering.<br><br>Frequent LiveKernelEvents point to the same kinds of causes as display driver timeouts.",tools:["Display Driver Uninstaller (DDU)","FurMark","HWiNFO"]},
 {id:'wifi-signal',q:"Weak Wi-Fi Signal",a:"The wireless connection's signal strength was weak at the moment this report was generated. A weak signal can cause slow speeds, dropped connections, and higher ping in games, and is usually down to distance from the router, walls/obstructions, or interference from other devices.",tools:[]},
+{id:'gigabit-slow',q:"Gigabit Adapter Running Below Rated Speed",a:"This network adapter supports Gigabit Ethernet (1000 Mbps) but is currently connected at a much lower speed, most often 100 Mbps.<br><br>This is a very common symptom of a damaged or low-quality cable, a loose connection, or a faulty port on either end - Gigabit needs all 4 wire pairs in the cable to be good, while 100 Mbps only needs 2, so a cable can work perfectly well at the lower speed while silently capping the connection. Try a known-good cable (ideally Cat5e or better) and a different port on the router/switch first.",tools:[]},
 {id:'commit-charge',q:"Commit Charge",a:"This measures how much memory (RAM plus the page file combined) the system had committed to running programs at the moment this report was generated.<br><br>Running close to the limit can cause slowdowns, stuttering, or 'out of memory' errors, and often points to either too little RAM for the workload or a page file set too small.",tools:["HWiNFO"]},
 {id:'software-anticheat',q:"Anti-Cheat / Kernel Drivers",a:"Anti-cheat systems like Vanguard, Easy Anti-Cheat, and BattlEye run at a very deep level in Windows (a 'kernel driver') to detect cheating in games. That deep access makes them a common (though not the only) suspect when troubleshooting crashes tied to a specific game.<br><br>This is a factual note that it's installed, not a claim that it's causing a problem.",tools:[]},
 {id:'software-overclock',q:"Overclocking / Monitoring Tools",a:"Tools like MSI Afterburner, RTSS, Intel XTU, and Ryzen Master can adjust CPU/GPU clock speeds, voltages, and power limits beyond default settings. If a system is unstable, an aggressive overclock applied through one of these is a common and easy-to-test cause.",tools:["OCCT"]},
 {id:'software-rgb',q:"RGB / Peripheral Software",a:"Software like Corsair iCUE, Razer Synapse, Logitech G HUB, and similar RGB/peripheral control suites has a real history of causing background crashes, high idle CPU/RAM usage, and driver conflicts, even though each individual program is legitimate.",tools:[]},
 {id:'software-audio',q:"Audio / Overlay Software",a:"Tools like Nahimic, GeForce Experience, Xbox Game Bar, and Streamlabs OBS can conflict with each other or with games, particularly when more than one is trying to add an overlay at the same time.",tools:[]},
 {id:'software-network',q:"Flagged Network Software",a:"Software like Killer Network Manager or Hola VPN has a known history of causing latency spikes, packet loss, or other connectivity problems on some systems.",tools:[]},
+{id:'software-shell',q:"Shell/Taskbar Tweak Tools",a:"Tools like TranslucentTB, ExplorerPatcher, StartAllBack, Start11, Open-Shell, or Windhawk modify Windows Explorer or the taskbar/Start menu's appearance and behaviour, often by hooking into or patching explorer.exe itself.<br><br>They're generally safe day-to-day, but because they hook into core shell processes, they're a common cause of taskbar/Start menu glitches, explorer.exe crashes, or freezes after a Windows feature update changes something they relied on. Worth ruling out first if that's the symptom.",tools:[]},
 {id:'windows-old',q:"Windows.old Folder",a:"Windows.old is a backup of the previous Windows installation, automatically created when Windows is upgraded in place or reset while keeping personal files. It lets Windows roll back to the previous version for about 10 days before it's automatically deleted to free up space, though it can stick around longer if that cleanup didn't run.<br><br>Its presence is a useful sign that this installation is newer than the hardware, which is handy context if a problem only started recently. It doesn't cover every case, though: a full wipe-and-reinstall or a reset that removes everything doesn't leave a Windows.old folder behind at all, so its absence doesn't rule out a recent reset.",tools:[]},
 {id:'secure-boot',q:"Secure Boot",a:"Secure Boot is a security feature that checks the software involved in starting Windows hasn't been tampered with, before the operating system even loads. It helps stop a specific but nasty category of malware (called bootkits or rootkits) that tries to run before Windows, and before any antivirus, gets a chance to load.<br><br>Microsoft requires it for Windows 11, and leaving it disabled removes a real layer of protection for no real-world upside on most PCs. It requires the system disk to use GPT partitioning. See the note about MBR partitioning in this report if that's relevant.",tools:[]},
 {id:'tpm',q:"TPM",a:"A TPM (Trusted Platform Module) is a small, dedicated security chip, or a feature built into the CPU (fTPM) on newer systems, that securely stores encryption keys and other sensitive data separately from the rest of the PC. It's what Windows 11 relies on for BitLocker drive encryption and for meeting its own minimum security requirements.<br><br>If it's disabled, Windows Hello, BitLocker, and some newer Windows security features either can't be used or fall back to a weaker mode. It can usually be turned on in the BIOS/UEFI settings (often listed as 'TPM', 'fTPM', 'PTT', or 'Security Device').",tools:[]},
@@ -1135,7 +1166,7 @@ function renderSummary(){
   const sysDisk=DISKLAYOUT.find(dk=>dk.partitions.some(p=>p.letter==='C:'));
   if(sysDisk&&sysDisk.style&&sysDisk.style.toUpperCase()==='MBR')notes.push(dataLink('drives','mbr-secureboot','<span class="y">System disk uses MBR partitioning (Secure Boot requires GPT)</span>'));
   if(WINUPDATE&&WINUPDATE.pendingReboot)notes.push(dataLink('updates','pending-reboot','<span class="y">System has a pending reboot (Windows Update or servicing)</span>'));
-  if(WINUPDATE&&WINUPDATE.serviceStatus&&WINUPDATE.serviceStatus!=='Running')notes.push(dataLink('updates','wu-service','<span class="y">Windows Update service is '+esc(WINUPDATE.serviceStatus)+'</span>'));
+  if(WINUPDATE&&WINUPDATE.serviceStartType==='Disabled')notes.push(dataLink('updates','wu-service','<span class="y">Windows Update service is disabled</span>'));
   const wuFails=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
   if(wuFails)notes.push(dataLink('updates','wu-failed','<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully</span>'));
   if(RAM.length){
@@ -1152,6 +1183,12 @@ function renderSummary(){
     {re:/rtss|rivatuner/i,       label:'RTSS (RivaTuner Statistics)',grp:'oc'},
     {re:/intel.*extreme tuning|intel\(r\) xtu/i, label:'Intel XTU', grp:'oc'},
     {re:/ryzen master/i,         label:'AMD Ryzen Master',           grp:'oc'},
+    {re:/evga precision/i,       label:'EVGA Precision X1/XOC',      grp:'oc'},
+    {re:/gpu tweak/i,            label:'ASUS GPU Tweak',             grp:'oc'},
+    {re:/firestorm/i,            label:'Zotac Firestorm',            grp:'oc'},
+    {re:/sapphire trixx/i,       label:'Sapphire TriXX',             grp:'oc'},
+    {re:/aorus engine/i,         label:'Gigabyte AORUS Engine',      grp:'oc'},
+    {re:/throttlestop/i,         label:'ThrottleStop',               grp:'oc'},
     {re:/corsair icue/i,         label:'Corsair iCUE',               grp:'periph'},
     {re:/razer synapse/i,        label:'Razer Synapse',              grp:'periph'},
     {re:/(logitech|logi) g ?hub/i, label:'Logitech G HUB',           grp:'periph'},
@@ -1165,6 +1202,13 @@ function renderSummary(){
     {re:/reimage|restoro/i,      label:'Restoro/Reimage',            grp:'bloat'},
     {re:/pc cleaner pro|mycleanpc|pc healthboost|systweak/i, label:'PC "cleaner" utility', grp:'bloat'},
     {re:/driverfix|smart driver care|driver updater/i, label:'Third-party driver updater', grp:'bloat'},
+    {re:/driverpack solution/i,  label:'DriverPack Solution',        grp:'bloat'},
+    {re:/snappy driver installer/i, label:'Snappy Driver Installer', grp:'bloat'},
+    {re:/driver ?easy/i,         label:'Driver Easy',                grp:'bloat'},
+    {re:/drivermax/i,            label:'DriverMax',                  grp:'bloat'},
+    {re:/avast driver updater|avg driver updater/i, label:'Avast/AVG Driver Updater', grp:'bloat'},
+    {re:/auslogics driver updater/i, label:'Auslogics Driver Updater', grp:'bloat'},
+    {re:/tweakbit/i,             label:'TweakBit Driver Updater',    grp:'bloat'},
     {re:/nzxt cam/i,             label:'NZXT CAM',                   grp:'periph'},
     {re:/msi dragon center|dragon center/i, label:'MSI Dragon Center', grp:'periph'},
     {re:/nahimic/i,              label:'Nahimic Audio',              grp:'audio'},
@@ -1173,6 +1217,12 @@ function renderSummary(){
     {re:/streamlabs/i,           label:'Streamlabs OBS',             grp:'audio'},
     {re:/hola vpn/i,             label:'Hola VPN',                   grp:'net'},
     {re:/killer network|killer control center/i, label:'Killer Network Manager', grp:'net'},
+    {re:/translucenttb/i,        label:'TranslucentTB',              grp:'shell'},
+    {re:/explorerpatcher/i,      label:'ExplorerPatcher',            grp:'shell'},
+    {re:/startallback/i,         label:'StartAllBack',               grp:'shell'},
+    {re:/^start11$|stardock start11/i, label:'Start11',              grp:'shell'},
+    {re:/open-?shell|classic shell/i, label:'Open-Shell/Classic Shell', grp:'shell'},
+    {re:/windhawk/i,             label:'Windhawk',                   grp:'shell'},
     {re:/teamviewer/i,           label:'TeamViewer',                 grp:'remote'},
     {re:/anydesk/i,              label:'AnyDesk',                    grp:'remote'},
     {re:/screenconnect|connectwise control|connectwise screenconnect/i, label:'ScreenConnect', grp:'remote'},
@@ -1188,19 +1238,20 @@ function renderSummary(){
     {re:/zoho assist/i,          label:'Zoho Assist',                grp:'remote'},
     {re:/chrome remote desktop/i,label:'Chrome Remote Desktop',      grp:'remote'},
   ];
-  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP',remote:'Remote access software'};
+  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP',remote:'Remote access software',shell:'Shell/taskbar tweak tool'};
   const foundSoft={};
   (sp.programs||[]).forEach(p=>{
     SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
   });
+  const softNotes=[];
   if(SECURITY&&SECURITY.avProducts&&SECURITY.avProducts.length){
     const avList=SECURITY.avProducts.filter(a=>a.enabled).map(a=>a.name);
-    if(avList.length>1)notes.push(dataLink('security','antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
+    if(avList.length>1)softNotes.push(dataLink('security','antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
   }
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
-    const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware'};
-    notes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'||grp==='remote'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
+    const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware',shell:'software-shell'};
+    softNotes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'||grp==='remote'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
   });
 
   if(SECURITY){
@@ -1230,11 +1281,19 @@ function renderSummary(){
     const drv=[...new Set(tdrEvents.map(r=>{const m2=(r.prov+' '+(r.msg||'')).match(gpuDrvRe);return m2?m2[0].toLowerCase():null;}).filter(Boolean))];
     notes.push(dataLink('sys','gpu-tdr','<span class="r"><b>'+tdrEvents.length+'</b> display driver timeout/reset event'+(tdrEvents.length>1?'s':'')+(drv.length?' ('+esc(drv.join(', '))+')':'')+'</span>'));
   }
-  const lke=RAW.filter(r=>/LiveKernelEvent/i.test(r.m||'')).length;
+  // SourceName is 'LiveKernelEvent' for these reliability records - a fixed internal identifier,
+  // never localized - so matching it directly is safer than matching the word "LiveKernelEvent"
+  // inside the (potentially translated) message text.
+  const lke=RAW.filter(r=>r.s==='LiveKernelEvent').length;
   if(lke)notes.push(dataLink('rel','livekernelevent','<span class="r"><b>'+lke+'</b> LiveKernelEvent record'+(lke>1?'s':'')+' in reliability history</span>'));
   if(NET&&NET.wifi&&NET.wifi.signal){
     const sig=parseInt(NET.wifi.signal)||0;
     if(sig&&sig<50)notes.push(dataLink('net','wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
+  }
+  if(NET&&NET.adapters){
+    NET.adapters.filter(a=>a.gigabitBelowRated).forEach(a=>{
+      notes.push(dataLink('net','gigabit-slow','<span class="y">'+esc(a.name)+' is Gigabit-capable but connected at only '+esc(a.speed)+'</span>'));
+    });
   }
   if(MEMUSE&&MEMUSE.ct&&MEMUSE.cu/MEMUSE.ct>0.9)notes.push(dataLink('memory','commit-charge','<span class="y">Commit charge at '+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'% of limit at time of capture</span>'));
   // Display connected to the integrated GPU while a dedicated GPU sits unused - the classic
@@ -1251,6 +1310,9 @@ function renderSummary(){
     }
   }
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
+  if(POWERPLAN&&!POWERPLAN.isDefault)notes.push('<span style="color:var(--dim)">Non-default power plan active: '+esc(POWERPLAN.name)+'</span>');
+  if(GENFLAGS&&GENFLAGS.tpmDisabled)notes.push(flagLink('tpm','<span style="color:var(--dim)">TPM is present but disabled</span>'));
+  if(GENFLAGS&&GENFLAGS.secureBootDisabled)notes.push(flagLink('secure-boot','<span style="color:var(--dim)">Secure Boot disabled</span>'));
   if(CBS&&CBS.unresolvedCount>0)notes.push(dataLink('sys','cbs-corruption','<span class="r"><b>'+CBS.unresolvedCount+'</b> unresolved component corruption entr'+(CBS.unresolvedCount>1?'ies':'y')+' in CBS.log</span>'));
   if(up){
     const upDays=parseInt((up.match(/^(\d+)\s*days?/i)||[])[1]||'0',10);
@@ -1259,16 +1321,16 @@ function renderSummary(){
   const nEl=document.getElementById('notesBody');
   el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
   const NOTE_GROUPS=[
-    {label:'Critical',   test:n=>/class="r"/.test(n)},
-    {label:'Warnings',   test:n=>/class="y"/.test(n)},
-    {label:'Informational', test:n=>!/class="[ry]"/.test(n)&&!/class="g"/.test(n)},
-    {label:'All good',   test:n=>/class="g"/.test(n)},
+    {label:'Critical',   items:notes.filter(n=>/class="r"/.test(n))},
+    {label:'Warnings',   items:notes.filter(n=>/class="y"/.test(n))},
+    {label:'Notable software', items:softNotes},
+    {label:'Informational', items:notes.filter(n=>!/class="[ry]"/.test(n)&&!/class="g"/.test(n))},
+    {label:'All good',   items:notes.filter(n=>/class="g"/.test(n))},
   ];
   let notesHtml='';
   NOTE_GROUPS.forEach(g=>{
-    const items=notes.filter(g.test);
-    if(!items.length)return;
-    notesHtml+='<div class="notes-group"><div class="notes-head">'+g.label+'</div><ul class="notes">'+items.map(n=>'<li>'+n+'</li>').join('')+'</ul></div>';
+    if(!g.items.length)return;
+    notesHtml+='<div class="notes-group"><div class="notes-head">'+g.label+'</div><ul class="notes">'+g.items.map(n=>'<li>'+n+'</li>').join('')+'</ul></div>';
   });
   nEl.innerHTML=notesHtml;
 }
@@ -1443,6 +1505,40 @@ function renderGPU(){
   h+='</div></div>';
   v.innerHTML=h;
 }
+function sparklineSvg(vals,color){
+  const w=280,h=56,pad=4;
+  const min=Math.min(...vals),max=Math.max(...vals);
+  const span=(max-min)||1;
+  const pts=vals.map((v,i)=>{
+    const x=pad+(i/(Math.max(vals.length-1,1)))*(w-2*pad);
+    const y=h-pad-((v-min)/span)*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  return '<svg viewBox="0 0 '+w+' '+h+'" class="temp-spark" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+function renderTemps(){
+  const v=document.getElementById('tempsView');
+  if(!TEMPS.length){
+    v.innerHTML='<div class="spec-section"><h2>Temperatures</h2><div style="color:var(--faint)">No temperature sensors could be read on this system.</div></div>';
+    return;
+  }
+  let h='<div class="spec-section"><h2>Temperatures</h2><div class="temp-note">30-second sample taken during collection, at whatever load was running at the time.</div><div class="drive-grid">';
+  TEMPS.forEach(t=>{
+    const vals=t.vals||[];
+    if(!vals.length)return;
+    const min=Math.min(...vals),max=Math.max(...vals);
+    const avg=Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
+    const cls=max>=90?'r':(max>=75?'y':'');
+    const color=max>=90?'var(--err)':(max>=75?'var(--warn)':'var(--info)');
+    h+='<div class="drive"><h3>'+esc(t.name)+'</h3>'+
+      '<div class="sub">'+esc(t.hw)+'</div>'+
+      '<div class="temp-stats"><span>Min <b>'+min+'&deg;C</b></span><span>Avg <b>'+avg+'&deg;C</b></span><span>Max <b class="'+cls+'">'+max+'&deg;C</b></span></div>'+
+      sparklineSvg(vals,color)+
+      '</div>';
+  });
+  h+='</div></div>';
+  v.innerHTML=h;
+}
 function renderMemory(){
   const v=document.getElementById('memoryView');
   let h='';
@@ -1492,7 +1588,7 @@ function renderNet(){
         '<div class="sub">'+esc(a.desc||'')+'</div>'+
         '<dl class="kv smart-kv">'+
         '<dt>Status</dt><dd style="color:'+stCol+'">'+esc(a.status)+'</dd>'+
-        (up&&a.speed?'<dt>Link speed</dt><dd>'+esc(a.speed)+'</dd>':'')+
+        (up&&a.speed?'<dt>Link speed</dt><dd'+(a.gigabitBelowRated?' style="color:var(--warn)"':'')+'>'+esc(a.speed)+(a.gigabitBelowRated?' <span style="color:var(--faint)">(Gigabit-capable)</span>':'')+'</dd>':'')+
         (a.media?'<dt>Media</dt><dd>'+esc(friendlyMedia(a.media))+'</dd>':'')+
         '</dl></div>';
     });
@@ -1589,6 +1685,7 @@ renderDumps();
 renderNet();
 renderDevices();
 renderGPU();
+renderTemps();
 renderMemory();
 renderSecurity();
 renderAppsList(SPECS_PROGRAMS);
@@ -1608,7 +1705,6 @@ $dmpfound = $false
 $errors = @{
     fileCreate  = $false
     Compress    = $false
-    event       = $false
     reliability = $false
 }
 
@@ -1643,14 +1739,14 @@ function dmpcheck {
     Clear-Host 
     Write-Host ""
     Write-Host "==================================================" -ForegroundColor DarkGreen
-    Write-Host "         PCHH Triage v1.0 - 23/07/2026            " -ForegroundColor Green
+    Write-Host "         PCHH Triage v1.1 - 18/08/2026            " -ForegroundColor Green
     Write-Host "       Developed by Rory (ctrl.alt.repeat)		  " -ForegroundColor DarkGray
     Write-Host "==================================================" -ForegroundColor DarkGreen
     Write-Host ""
     Write-Host "This collects crash logs, specs and diagnostics into" -ForegroundColor Gray
     Write-Host "a single zip on your Desktop. This can take time, please be patient." -ForegroundColor Gray
     Write-Host ""
-    Write-Host "[1/4] Collecting system specs.." -ForegroundColor Blue
+    Write-Host "[1/3] Collecting system specs.." -ForegroundColor Blue
 
     # Detect minidumps only - files on the user's PC are never deleted by this script.
     if (Test-Path $minidump) {
@@ -1844,7 +1940,7 @@ function fileadd {
     Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
     Write-Host " System specs collected"
 
-    eventlogexport
+    reliabilityexport
 }
 
 
@@ -1855,26 +1951,6 @@ function specs {
     Add-Content -Path $infofile -Value "$value"
 }
 
-
-function eventlogexport {
-    Write-Host ""
-    Write-Host "[2/4] Exporting Windows event logs.." -ForegroundColor Blue
-
-    $startTime = (Get-Date).AddDays(-$lookbackDays).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss")
-
-    try {
-        wevtutil epl System $sys_eventlog_path /q:"*[System[TimeCreated[@SystemTime>='$startTime']]]"
-    }
-    catch {
-        $errors.event = $true
-        functionerror
-    }
-
-    Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
-    Write-Host " Event logs exported"
-
-    reliabilityexport
-}
 # Curated System event log entries (crash / hardware / storage / GPU / service failures)
 function Get-CuratedSystemEvents {
     $allow = @(
@@ -1944,10 +2020,90 @@ function Get-CuratedSystemEvents {
     return $out
 }
 
+# Temperature sensors via LibreHardwareMonitorLib + the PawnIO kernel driver.
+# PawnIO is only installed if it isn't already present, and only removed again
+# afterwards if this run is the one that installed it - a PC that already had
+# it (e.g. for fan control) keeps it.
+function Ensure-LibreHardwareMonitorLib {
+    param([string]$WorkDir)
+    $dllPath = Join-Path $WorkDir "LibreHardwareMonitorLib.dll"
+    if (Test-Path $dllPath) { return $dllPath }
+
+    $zipUrl = "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases/latest/download/LibreHardwareMonitor-net472.zip"
+    $zipPath = Join-Path $WorkDir "lhm.zip"
+    $extractPath = Join-Path $WorkDir "lhm"
+    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+    Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+
+    $found = Get-ChildItem -Path $extractPath -Filter "LibreHardwareMonitorLib.dll" -Recurse | Select-Object -First 1
+    if (-not $found) { throw "LibreHardwareMonitorLib.dll not found after extraction" }
+    Copy-Item $found.FullName $dllPath
+    return $dllPath
+}
+
+function Test-PawnIOInstalled {
+    return [bool](Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue)
+}
+
+function Install-PawnIOSilent {
+    param([string]$WorkDir)
+    if (Test-PawnIOInstalled) { return $false }  # already present - not ours to remove later
+
+    $setupUrl = "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/raw/master/LibreHardwareMonitor/Resources/PawnIO_setup.exe"
+    $setupPath = Join-Path $WorkDir "PawnIO_setup.exe"
+    Invoke-WebRequest -Uri $setupUrl -OutFile $setupPath -UseBasicParsing
+    Start-Process -FilePath $setupPath -ArgumentList "-install -silent" -Wait -NoNewWindow
+    return $true
+}
+
+function Uninstall-PawnIOSilent {
+    $uninstaller = "C:\Program Files\PawnIO\uninstall.exe"
+    if (Test-Path $uninstaller) {
+        Start-Process -FilePath $uninstaller -ArgumentList "-uninstall -silent" -Wait -NoNewWindow -ErrorAction SilentlyContinue
+    }
+}
+
+# Samples CPU/GPU/motherboard temperature sensors once a second for $DurationSeconds
+# and returns one object per sensor with its full list of readings.
+function Get-TemperatureSamples {
+    param([string]$DllPath, [int]$DurationSeconds = 30)
+
+    Add-Type -Path $DllPath
+
+    $computer = New-Object LibreHardwareMonitor.Hardware.Computer
+    $computer.IsCpuEnabled = $true
+    $computer.IsGpuEnabled = $true
+    $computer.IsMotherboardEnabled = $true
+    $computer.Open()
+
+    $bySensor = @{}  # "hw|sensor" -> @{ hw=; name=; vals=@() }
+
+    for ($i = 0; $i -lt $DurationSeconds; $i++) {
+        foreach ($hw in $computer.Hardware) {
+            $hw.Update()
+            foreach ($sensor in $hw.Sensors) {
+                if ($sensor.SensorType -eq [LibreHardwareMonitor.Hardware.SensorType]::Temperature -and $null -ne $sensor.Value) {
+                    $key = "$($hw.Name)|$($sensor.Name)"
+                    if (-not $bySensor.ContainsKey($key)) {
+                        $bySensor[$key] = [PSCustomObject]@{ hw = $hw.Name; name = $sensor.Name; vals = [System.Collections.Generic.List[double]]::new() }
+                    }
+                    $bySensor[$key].vals.Add([math]::Round([double]$sensor.Value, 1))
+                }
+            }
+        }
+        Write-Progress -Activity "Sampling temperatures" -Status "$($i + 1) / $DurationSeconds seconds" -PercentComplete ((($i + 1) / $DurationSeconds) * 100)
+        Start-Sleep -Seconds 1
+    }
+    Write-Progress -Activity "Sampling temperatures" -Completed
+
+    $computer.Close()
+    return @($bySensor.Values | ForEach-Object { [PSCustomObject]@{ hw = $_.hw; name = $_.name; vals = @($_.vals) } })
+}
+
 # Exports reliability history + system specs and builds an interactive HTML viewer
 function reliabilityexport {
     Write-Host ""
-    Write-Host "[3/4] Collecting diagnostics.." -ForegroundColor Blue
+    Write-Host "[2/3] Collecting diagnostics.." -ForegroundColor Blue
 
         Write-Host "      - Reliability history" -ForegroundColor DarkGray
         $recs = @()
@@ -2162,7 +2318,47 @@ function reliabilityexport {
             }
         } catch { }
 
-        Write-Host "      - Hotfixes, Device Manager and audio devices" -ForegroundColor DarkGray
+        # Custom power plan: compare the active scheme's GUID against Microsoft's small, fixed set
+        # of built-in plans, rather than matching the (renameable, localized) friendly name - some
+        # tweaking tools clone "Balanced" and keep the name identical, and some legitimate OEM/AMD
+        # plans have odd names too, so the GUID is the only reliable signal either way.
+        $powerPlanInfo = $null
+        try {
+            $builtInSchemes = @(
+                '381b4222-f694-41f0-9685-ff5bb260df2e', # Balanced
+                '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', # High performance
+                'a1841308-3541-4fab-bc81-f71556f20b4a', # Power saver
+                'e9a42b02-d5df-448d-aa00-03f14749eb61'  # Ultimate Performance
+            )
+            $activeSchemeOut = powercfg /getactivescheme
+            if ($activeSchemeOut -match '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})') {
+                $activeGuid = $Matches[1].ToLower()
+                $planName = if ($activeSchemeOut -match '\((.+)\)\s*$') { $Matches[1] } else { $activeGuid }
+                $powerPlanInfo = [PSCustomObject]@{
+                    name      = $planName
+                    isDefault = [bool]($builtInSchemes -contains $activeGuid)
+                }
+            }
+        } catch { }
+
+        # A small, extensible set of general "worth mentioning" flags - not inherently a problem
+        # (unlike the red/yellow findings above), just useful context for a conversation, e.g.
+        # Windows 11 eligibility or general security posture.
+        $generalFlags = [PSCustomObject]@{
+            tpmDisabled         = $false
+            secureBootDisabled  = $false
+        }
+        try {
+            $tpmCheck = Get-Tpm -ErrorAction Stop
+            if ($tpmCheck.TpmPresent -and -not $tpmCheck.TpmEnabled) { $generalFlags.tpmDisabled = $true }
+        } catch { }
+        try {
+            # Confirm-SecureBootUEFI throws on legacy BIOS/unsupported hardware rather than
+            # returning $false - only a hard $false (UEFI present, Secure Boot turned off) counts
+            # here, since "not supported" isn't something the user can just switch on.
+            if ((Confirm-SecureBootUEFI -ErrorAction Stop) -eq $false) { $generalFlags.secureBootDisabled = $true }
+        } catch { }
+
         # Windows.old: left behind after an in-place upgrade or a "Reset this PC" that kept files.
         # Presence + date is a useful proxy for "this OS install is newer than the hardware", but it's
         # not a reliable way to detect every reset path (a full wipe-and-reinstall leaves no trace here).
@@ -2222,9 +2418,17 @@ function reliabilityexport {
             }
         } catch { }
 
-        # Windows Update service status
+        # Windows Update service status. wuauserv is a Manual/Trigger-Start service by default from
+        # Windows 10 onward - it's normal for it to sit "Stopped" when idle and only start when
+        # Windows Update actually runs, so a live Status of anything but "Running" is not itself a
+        # problem. StartType is the useful signal: "Disabled" means Windows genuinely can't update.
         $wuServiceStatus = ""
-        try { $wuServiceStatus = "$((Get-Service -Name wuauserv -ErrorAction Stop).Status)" } catch { }
+        $wuServiceStartType = ""
+        try {
+            $wuSvc = Get-Service -Name wuauserv -ErrorAction Stop
+            $wuServiceStatus = "$($wuSvc.Status)"
+            $wuServiceStartType = "$($wuSvc.StartType)"
+        } catch { }
 
         # Recent Windows Update history, including FAILED/pending attempts that Get-HotFix cannot show.
         # Defender's daily "Security Intelligence Update" entries can dominate the most recent history,
@@ -2386,6 +2590,22 @@ function reliabilityexport {
                 Remove-Item $dxPath -Force -ErrorAction SilentlyContinue
             }
         } catch { }
+
+        Write-Host "      - Temperatures (30 second sample - please wait)" -ForegroundColor DarkGray
+        $temps = @()
+        $tempWorkDir = Join-Path $env:TEMP "pchh-triage-temp"
+        $weInstalledPawnIO = $false
+        try {
+            New-Item -ItemType Directory -Path $tempWorkDir -Force | Out-Null
+            $lhmDll = Ensure-LibreHardwareMonitorLib -WorkDir $tempWorkDir
+            $weInstalledPawnIO = Install-PawnIOSilent -WorkDir $tempWorkDir
+            $temps = @(Get-TemperatureSamples -DllPath $lhmDll -DurationSeconds 30)
+        } catch {
+            Write-Host "        Could not read temperature sensors - $($_.Exception.Message)" -ForegroundColor Yellow
+        } finally {
+            if ($weInstalledPawnIO) { Uninstall-PawnIOSilent }
+            Remove-Item $tempWorkDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
 
         # Running processes grouped by name (top 150 by memory)
         $procs = @()
@@ -2704,18 +2924,37 @@ function reliabilityexport {
         $net = $null
         try {
             $adapters = @(Get-NetAdapter -Physical -ErrorAction Stop | ForEach-Object {
+                # Flag an Ethernet link that's connected well below what the hardware can do - a
+                # classic sign of a bad/damaged cable, a bad port, or a cheap Cat5 run. We check the
+                # driver's own advertised speed options (ValidDisplayValues) rather than guessing
+                # gigabit capability from the adapter's name, since plenty of genuine gigabit NICs
+                # (e.g. most Intel ones) don't say "Gigabit" anywhere in their description.
+                $gigabitBelowRated = $false
+                try {
+                    if ($_.Status -eq 'Up' -and $_.PhysicalMediaType -eq '802.3') {
+                        $speedProp = Get-NetAdapterAdvancedProperty -Name $_.Name -RegistryKeyword '*SpeedDuplex' -ErrorAction Stop
+                        if ($speedProp.ValidDisplayValues -match '1\.?0?\s*Gbps|1000') {
+                            if ("$($_.LinkSpeed)" -match '^([\d.,]+)\s*(Gbps|Mbps|Kbps)') {
+                                $val = [double]($Matches[1] -replace ',', '.')
+                                $mbps = switch -Regex ($Matches[2]) { 'Gbps' { $val * 1000 }; 'Mbps' { $val }; 'Kbps' { $val / 1000 } }
+                                if ($mbps -lt 1000) { $gigabitBelowRated = $true }
+                            }
+                        }
+                    }
+                } catch { }
                 [PSCustomObject]@{
                     name   = "$($_.Name)"
                     desc   = "$($_.InterfaceDescription)"
                     status = "$($_.Status)"
                     speed  = "$($_.LinkSpeed)"
                     media  = "$($_.PhysicalMediaType)"
+                    gigabitBelowRated = $gigabitBelowRated
                 }
             })
             $vpns = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
                 -not $_.Physical -and (
                     $_.Status -eq 'Up' -or
-                    "$($_.InterfaceDescription) $($_.Name)" -match 'TAP|Wintun|WireGuard|OpenVPN|Tailscale|Nord|ExpressVPN|Proton|Surfshark|Mullvad|ZeroTier|Hamachi|Radmin|VPN'
+                    "$($_.InterfaceDescription) $($_.Name)" -match 'TAP|Wintun|WireGuard|OpenVPN|Tailscale|Nord|ExpressVPN|Proton|Surfshark|Mullvad|ZeroTier|Hamachi|Radmin|Bright|VPN'
                 ) -and "$($_.InterfaceDescription)" -notmatch 'WAN Miniport|Bluetooth|Loopback|Kernel Debug'
             } | ForEach-Object {
                 [PSCustomObject]@{
@@ -2735,29 +2974,130 @@ function reliabilityexport {
                 if ($sig) { $wifiSignalPct = [int]$sig.Ndis80211ReceivedSignalStrength }
             } catch { }
 
-            # The supplementary fields (band/channel/radio type/rates/auth) don't have as clean a
-            # locale-independent source, so these remain best-effort via netsh and may come back
-            # empty on a non-English system. Signal strength - the one this tool actually acts on -
-            # no longer depends on that.
+            # Radio type / auth / rx-tx rate via the native WLAN API (wlanapi.dll) instead of text-
+            # matching netsh's localized field labels - this returns raw enum/numeric values from the
+            # OS regardless of display language, so it no longer silently comes back empty on a
+            # non-English system the way the old netsh parsing did.
+            $radioType = $null; $authDisplay = $null; $rxMbps = $null; $txMbps = $null
+            try {
+                if (-not ("PCHH.Wlan" -as [type])) {
+                    Add-Type -Namespace PCHH -Name Wlan -MemberDefinition @'
+[DllImport("wlanapi.dll")] public static extern int WlanOpenHandle(uint clientVersion, IntPtr reserved, out uint negotiatedVersion, out IntPtr clientHandle);
+[DllImport("wlanapi.dll")] public static extern int WlanCloseHandle(IntPtr clientHandle, IntPtr reserved);
+[DllImport("wlanapi.dll")] public static extern int WlanEnumInterfaces(IntPtr clientHandle, IntPtr reserved, out IntPtr interfaceList);
+[DllImport("wlanapi.dll")] public static extern int WlanQueryInterface(IntPtr clientHandle, ref Guid interfaceGuid, int opCode, IntPtr reserved, out uint dataSize, out IntPtr data, IntPtr valueType);
+[DllImport("wlanapi.dll")] public static extern void WlanFreeMemory(IntPtr memory);
+'@ -ErrorAction Stop
+
+                    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+namespace PCHH {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct WLAN_INTERFACE_INFO {
+        public Guid InterfaceGuid;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string strInterfaceDescription;
+        public int isState;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DOT11_SSID {
+        public uint uSSIDLength;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] public byte[] ucSSID;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WLAN_ASSOCIATION_ATTRIBUTES {
+        public DOT11_SSID dot11Ssid;
+        public int dot11BssType;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)] public byte[] dot11Bssid;
+        public uint dot11PhyType;
+        public uint uDot11PhyIndex;
+        public uint wlanSignalQuality;
+        public uint ulRxRate;
+        public uint ulTxRate;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WLAN_SECURITY_ATTRIBUTES {
+        [MarshalAs(UnmanagedType.Bool)] public bool bSecurityEnabled;
+        [MarshalAs(UnmanagedType.Bool)] public bool bOneXEnabled;
+        public uint dot11AuthAlgorithm;
+        public uint dot11CipherAlgorithm;
+    }
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct WLAN_CONNECTION_ATTRIBUTES {
+        public int isState;
+        public int wlanConnectionMode;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string strProfileName;
+        public WLAN_ASSOCIATION_ATTRIBUTES wlanAssociationAttributes;
+        public WLAN_SECURITY_ATTRIBUTES wlanSecurityAttributes;
+    }
+}
+'@ -ErrorAction Stop
+                }
+
+                $clientHandle = [IntPtr]::Zero
+                $negotiatedVersion = 0
+                if ([PCHH.Wlan]::WlanOpenHandle(2, [IntPtr]::Zero, [ref]$negotiatedVersion, [ref]$clientHandle) -eq 0) {
+                    try {
+                        $ifaceListPtr = [IntPtr]::Zero
+                        if ([PCHH.Wlan]::WlanEnumInterfaces($clientHandle, [IntPtr]::Zero, [ref]$ifaceListPtr) -eq 0) {
+                            try {
+                                $numItems = [Runtime.InteropServices.Marshal]::ReadInt32($ifaceListPtr, 0)
+                                $ifaceStructSize = [Runtime.InteropServices.Marshal]::SizeOf([type][PCHH.WLAN_INTERFACE_INFO])
+                                for ($i = 0; $i -lt $numItems; $i++) {
+                                    # dwNumberOfItems (4 bytes) + dwIndex (4 bytes) precede the interface array
+                                    $ifaceInfoPtr = [IntPtr]::Add($ifaceListPtr, 8 + ($i * $ifaceStructSize))
+                                    $ifaceInfo = [Runtime.InteropServices.Marshal]::PtrToStructure($ifaceInfoPtr, [type][PCHH.WLAN_INTERFACE_INFO])
+                                    if ($ifaceInfo.isState -ne 1) { continue } # 1 = connected
+
+                                    $dataSize = 0; $dataPtr = [IntPtr]::Zero
+                                    $guidCopy = $ifaceInfo.InterfaceGuid
+                                    $qres = [PCHH.Wlan]::WlanQueryInterface($clientHandle, [ref]$guidCopy, 7, [IntPtr]::Zero, [ref]$dataSize, [ref]$dataPtr, [IntPtr]::Zero)
+                                    if ($qres -eq 0) {
+                                        try {
+                                            $conn = [Runtime.InteropServices.Marshal]::PtrToStructure($dataPtr, [type][PCHH.WLAN_CONNECTION_ATTRIBUTES])
+                                            $assoc = $conn.wlanAssociationAttributes
+                                            $sec = $conn.wlanSecurityAttributes
+
+                                            $phyMap = @{ 4 = '802.11a'; 5 = '802.11b'; 6 = '802.11g'; 7 = '802.11n'; 8 = '802.11ac'; 9 = '802.11ad'; 10 = '802.11ax'; 11 = '802.11be' }
+                                            if ($phyMap.ContainsKey([int]$assoc.dot11PhyType)) { $radioType = $phyMap[[int]$assoc.dot11PhyType] }
+
+                                            $authMap = @{ 1 = 'Open'; 2 = 'Shared key'; 3 = 'WPA-Enterprise'; 4 = 'WPA-Personal'; 5 = 'WPA-None'; 6 = 'WPA2-Enterprise'; 7 = 'WPA2-Personal'; 8 = 'WPA3-Enterprise'; 9 = 'WPA3-Personal'; 10 = 'OWE'; 11 = 'WPA3-Enterprise (192-bit)' }
+                                            if ($authMap.ContainsKey([int]$sec.dot11AuthAlgorithm)) { $authDisplay = $authMap[[int]$sec.dot11AuthAlgorithm] }
+
+                                            if ($null -eq $wifiSignalPct) { $wifiSignalPct = [int]$assoc.wlanSignalQuality }
+                                            $rxMbps = [math]::Round($assoc.ulRxRate / 1000)
+                                            $txMbps = [math]::Round($assoc.ulTxRate / 1000)
+                                        } finally { [PCHH.Wlan]::WlanFreeMemory($dataPtr) }
+                                    }
+                                    break
+                                }
+                            } finally { [PCHH.Wlan]::WlanFreeMemory($ifaceListPtr) }
+                        }
+                    } finally { [PCHH.Wlan]::WlanCloseHandle($clientHandle, [IntPtr]::Zero) }
+                }
+            } catch { }
+
+            # Band/Channel have no clean locale-independent source (the WLAN API's connection
+            # attributes don't carry frequency), so these two remain best-effort via netsh and may
+            # come back empty on a non-English system.
             $wl = netsh wlan show interfaces 2>$null
             $wf = @{}
             if ($wl) {
                 foreach ($line in $wl) {
-                    if ($line -match '^\s*(Radio type|Band|Channel|Signal|Authentication|Receive rate \(Mbps\)|Transmit rate \(Mbps\))\s*:\s*(.+)$') {
+                    if ($line -match '^\s*(Band|Channel)\s*:\s*(.+)$') {
                         $wf[$Matches[1]] = $Matches[2].Trim()
                     }
                 }
             }
-            $signalDisplay = if ($null -ne $wifiSignalPct) { "$wifiSignalPct%" } elseif ($wf['Signal']) { $wf['Signal'] } else { $null }
-            if ($signalDisplay) {
+            if ($null -ne $wifiSignalPct) {
                 $wifi = [PSCustomObject]@{
-                    signal  = "$signalDisplay"
+                    signal  = "$wifiSignalPct%"
                     band    = "$($wf['Band'])"
                     channel = "$($wf['Channel'])"
-                    radio   = "$($wf['Radio type'])"
-                    auth    = "$($wf['Authentication'])"
-                    rx      = "$($wf['Receive rate (Mbps)'])"
-                    tx      = "$($wf['Transmit rate (Mbps)'])"
+                    radio   = "$radioType"
+                    auth    = "$authDisplay"
+                    rx      = "$rxMbps"
+                    tx      = "$txMbps"
                 }
             }
             $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi }
@@ -2792,6 +3132,7 @@ function reliabilityexport {
         $sysJson   = if ($sysEvents.Count -gt 0) { (ConvertTo-Json @($sysEvents) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
+        $tempsJson = if ($temps.Count -gt 0) { (ConvertTo-Json @($temps) -Compress -Depth 4).Replace('</', '<\/') } else { '[]' }
         $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
         $isLaptopJson = if ($isLaptop) { 'true' } else { 'false' }
         $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -2801,9 +3142,11 @@ function reliabilityexport {
         $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
         $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $windowsOldJson = if ($windowsOld) { (ConvertTo-Json $windowsOld -Compress).Replace('</', '<\/') } else { 'null' }
+        $powerPlanJson = if ($powerPlanInfo) { (ConvertTo-Json $powerPlanInfo -Compress).Replace('</', '<\/') } else { 'null' }
+        $generalFlagsJson = (ConvertTo-Json $generalFlags -Compress).Replace('</', '<\/')
         $cbsJson = if ($cbs) { (ConvertTo-Json $cbs -Compress).Replace('</', '<\/') } else { 'null' }
         $wuHistoryJson = if ($wuHistory.Count -gt 0) { (ConvertTo-Json @($wuHistory) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus }
+        $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus; serviceStartType = $wuServiceStartType }
         $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
         $devErrorsJson = if ($devErrors.Count -gt 0) { (ConvertTo-Json @($devErrors) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $audioJson = if ($audio) { (ConvertTo-Json $audio -Compress).Replace('</', '<\/') } else { 'null' }
@@ -2819,7 +3162,7 @@ function reliabilityexport {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__TEMPS__*/[]', $tempsJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
@@ -2837,11 +3180,11 @@ function reliabilityexport {
 # Compresses files
 function compression {
     Write-Host ""
-    Write-Host "[4/4] Compressing everything into one zip.." -ForegroundColor Blue
+    Write-Host "[3/3] Compressing everything into one zip.." -ForegroundColor Blue
 
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" -Name "DisplayParameters" -Value 1 -Type DWord -Force | Out-Null
 
-    $filesToCompress = @($infofile, $sys_eventlog_path, $reliability_csv_path, $reliability_html_path)
+    $filesToCompress = @($infofile, $reliability_csv_path, $reliability_html_path)
 
     if ($dmpfound) {
         # Only include dumps from the last 60 days in the zip - older ones are left alone on disk
@@ -2867,7 +3210,7 @@ function compression {
         functionerror
     }
 
-    Remove-Item -Path $infofile, $sys_eventlog_path, $reliability_csv_path, $reliability_html_path -Force -Recurse -ErrorAction SilentlyContinue > $null 2>&1
+    Remove-Item -Path $infofile, $reliability_csv_path, $reliability_html_path -Force -Recurse -ErrorAction SilentlyContinue > $null 2>&1
 
     Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
     Write-Host " Zip created"
@@ -2900,9 +3243,6 @@ function functionerror {
 
     if ($errors.Compress -eq "true") {
         Write-Host " There was an error during compression.."
-    }
-    elseif ($errors.event -eq "true") {
-        Write-Host "There was an error while grabbing the event logs.."
     }
     elseif ($errors.fileCreate -eq "true") {
         Write-Host "There was an error while creating files.."
