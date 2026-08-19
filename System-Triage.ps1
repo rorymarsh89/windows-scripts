@@ -2049,7 +2049,7 @@ function Install-PawnIOSilent {
     param([string]$WorkDir)
     if (Test-PawnIOInstalled) { return $false }  # already present - not ours to remove later
 
-    $setupUrl = "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/raw/master/LibreHardwareMonitor/Resources/PawnIO_setup.exe"
+    $setupUrl = "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe"
     $setupPath = Join-Path $WorkDir "PawnIO_setup.exe"
     Invoke-WebRequest -Uri $setupUrl -OutFile $setupPath -UseBasicParsing
     Start-Process -FilePath $setupPath -ArgumentList "-install -silent" -Wait -NoNewWindow
