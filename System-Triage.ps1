@@ -50,7 +50,7 @@ $infofile = "$File\specs-programs.txt"
 
 $ziptar = "$File\PCHH-Triage_$random.zip"
 
-$scriptVersion = "1.1"
+$scriptVersion = "1.3"
 $lookbackDays = 365   # match reliability history's ~1 year span; System log is size-capped anyway
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
@@ -72,6 +72,7 @@ $viewerTemplate = @'
   --err:#ff6b6b; --warn:#ffc069; --ok:#3ddc97; --info:#6aa7ff;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important}}
 body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:16px;min-height:100vh}
 #appShell{display:flex;background:var(--bg);padding:40px 16px 40px 40px;gap:16px;min-height:100vh;width:100%}
 .mono{font-family:'IBM Plex Mono',monospace}
@@ -118,27 +119,11 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 .r{color:var(--err)}
 .y{color:var(--warn)}
 .view{display:none}
-body.tab-summary #summaryView{display:block}
-body.tab-rel #relView{display:block}
-body.tab-sys #sysView{display:block}
-body.tab-shutdowns #shutdownsView{display:block}
-body.tab-drives #drivesView{display:block}
-body.tab-gpu #gpuView{display:block}
-body.tab-temps #tempsView{display:block}
-body.tab-memory #memoryView{display:block}
-body.tab-net #netView{display:block}
-body.tab-devices #devicesView{display:block}
-body.tab-security #securityView{display:block}
-body.tab-processes #processesView{display:block}
-body.tab-apps #appsView{display:block}
-body.tab-updates #updatesView{display:block}
-body.tab-extensions #extensionsView{display:block}
-body.tab-faq #faqView{display:block}
-body.tab-tools #toolsView{display:block}
-body.tab-dumps #dumpsView{display:block}
+@keyframes viewFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.tab-shutdowns #shutdownsView,body.tab-drives #drivesView,body.tab-gpu #gpuView,body.tab-memory #memoryView,body.tab-net #netView,body.tab-devices #devicesView,body.tab-security #securityView,body.tab-processes #processesView,body.tab-apps #appsView,body.tab-updates #updatesView,body.tab-extensions #extensionsView,body.tab-faq #faqView,body.tab-tools #toolsView,body.tab-dumps #dumpsView{display:block;animation:viewFadeIn .28s cubic-bezier(.16,1,.3,1)}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#tempsView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
@@ -173,12 +158,6 @@ body.tab-dumps #dumpsView{display:block}
 .drive .meter div{height:100%;background:var(--info)}
 .drive .meter.low div{background:var(--warn)}
 .drive .use{color:var(--dim);font-size:14px}
-.temp-stats{display:flex;gap:16px;font-size:13.5px;color:var(--dim);margin-bottom:10px}
-.temp-stats b{color:var(--text);font-weight:600}
-.temp-stats .r{color:var(--err)}
-.temp-stats .y{color:var(--warn)}
-.temp-spark{width:100%;height:auto;display:block}
-.temp-note{color:var(--faint);font-size:13px;margin-bottom:16px}
 .drive.smart-bad{border-color:var(--err)}
 .smart-kv{grid-template-columns:1fr auto;font-size:14.5px;gap:7px 12px}
 .smart-kv dt{color:var(--dim)}
@@ -257,17 +236,16 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 .title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.open .title{white-space:normal}
 .src{color:var(--dim);font-size:14px;margin-left:10px}
-.msg{grid-column:3;color:var(--dim);font-size:14px;line-height:1.5;padding:6px 0 2px;white-space:pre-wrap;display:none;word-break:break-word}
+.msg{grid-column:3;color:var(--dim);font-size:14px;line-height:1.5;padding:6px 0 2px;white-space:pre-wrap;display:none;word-break:break-word;cursor:text;user-select:text}
 .row.open .msg{display:block}
 .faq-row{grid-template-columns:12px 1fr}
-.faq-row .msg{cursor:text;user-select:text}
 .faq-row .msg{grid-column:2}
 #empty{color:var(--faint);padding:40px 0;text-align:center;display:none}
 @media (max-width:600px){
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#tempsView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
+  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -298,8 +276,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       <div class="nav-group-items">
         <button class="tab" data-tab="drives">Drives</button>
         <button class="tab" data-tab="gpu">GPU and Display(s)</button>
-        <button class="tab" data-tab="temps">Temperatures</button>
-        <button class="tab" data-tab="memory">Memory (RAM)</button>
+        <button class="tab" data-tab="memory">Memory</button>
         <button class="tab" data-tab="net">Network</button>
         <button class="tab" data-tab="devices">Connected Devices</button>
       </div>
@@ -359,7 +336,6 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="shutdownsView" class="view"></div>
 <div id="drivesView" class="view"></div>
 <div id="gpuView" class="view"></div>
-<div id="tempsView" class="view"></div>
 <div id="memoryView" class="view"></div>
 <div id="netView" class="view"></div>
 <div id="devicesView" class="view"></div>
@@ -387,7 +363,6 @@ const DIRTY = /*__DIRTY__*/[];
 const DISKLAYOUT = /*__DISKLAYOUT__*/[];
 const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
-const TEMPS = /*__TEMPS__*/[];
 const HAGS = /*__HAGS__*/null;
 const ISLAPTOP = /*__ISLAPTOP__*/false;
 const WUHISTORY = /*__WUHISTORY__*/[];
@@ -555,7 +530,8 @@ function render(){
           '<span class="dot d-'+e.cat+'"></span>'+
           '<span class="title">'+esc(e.p||'(unnamed)')+'<span class="src">'+summary(e)+'</span></span>'+
           '<div class="msg mono">'+esc(e.m)+'</div>';
-        row.onclick=(e)=>{ if(e.target.closest('.msg'))return; row.classList.toggle('open'); };
+        row.onclick=(e)=>{ if(e.target.closest('.msg')||hasTextSelection())return; row.classList.toggle('open'); };
+        row.querySelector('.msg').onclick=e=>e.stopPropagation();
         list.appendChild(row);
       });
     });
@@ -582,6 +558,12 @@ function summary(e){
   return esc(e.s);
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// Guards accordion-row toggles against text selection. Checking only whether the click
+// *landed* inside .msg isn't enough - drag-selecting a long/wrapped message often ends with
+// the mouse released just outside its box, which used to collapse the row mid-selection and
+// made it hard to copy anything. Checking for a live selection catches that regardless of
+// where the mouseup happened.
+function hasTextSelection(){ const s=window.getSelection(); return !!(s && s.toString().length>0); }
 
 document.querySelectorAll('.chip[data-cat]').forEach(c=>c.onclick=()=>{
   const cat=c.dataset.cat;
@@ -831,7 +813,7 @@ function renderWuHistList(){
 }
 const FAQ_DATA=[
 {id:'app-crashes',q:"Application Crashes",a:"This counts how many times a program on your PC has crashed and forced Windows to close it, based on the "+tabLink('rel','Windows Reliability History')+".<br><br>Occasional crashes are normal, especially in games or browsers. A rising number, especially if they're all the same program or all mention the same driver file, usually points to that specific program, a graphics driver, or a plugin/mod rather than Windows itself.",tools:["WhoCrashed","Display Driver Uninstaller (DDU)"]},
-{id:'unexpected-shutdown',q:"Unexpected Shutdowns",a:"Windows didn't shut down properly last time, meaning it never received the normal 'the user is turning off the PC' signal. This can be caused by:<ul style='margin:8px 0 8px 20px;padding:0'><li>a full system crash (a 'blue screen')</li><li>a power cut</li><li>someone holding the power button</li><li>the PC freezing and being force-restarted</li></ul>If a specific bugcheck code is shown, that's the technical reason Windows gave. It can point toward whether this is a hardware, driver, or Windows problem. Most bugcheck codes are Google-able and have common fixes.",tools:["WhoCrashed","OCCT","MemTest86","Display Driver Uninstaller (DDU)"]},
+{id:'unexpected-shutdown',q:"Unexpected Shutdowns",a:"Windows didn't shut down properly last time, meaning it never received the normal 'the user is turning off the PC' signal. This can be caused by:<ul style='margin:8px 0 8px 20px;padding:0'><li>a full system crash (a 'blue screen')</li><li>a power cut</li><li>overheating (thermal shutdown)</li><li>someone holding the power button</li><li>the PC freezing and being force-restarted</li></ul>If a specific bugcheck code is shown, that's the technical reason Windows gave. It can point toward whether this is a hardware, driver, or Windows problem. Most bugcheck codes are Google-able and have common fixes.<br><br>When Windows detects the power button was physically held down for 4+ seconds, it records that moment separately from the shutdown itself - that's shown as 'Power button held down' with the exact time, which usually means the PC was unresponsive and had to be force-closed rather than crashing cleanly with a bugcheck.",tools:["WhoCrashed","OCCT","MemTest86","Display Driver Uninstaller (DDU)"]},
 {id:'memory-dump',q:"Memory Dump",a:"When Windows crashes badly, a 'blue screen' happens. Windows tries to save a snapshot of exactly what the computer was doing at that moment to a file called a memory dump.<br><br>Memory dump(s) are included in the zip this tool creates. If you have them, you can share the zip file with us and we'll try to debug for you. Memory dumps are one of the most useful pieces of evidence for figuring out precisely what caused a crash.<br><br>If there are no memory dumps in the zip file but you've been experiencing crashes, shutdowns, or freezing, that means Windows wasn't able to create one. This can (but not always) indicate a hardware problem over a software one. Windows will usually try to generate a memory dump when the system crashes.",tools:["WhoCrashed"]},
 {id:'whea',q:"Fatal Hardware Error (WHEA)",a:"WHEA is Windows' hardware error reporting system. A fatal WHEA error means a core piece of hardware, usually the CPU, memory controller, or a PCIe device, reported a serious problem Windows couldn't recover from, and the machine likely crashed or rebooted as a result.<br><br>This is a strong indication that something is physically wrong or unstable, often an overclock, degraded hardware, or insufficient voltage, rather than a software issue.",tools:["OCCT","MemTest86","HWiNFO"]},
 {id:'disk-smart',q:"Drive / SMART Warnings",a:"Your drives (SSD, NVMe, hard drive) constantly track their own health statistics using something called SMART data. This data lists specific problems the drive itself has self-reported, such as:<ul style='margin:8px 0 8px 20px;padding:0'><li>reallocated sectors (damaged areas it's had to work around)</li><li>pending or uncorrectable sectors (data that couldn't be read reliably)</li><li>a high UltraDMA CRC error count (usually a loose or failing cable)</li></ul>If a drive predicts its own failure, it's important that you back up anything important from it immediately. Drive failures are often random and unpredictable.",tools:["CrystalDiskInfo"]},
@@ -864,6 +846,8 @@ const FAQ_DATA=[
 {id:'software-audio',q:"Audio / Overlay Software",a:"Tools like Nahimic, GeForce Experience, Xbox Game Bar, and Streamlabs OBS can conflict with each other or with games, particularly when more than one is trying to add an overlay at the same time.",tools:[]},
 {id:'software-network',q:"Flagged Network Software",a:"Software like Killer Network Manager or Hola VPN has a known history of causing latency spikes, packet loss, or other connectivity problems on some systems.",tools:[]},
 {id:'software-shell',q:"Shell/Taskbar Tweak Tools",a:"Tools like TranslucentTB, ExplorerPatcher, StartAllBack, Start11, Open-Shell, or Windhawk modify Windows Explorer or the taskbar/Start menu's appearance and behaviour, often by hooking into or patching explorer.exe itself.<br><br>They're generally safe day-to-day, but because they hook into core shell processes, they're a common cause of taskbar/Start menu glitches, explorer.exe crashes, or freezes after a Windows feature update changes something they relied on. Worth ruling out first if that's the symptom.",tools:[]},
+{id:'software-cheat',q:"Game Exploit / Cheat Tool",a:"Tools like JJSploit, Synapse X, Krnl, Fluxus, and similar Roblox/game script executors, along with general memory-editors like Cheat Engine, are flagged here because they carry real risk beyond just breaking the rules of a game:<ul style='margin:8px 0 8px 20px;padding:0'><li>they're a very common way to end up with genuine malware, since many are distributed through cracked/pirated download sites with a trojan bundled in</li><li>most inject code into a running game process, which is exactly the pattern antivirus and anti-cheat software is built to catch - a wave of false-positive detections or a sudden anti-cheat ban often traces straight back to one of these</li><li>some game accounts can be permanently banned the moment one of these is detected running, even once</li></ul>This is a factual note that it's installed, not an accusation - but if unexplained AV detections, game bans, or crashes tied to a specific game are the symptom, this is worth checking first.",tools:[]},
+{id:'software-fancontrol',q:"Multiple Fan-Control Programs",a:"Programs like Lian Li L-Connect, FanControl, SpeedFan, Fan Xpert, and RGB/fan hubs such as Corsair iCUE, NZXT CAM, MSI Dragon Center, or ASUS Armoury Crate can all set fan curves directly through the motherboard or a fan controller.<br><br>Running more than one of these at the same time means they can end up fighting over the same fans - each one periodically re-applying its own curve over the other's - which shows up as fans that surge, stall, or cycle speed for no clear reason. The fix is usually to pick one and fully close (not just minimize) the others, since some keep running in the background even without a visible window.",tools:[]},
 {id:'windows-old',q:"Windows.old Folder",a:"Windows.old is a backup of the previous Windows installation, automatically created when Windows is upgraded in place or reset while keeping personal files. It lets Windows roll back to the previous version for about 10 days before it's automatically deleted to free up space, though it can stick around longer if that cleanup didn't run.<br><br>Its presence is a useful sign that this installation is newer than the hardware, which is handy context if a problem only started recently. It doesn't cover every case, though: a full wipe-and-reinstall or a reset that removes everything doesn't leave a Windows.old folder behind at all, so its absence doesn't rule out a recent reset.",tools:[]},
 {id:'secure-boot',q:"Secure Boot",a:"Secure Boot is a security feature that checks the software involved in starting Windows hasn't been tampered with, before the operating system even loads. It helps stop a specific but nasty category of malware (called bootkits or rootkits) that tries to run before Windows, and before any antivirus, gets a chance to load.<br><br>Microsoft requires it for Windows 11, and leaving it disabled removes a real layer of protection for no real-world upside on most PCs. It requires the system disk to use GPT partitioning. See the note about MBR partitioning in this report if that's relevant.",tools:[]},
 {id:'tpm',q:"TPM",a:"A TPM (Trusted Platform Module) is a small, dedicated security chip, or a feature built into the CPU (fTPM) on newer systems, that securely stores encryption keys and other sensitive data separately from the rest of the PC. It's what Windows 11 relies on for BitLocker drive encryption and for meeting its own minimum security requirements.<br><br>If it's disabled, Windows Hello, BitLocker, and some newer Windows security features either can't be used or fall back to a weaker mode. It can usually be turned on in the BIOS/UEFI settings (often listed as 'TPM', 'fTPM', 'PTT', or 'Security Device').",tools:[]},
@@ -885,7 +869,8 @@ function renderFAQ(){
   });
   h+='</div>';
   v.innerHTML=h;
-  v.querySelectorAll('.faq-row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg'))return; r.classList.toggle('open'); });
+  v.querySelectorAll('.faq-row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg')||hasTextSelection())return; r.classList.toggle('open'); });
+  v.querySelectorAll('.faq-row .msg').forEach(m=>m.onclick=e=>e.stopPropagation());
 }
 function goFaq(id){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab==='faq'));
@@ -1082,7 +1067,12 @@ function renderSummary(){
   const pairs=[];
   const sysName=specVal(sp.info,'System Name'), sysMfr=realSpec(specVal(sp.info,'Manufacturer')), sysModel=realSpec(specVal(sp.info,'Model'));
   if(sysName)pairs.push(['System name', esc(sysName)]);
-  if(sysMfr||sysModel)pairs.push(['Manufacturer / Model', esc([sysMfr,sysModel].filter(Boolean).join(' \u00b7 '))]);
+  // On DIY/homebuilt PCs, Win32_ComputerSystemProduct's "Model" is often just the motherboard's
+  // own part number restated (e.g. "MS-7C96") - already shown in full in the Motherboard row
+  // below. Only show it here when it adds something the Motherboard line doesn't already say.
+  const mbForDedupe=specVal(sp.info,'Motherboard')||'';
+  const sysModelIsDupe=sysModel && mbForDedupe.toLowerCase().includes(sysModel.toLowerCase());
+  if(sysMfr||(sysModel&&!sysModelIsDupe))pairs.push(sysModel&&!sysModelIsDupe?['Manufacturer / Model', esc([sysMfr,sysModel].filter(Boolean).join(' \u00b7 '))]:['Manufacturer', esc(sysMfr)]);
   const os=specVal(sp.info,'OS'), build=specVal(sp.info,'Build'), up=specVal(sp.info,'System Uptime');
   const WINVER={ '26200':'25H2','26100':'24H2','22631':'23H2','22621':'22H2','22000':'21H2','19045':'22H2','19044':'21H2' };
   if(os){
@@ -1107,22 +1097,25 @@ function renderSummary(){
   const bver=specVal(sp.info,'BIOS Version');
   if(bver||mb){
     const val=bver?esc(bver):'';
-    // A few vendors have a reliable model-search URL; everyone else falls back to a plain web
-    // search, which reliably lands on the right support page without needing per-vendor scraping.
+    // Vendor support sites are single-page apps that get restructured often (MSI's own
+    // "/Search?searchKeyword=" link 404s as of 2026, and ASUS's has since moved behind a
+    // region prefix) - hard-coding another guessed URL just sets up the next 404. A
+    // site-scoped Google search always lands on the current support page regardless of how
+    // the vendor's frontend changes, so every vendor uses that instead of a direct link.
+    const vendorSite={asus:'asus.com',msi:'msi.com','micro-star':'msi.com',gigabyte:'gigabyte.com',asrock:'asrock.com'};
     const mfrL=(mbMfr||'').toLowerCase();
     const q=encodeURIComponent(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+(mb||'')).trim()+' bios update download');
     let url='https://www.google.com/search?q='+q;
     if(mb){
-      if(/asus/.test(mfrL))url='https://www.asus.com/support/AllSupport/?keyword='+encodeURIComponent(mb);
-      else if(/msi|micro-star/.test(mfrL))url='https://www.msi.com/Search?searchKeyword='+encodeURIComponent(mb);
-      else if(/gigabyte/.test(mfrL))url='https://www.gigabyte.com/Search?search='+encodeURIComponent(mb);
+      const vendorKey=Object.keys(vendorSite).find(k=>mfrL.includes(k));
+      if(vendorKey)url='https://www.google.com/search?q='+encodeURIComponent('site:'+vendorSite[vendorKey]+' '+mb);
     }
     pairs.push(['BIOS version', (val?val+' \u00b7 ':'')+'<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--info)">Check for updates</a>']);
   }
   if(RAM.length){
     const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
     const conf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
-    pairs.push(['Memory', totGB+' GB total'+(conf?' @ '+esc(conf)+' MT/s':'')]);
+    pairs.push(['Memory', totGB+' GB'+(conf?' @ '+esc(conf)+' MT/s':'')]);
   } else {
     const rc=specVal(sp.info,'Ram Capacity');
     if(rc)pairs.push(['Memory', esc(rc)]);
@@ -1170,8 +1163,12 @@ function renderSummary(){
   const wuFails=WUHISTORY.filter(u=>u.result==='Failed'||u.result==='Cancelled').length;
   if(wuFails)notes.push(dataLink('updates','wu-failed','<span class="y"><b>'+wuFails+'</b> Windows Update'+(wuFails>1?'s':'')+' did not complete successfully</span>'));
   if(RAM.length){
-    const slow=RAM.filter(m=>m.rated&&m.conf&&+m.conf<+m.rated);
-    if(slow.length)notes.push(dataLink('memory','ram-speed','<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(slow[0].rated)+' MT/s</span>'));
+    // Prefer the speed embedded in the part number over Win32_PhysicalMemory.Speed when it's
+    // higher - Speed often just reflects the JEDEC default the stick is currently running at,
+    // not what it's actually rated for, which silently hides an XMP/EXPO-off situation.
+    const effRated=m=>Math.max(+m.rated||0,+m.pnSpeed||0)||'';
+    const slow=RAM.filter(m=>effRated(m)&&m.conf&&+m.conf<+effRated(m));
+    if(slow.length)notes.push(dataLink('memory','ram-speed','<span class="y">RAM configured at '+esc(slow[0].conf)+' MT/s, rated '+esc(effRated(slow[0]))+' MT/s</span>'));
   }
   // Known software flags: anti-cheat/kernel drivers, OC & monitoring tools, RGB/peripheral suites, bloatware/PUPs
   const SOFT_FLAGS=[
@@ -1237,8 +1234,37 @@ function renderSummary(){
     {re:/supremo/i,              label:'Supremo',                    grp:'remote'},
     {re:/zoho assist/i,          label:'Zoho Assist',                grp:'remote'},
     {re:/chrome remote desktop/i,label:'Chrome Remote Desktop',      grp:'remote'},
+    // Roblox/game exploit executors - frequently bundled with malware, routinely
+    // quarantined or flagged by antivirus/anti-cheat, and a common cause of game bans.
+    // Worth calling out even factually, since it explains a lot of "random" AV
+    // detections, crashes, or account bans people bring to tech support.
+    {re:/jjsploit/i,              label:'JJSploit',                   grp:'cheat'},
+    {re:/synapse ?x/i,            label:'Synapse X',                  grp:'cheat'},
+    {re:/\bkrnl\b/i,              label:'Krnl',                       grp:'cheat'},
+    {re:/fluxus/i,                label:'Fluxus',                     grp:'cheat'},
+    {re:/\belectron\b.*executor|electron executor/i, label:'Electron', grp:'cheat'},
+    {re:/sentinel executor|sentinel roblox/i, label:'Sentinel',       grp:'cheat'},
+    {re:/wave executor/i,         label:'Wave',                       grp:'cheat'},
+    {re:/\bcodex\b.*executor|codex executor/i, label:'Codex',         grp:'cheat'},
+    {re:/\bevon\b/i,              label:'Evon',                       grp:'cheat'},
+    {re:/solara/i,                label:'Solara',                     grp:'cheat'},
+    {re:/seliware/i,              label:'Seliware',                   grp:'cheat'},
+    {re:/arceus ?x/i,             label:'Arceus X',                   grp:'cheat'},
+    {re:/hydrogen executor/i,     label:'Hydrogen',                   grp:'cheat'},
+    {re:/cheat engine/i,          label:'Cheat Engine',               grp:'cheat'},
+    {re:/wemod/i,                 label:'WeMod',                      grp:'cheat'},
+    // Dedicated fan-curve controllers - see the multi-app conflict check below, which
+    // also folds in the multi-purpose RGB hubs (iCUE, CAM, etc.) that control fans too.
+    {re:/l-?connect/i,            label:'Lian Li L-Connect',          grp:'fan'},
+    {re:/^fan ?control$/i,        label:'FanControl',                 grp:'fan'},
+    {re:/speedfan/i,              label:'SpeedFan',                   grp:'fan'},
+    {re:/argus monitor/i,         label:'Argus Monitor',              grp:'fan'},
+    {re:/fan ?xpert/i,            label:'ASUS Fan Xpert',             grp:'fan'},
+    {re:/silverstone/i,           label:'SilverStone Fan Control',    grp:'fan'},
+    {re:/tt rgb plus/i,           label:'Thermaltake TT RGB Plus',    grp:'fan'},
+    {re:/ek loop connect/i,       label:'EK Loop Connect',            grp:'fan'},
+    {re:/gigabyte.*(smart ?fan|\bsiv\b)/i, label:'Gigabyte SIV/Smart Fan', grp:'fan'},
   ];
-  const GRP_NAME={ac:'Anti-cheat / kernel driver',oc:'Overclock / monitoring tool',periph:'RGB / peripheral suite',audio:'Audio / overlay software',net:'Network software',bloat:'Potential bloatware/PUP',remote:'Remote access software',shell:'Shell/taskbar tweak tool'};
   const foundSoft={};
   (sp.programs||[]).forEach(p=>{
     SOFT_FLAGS.forEach(f=>{ if(f.re.test(p)){ (foundSoft[f.grp]=foundSoft[f.grp]||new Set()).add(f.label); } });
@@ -1248,10 +1274,20 @@ function renderSummary(){
     const avList=SECURITY.avProducts.filter(a=>a.enabled).map(a=>a.name);
     if(avList.length>1)softNotes.push(dataLink('security','antivirus-conflict','<span class="y">Multiple real-time antivirus products active: '+esc(avList.join(', '))+'</span>'));
   }
+  // Fan-curve conflicts: dedicated fan-control tools (grp 'fan') plus the multi-purpose RGB
+  // hubs that also drive fan curves (iCUE, CAM, Dragon Center, Armoury Crate) - two or more
+  // of these fighting over the same header/fans is a real, common cause of erratic or noisy
+  // fan behaviour, so this gets its own elevated check rather than just a plain listing.
+  const fanCapablePeriph=['Corsair iCUE','NZXT CAM','MSI Dragon Center','ASUS Armoury Crate'];
+  const fanApps=new Set([...(foundSoft.fan||[]), ...[...(foundSoft.periph||[])].filter(n=>fanCapablePeriph.includes(n))]);
+  if(fanApps.size>1){
+    notes.push(dataLink('apps','software-fancontrol','<span class="y">Multiple fan-control programs active: '+esc([...fanApps].sort().join(', '))+' &mdash; these can fight over the same fan curves and cause erratic or noisy fan behaviour</span>'));
+  }
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
-    const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware',shell:'software-shell'};
-    softNotes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(grp==='bloat'||grp==='remote'?'y':'')+'"><span class="slabel">'+GRP_NAME[grp]+':</span> '+esc(items)+'</span>'));
+    const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware',shell:'software-shell',cheat:'software-cheat',fan:'software-fancontrol'};
+    const GRP_COLOR={cheat:'r',bloat:'y',remote:'y'};
+    softNotes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(GRP_COLOR[grp]||'')+'">'+esc(items)+'</span>'));
   });
 
   if(SECURITY){
@@ -1351,13 +1387,15 @@ function renderSys(){
     let title=esc(e.prov)+' '+esc(e.id);
     if(e.bc&&e.bc!=='0')title+=' <span class="r" style="color:var(--err)">\u00b7 Bugcheck 0x'+esc(parseInt(e.bc).toString(16).toUpperCase())+'</span>';
     if(e.cnt)title+=' \u00d7'+e.cnt;
+    const overheatNote=String(e.id)==='41'?' <span style="color:var(--faint)">(this can also include overheating)</span>':'';
     h+='<div class="row"><span class="time mono">'+fmtTime(e.dt)+'</span>'+
       '<span class="dot d-'+cat+'"></span>'+
       '<span class="title">'+title+'</span>'+
-      '<div class="msg mono">'+esc(e.msg||'')+'</div></div>';
+      '<div class="msg mono">'+esc(e.msg||'')+overheatNote+'</div></div>';
   });
   v.innerHTML=h;
-  v.querySelectorAll('.row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg'))return; r.classList.toggle('open'); });
+  v.querySelectorAll('.row').forEach(r=>r.onclick=(e)=>{ if(e.target.closest('.msg')||hasTextSelection())return; r.classList.toggle('open'); });
+  v.querySelectorAll('.row .msg').forEach(m=>m.onclick=e=>e.stopPropagation());
 }
 function renderShutdowns(){
   const v=document.getElementById('shutdownsView');
@@ -1369,15 +1407,17 @@ function renderShutdowns(){
   const kp41=SYSEVT.filter(r=>String(r.id)==='41').map(r=>{
     const dt=parseDate(r.t);
     const bc=(r.bc&&String(r.bc)!=='0')?String(r.bc):'';
-    return {d:dt,bc,src:'Kernel-Power (41)'};
+    const pbt=r.pbt?parseDate(r.pbt):null;
+    return {d:dt,bc,pbt,src:'Kernel-Power (41)'};
   }).filter(x=>x.d);
-  const relOnly=events.filter(e=>e.s==='EventLog').map(e=>({d:e.d,bc:'',src:'Reliability history'}));
+  const relOnly=events.filter(e=>e.s==='EventLog').map(e=>({d:e.d,bc:'',pbt:null,src:'Reliability history'}));
   const all=[...kp41,...relOnly].sort((a,b)=>b.d-a.d);
   const merged=[];
   all.forEach(item=>{
     const dup=merged.find(m=>Math.abs(m.d-item.d)<2*60*1000);
     if(dup){
       if(!dup.bc&&item.bc)dup.bc=item.bc;
+      if(!dup.pbt&&item.pbt)dup.pbt=item.pbt;
       if(!dup.src.includes(item.src))dup.src+=' + '+item.src;
     }else merged.push({...item});
   });
@@ -1386,13 +1426,17 @@ function renderShutdowns(){
     return;
   }
   let h='<div class="spec-section"><h2>Unexpected Shutdowns ('+merged.length+')</h2>'+
-    '<div class="sys-note">A shutdown Windows never got a clean "powering off" signal for &mdash; caused by a crash, power loss, a hard reset, or a freeze that needed a force restart.</div>'+
+    '<div class="sys-note">A shutdown Windows never got a clean "powering off" signal for &mdash; caused by a crash, power loss, overheating, a hard reset, or a freeze that needed a force restart.</div>'+
     '<dl class="kv">';
   merged.forEach(x=>{
     const bcLabel=x.bc?('0x'+parseInt(x.bc).toString(16).toUpperCase()+(BC_NAMES[x.bc]?' '+BC_NAMES[x.bc]:'')):'';
-    h+='<dt class="mono">'+esc(fmtDay(x.d.toISOString().slice(0,10)))+', '+esc(fmtTime(x.d))+'</dt>'+
-      '<dd>'+(bcLabel?'<span class="r">Bugcheck '+esc(bcLabel)+'</span>':'<span style="color:var(--faint)">No bugcheck &mdash; power loss, hard reset, or hang</span>')+
-      ' <span style="color:var(--faint);font-size:13px">\u00b7 '+esc(x.src)+'</span></dd>';
+    let cause;
+    if(bcLabel)cause='<span class="r">Bugcheck '+esc(bcLabel)+'</span>';
+    else if(x.pbt)cause='<span class="y">Power button held down</span>';
+    else cause='<span style="color:var(--faint)">No crash code recorded &mdash; likely a power loss, hard reset, or hang</span>';
+    const pbtNote=x.pbt?' <span style="color:var(--faint)">\u00b7 button held at '+esc(fmtTime(x.pbt))+(x.pbt.toISOString().slice(0,10)!==x.d.toISOString().slice(0,10)?' on '+esc(fmtDay(x.pbt.toISOString().slice(0,10))):'')+'</span>':'';
+    h+='<dt class="mono" title="Source: '+esc(x.src)+'">'+esc(fmtDay(x.d.toISOString().slice(0,10)))+', '+esc(fmtTime(x.d))+'</dt>'+
+      '<dd>'+cause+pbtNote+'</dd>';
   });
   h+='</dl></div>';
   v.innerHTML=h;
@@ -1486,6 +1530,13 @@ function renderGPU(){
   let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
   if(HAGS)h+='<div style="color:var(--dim);font-size:14px;margin-bottom:16px">Hardware-accelerated GPU Scheduling: <b style="color:var(--text)">'+esc(HAGS)+'</b></div>';
   h+='<div class="drive-grid">';
+  // dxdiag's MonitorName is the generic driver's friendly name, not the panel's actual model -
+  // Windows shows "Generic PnP Monitor" here even when it has perfectly good EDID data (which
+  // is exactly how Settings > Display gets the real model name to show). Swap in the real
+  // name from MONS (read via WmiMonitorID/EDID) wherever dxdiag's name is one of these generic
+  // placeholders, consuming MONS entries in order across all adapters for multi-monitor setups.
+  const genericMonRe=/^(generic\s+(pnp|non-pnp|plug\s*and\s*play)\s+monitor|default\s+monitor|pnp\s+monitor)\s*$/i;
+  const monsPool=MONS.slice();
   gnames.forEach(g=>{
     const drv=drvByName[g]?friendlyDriver(g,esc(drvByName[g]),radByName[g]?esc(radByName[g]):''):'';
     const vram=vramByName[g];
@@ -1493,7 +1544,8 @@ function renderGPU(){
     h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
       (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
     const dispRows=displays.filter(d=>d.mon||d.mode);
-    const fallbackMons=(!Object.keys(byGpu).length && MONS.length)?MONS:[];
+    dispRows.forEach(d=>{ if(!d.mon||genericMonRe.test(d.mon.trim())){ const real=monsPool.shift(); if(real)d.mon=real; } });
+    const fallbackMons=(!Object.keys(byGpu).length && monsPool.length)?monsPool.splice(0):[];
     if(dispRows.length||fallbackMons.length){
       h+='<div class="sev-head" style="color:var(--dim);padding:12px 0 5px 0">Connected Display'+((dispRows.length+fallbackMons.length)>1?'s':'')+'</div><dl class="kv smart-kv" style="font-size:15.5px">';
       dispRows.forEach(d=>{h+='<dt>'+esc(d.mon||'Display')+'</dt><dd>'+esc(d.mode||'')+'</dd>';});
@@ -1501,40 +1553,6 @@ function renderGPU(){
       h+='</dl>';
     }
     h+='</div>';
-  });
-  h+='</div></div>';
-  v.innerHTML=h;
-}
-function sparklineSvg(vals,color){
-  const w=280,h=56,pad=4;
-  const min=Math.min(...vals),max=Math.max(...vals);
-  const span=(max-min)||1;
-  const pts=vals.map((v,i)=>{
-    const x=pad+(i/(Math.max(vals.length-1,1)))*(w-2*pad);
-    const y=h-pad-((v-min)/span)*(h-2*pad);
-    return x.toFixed(1)+','+y.toFixed(1);
-  }).join(' ');
-  return '<svg viewBox="0 0 '+w+' '+h+'" class="temp-spark" preserveAspectRatio="none"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
-}
-function renderTemps(){
-  const v=document.getElementById('tempsView');
-  if(!TEMPS.length){
-    v.innerHTML='<div class="spec-section"><h2>Temperatures</h2><div style="color:var(--faint)">No temperature sensors could be read on this system.</div></div>';
-    return;
-  }
-  let h='<div class="spec-section"><h2>Temperatures</h2><div class="temp-note">30-second sample taken during collection, at whatever load was running at the time.</div><div class="drive-grid">';
-  TEMPS.forEach(t=>{
-    const vals=t.vals||[];
-    if(!vals.length)return;
-    const min=Math.min(...vals),max=Math.max(...vals);
-    const avg=Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*10)/10;
-    const cls=max>=90?'r':(max>=75?'y':'');
-    const color=max>=90?'var(--err)':(max>=75?'var(--warn)':'var(--info)');
-    h+='<div class="drive"><h3>'+esc(t.name)+'</h3>'+
-      '<div class="sub">'+esc(t.hw)+'</div>'+
-      '<div class="temp-stats"><span>Min <b>'+min+'&deg;C</b></span><span>Avg <b>'+avg+'&deg;C</b></span><span>Max <b class="'+cls+'">'+max+'&deg;C</b></span></div>'+
-      sparklineSvg(vals,color)+
-      '</div>';
   });
   h+='</div></div>';
   v.innerHTML=h;
@@ -1551,6 +1569,7 @@ function renderMemory(){
         '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
         '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
         (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
+        (m.pnSpeed?'<dt>Speed (from part number)</dt><dd>'+esc(m.pnSpeed)+' MT/s'+(m.rated&&+m.pnSpeed>+m.rated?' <span style="color:var(--faint)">(higher than reported rated speed)</span>':'')+'</dd>':'')+
         (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
         '</dl></div>';
     });
@@ -1685,7 +1704,6 @@ renderDumps();
 renderNet();
 renderDevices();
 renderGPU();
-renderTemps();
 renderMemory();
 renderSecurity();
 renderAppsList(SPECS_PROGRAMS);
@@ -1812,7 +1830,7 @@ function fileadd {
     $build = "$buildNumber.$ubr"
 
 
-    $osInstallDate = try { ([System.Management.ManagementDateTimeConverter]::ToDateTime($os.InstallDate)).ToString("dd/MM/yyyy") } catch { "" }
+    $osInstallDate = try { ([System.Management.ManagementDateTimeConverter]::ToDateTime($os.InstallDate)).ToString("dd'/'MM'/'yyyy") } catch { "" }
     $cpuCores = ($cpu | Select-Object -ExpandProperty NumberOfCores) -join "+"
     $cpuThreads = ($cpu | Select-Object -ExpandProperty ThreadCount) -join "+"
     $uacEnabled = try { if ((Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction Stop).EnableLUA -eq 1) { "Enabled" } else { "Disabled" } } catch { "" }
@@ -1988,18 +2006,27 @@ function Get-CuratedSystemEvents {
 
     $out = @($keep | Select-Object -First 400 | ForEach-Object {
         $bc = ''
+        $pbt = ''
         if ($_.ProviderName -like '*Kernel-Power' -and $_.Id -eq 41) {
             try {
                 $x = [xml]$_.ToXml()
                 $bc = "$(($x.Event.EventData.Data | Where-Object { $_.Name -eq 'BugcheckCode' }).'#text')"
+                # PowerButtonTimestamp is a FILETIME (100ns intervals since 1601), non-zero only when
+                # the power button was physically held for 4+ seconds to force the shutdown - see
+                # https://learn.microsoft.com/en-us/archive/technet-wiki/14246.kernel-power-event-id-41
+                $pbtRaw = ($x.Event.EventData.Data | Where-Object { $_.Name -eq 'PowerButtonTimestamp' }).'#text'
+                if ($pbtRaw -and [long]$pbtRaw -gt 0) {
+                    $pbt = ([DateTime]::FromFileTime([long]$pbtRaw)).ToString("dd'/'MM'/'yyyy HH:mm:ss")
+                }
             } catch { }
         }
         [PSCustomObject]@{
-            t    = $_.TimeCreated.ToString("dd/MM/yyyy HH:mm:ss")
+            t    = $_.TimeCreated.ToString("dd'/'MM'/'yyyy HH:mm:ss")
             prov = ($_.ProviderName -replace '^Microsoft-Windows-', '')
             id   = "$($_.Id)"
             lvl  = [int]$_.Level
             bc   = $bc
+            pbt  = $pbt
             msg  = "$($_.Message)"
         }
     })
@@ -2007,7 +2034,7 @@ function Get-CuratedSystemEvents {
     if ($whea17.Count -gt 0) {
         $latest = $whea17 | Sort-Object TimeCreated -Descending | Select-Object -First 1
         $out += [PSCustomObject]@{
-            t    = $latest.TimeCreated.ToString("dd/MM/yyyy HH:mm:ss")
+            t    = $latest.TimeCreated.ToString("dd'/'MM'/'yyyy HH:mm:ss")
             prov = 'WHEA-Logger'
             id   = '17'
             lvl  = 3
@@ -2020,86 +2047,6 @@ function Get-CuratedSystemEvents {
     return $out
 }
 
-# Temperature sensors via LibreHardwareMonitorLib + the PawnIO kernel driver.
-# PawnIO is only installed if it isn't already present, and only removed again
-# afterwards if this run is the one that installed it - a PC that already had
-# it (e.g. for fan control) keeps it.
-function Ensure-LibreHardwareMonitorLib {
-    param([string]$WorkDir)
-    $dllPath = Join-Path $WorkDir "LibreHardwareMonitorLib.dll"
-    if (Test-Path $dllPath) { return $dllPath }
-
-    $zipUrl = "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases/latest/download/LibreHardwareMonitor-net472.zip"
-    $zipPath = Join-Path $WorkDir "lhm.zip"
-    $extractPath = Join-Path $WorkDir "lhm"
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-    Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-
-    $found = Get-ChildItem -Path $extractPath -Filter "LibreHardwareMonitorLib.dll" -Recurse | Select-Object -First 1
-    if (-not $found) { throw "LibreHardwareMonitorLib.dll not found after extraction" }
-    Copy-Item $found.FullName $dllPath
-    return $dllPath
-}
-
-function Test-PawnIOInstalled {
-    return [bool](Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue)
-}
-
-function Install-PawnIOSilent {
-    param([string]$WorkDir)
-    if (Test-PawnIOInstalled) { return $false }  # already present - not ours to remove later
-
-    $setupUrl = "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe"
-    $setupPath = Join-Path $WorkDir "PawnIO_setup.exe"
-    Invoke-WebRequest -Uri $setupUrl -OutFile $setupPath -UseBasicParsing
-    Start-Process -FilePath $setupPath -ArgumentList "-install -silent" -Wait -NoNewWindow
-    return $true
-}
-
-function Uninstall-PawnIOSilent {
-    $uninstaller = "C:\Program Files\PawnIO\uninstall.exe"
-    if (Test-Path $uninstaller) {
-        Start-Process -FilePath $uninstaller -ArgumentList "-uninstall -silent" -Wait -NoNewWindow -ErrorAction SilentlyContinue
-    }
-}
-
-# Samples CPU/GPU/motherboard temperature sensors once a second for $DurationSeconds
-# and returns one object per sensor with its full list of readings.
-function Get-TemperatureSamples {
-    param([string]$DllPath, [int]$DurationSeconds = 30)
-
-    Add-Type -Path $DllPath
-
-    $computer = New-Object LibreHardwareMonitor.Hardware.Computer
-    $computer.IsCpuEnabled = $true
-    $computer.IsGpuEnabled = $true
-    $computer.IsMotherboardEnabled = $true
-    $computer.Open()
-
-    $bySensor = @{}  # "hw|sensor" -> @{ hw=; name=; vals=@() }
-
-    for ($i = 0; $i -lt $DurationSeconds; $i++) {
-        foreach ($hw in $computer.Hardware) {
-            $hw.Update()
-            foreach ($sensor in $hw.Sensors) {
-                if ($sensor.SensorType -eq [LibreHardwareMonitor.Hardware.SensorType]::Temperature -and $null -ne $sensor.Value) {
-                    $key = "$($hw.Name)|$($sensor.Name)"
-                    if (-not $bySensor.ContainsKey($key)) {
-                        $bySensor[$key] = [PSCustomObject]@{ hw = $hw.Name; name = $sensor.Name; vals = [System.Collections.Generic.List[double]]::new() }
-                    }
-                    $bySensor[$key].vals.Add([math]::Round([double]$sensor.Value, 1))
-                }
-            }
-        }
-        Write-Progress -Activity "Sampling temperatures" -Status "$($i + 1) / $DurationSeconds seconds" -PercentComplete ((($i + 1) / $DurationSeconds) * 100)
-        Start-Sleep -Seconds 1
-    }
-    Write-Progress -Activity "Sampling temperatures" -Completed
-
-    $computer.Close()
-    return @($bySensor.Values | ForEach-Object { [PSCustomObject]@{ hw = $_.hw; name = $_.name; vals = @($_.vals) } })
-}
-
 # Exports reliability history + system specs and builds an interactive HTML viewer
 function reliabilityexport {
     Write-Host ""
@@ -2110,7 +2057,7 @@ function reliabilityexport {
         try {
             $recs = @(Get-CimInstance Win32_ReliabilityRecords -ErrorAction Stop | ForEach-Object {
                 [PSCustomObject]@{
-                    t = $_.TimeGenerated.ToString("dd/MM/yyyy HH:mm:ss")
+                    t = $_.TimeGenerated.ToString("dd'/'MM'/'yyyy HH:mm:ss")
                     s = $_.SourceName
                     e = "$($_.EventIdentifier)"
                     p = $_.ProductName
@@ -2254,16 +2201,34 @@ function reliabilityexport {
             @{ p = '(KHX|KF4|KF3|KVR)'; b = 'Kingston / HyperX' },
             @{ p = '(BLS|BLM|CT\d)'; b = 'Crucial' },
             @{ p = '(TLZ|TED4|TF\d|TPD4)'; b = 'Team Group' },
-            @{ p = 'M[3478][45AB]'; b = 'Samsung' },
+            # Samsung's own module numbering is M3xx (UDIMM/RDIMM) or M4xx (SODIMM), e.g.
+            # M378, M391, M393, M471, M472 - the previous pattern (M[3478][45AB]) required a
+            # 4/5/A/B as the third character and so never matched any real Samsung part number.
+            @{ p = '^M[34]\d{2}';    b = 'Samsung' },
             @{ p = 'HMA|HMT';       b = 'SK Hynix' },
-            @{ p = 'MTA|MT\d{2}';  b = 'Micron' }
+            @{ p = 'MTA|MT\d{2}';  b = 'Micron' },
+            @{ p = '^MD\d';          b = 'PNY' },
+            @{ p = '^AD4U|^AX4U|^AD5U'; b = 'ADATA' },
+            @{ p = '^PSD|^PVS|^PVB'; b = 'Patriot' },
+            @{ p = '^99[UA]|^MR[AB]'; b = 'Mushkin' }
         )
         function Resolve-RamBrand($mfr, $pn) {
             if ($mfr -and $mfr -notmatch '^(Unknown|Undefined|To Be Filled|0*)$') { return $mfr }
             foreach ($entry in $ramBrandByPrefix) {
-                if ($pn -match $entry.p) { return "$($entry.b) (identified from part number)" }
+                if ($pn -match $entry.p) { return $entry.b }
             }
             return $mfr
+        }
+        # Most consumer DDR4/DDR5 part numbers embed the kit's rated speed as a bare 4-digit
+        # number (e.g. "MD16GSD43200-SI" -> 3200 MT/s). Win32_PhysicalMemory.Speed is often just
+        # the JEDEC default the module happens to be running at, not what it's actually rated
+        # for, so this catches XMP/EXPO-off cases that comparing Speed to ConfiguredClockSpeed
+        # alone would miss. Matches only against known real DDR speeds (with no leading/trailing
+        # digit) to avoid picking up capacity or revision numbers.
+        $knownDdrSpeeds = '1600|1866|2133|2400|2666|2800|2933|3000|3200|3466|3600|3733|4000|4133|4266|4400|4600|4800|5200|5333|5600|5800|6000|6400|6800|7200|7600|8000|8400|8800'
+        function Resolve-RamSpeedFromPartNumber($pn) {
+            if ($pn -match "(?<!\d)($knownDdrSpeeds)(?!\d)") { return $Matches[1] }
+            return ""
         }
         $ram = @()
         try {
@@ -2284,18 +2249,20 @@ function reliabilityexport {
             $slotIndex = @{}
             $ram = @($rawRam | ForEach-Object {
                 $mfrResolved = Resolve-RamBrand $_.mfr $_.pn
+                $pnSpeed = Resolve-RamSpeedFromPartNumber $_.pn
                 $displaySlot = $_.slot
                 if ($slotSeen[$_.slot] -gt 1) {
                     $slotIndex[$_.slot] = ($slotIndex[$_.slot] + 1)
                     $displaySlot = "$($_.slot) (position $($slotIndex[$_.slot]))"
                 }
                 [PSCustomObject]@{
-                    slot  = $displaySlot
-                    mfr   = $mfrResolved
-                    pn    = $_.pn
-                    cap   = $_.cap
-                    rated = $_.rated
-                    conf  = $_.conf
+                    slot     = $displaySlot
+                    mfr      = $mfrResolved
+                    pn       = $_.pn
+                    cap      = $_.cap
+                    rated    = $_.rated
+                    conf     = $_.conf
+                    pnSpeed  = $pnSpeed
                 }
             })
         } catch { }
@@ -2366,7 +2333,7 @@ function reliabilityexport {
         try {
             $woPath = "$env:SystemDrive\Windows.old"
             if (Test-Path $woPath -PathType Container) {
-                $woDate = (Get-Item $woPath -ErrorAction Stop).LastWriteTime.ToString("dd/MM/yyyy")
+                $woDate = (Get-Item $woPath -ErrorAction Stop).LastWriteTime.ToString("dd'/'MM'/'yyyy")
                 $windowsOld = [PSCustomObject]@{ present = $true; date = $woDate }
             }
         } catch { }
@@ -2383,7 +2350,7 @@ function reliabilityexport {
                 $lastLine = $cbsLines | Select-Object -Last 1
                 $lastDate = $null
                 if ($lastLine -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})') {
-                    try { $lastDate = [datetime]::ParseExact($matches[1], 'yyyy-MM-dd HH:mm:ss', $null).ToString("dd/MM/yyyy HH:mm") } catch { }
+                    try { $lastDate = [datetime]::ParseExact($matches[1], 'yyyy-MM-dd HH:mm:ss', $null).ToString("dd'/'MM'/'yyyy HH:mm") } catch { }
                 }
                 $cbs = [PSCustomObject]@{
                     unresolvedCount = $unresolved.Count
@@ -2398,7 +2365,7 @@ function reliabilityexport {
                 [PSCustomObject]@{
                     id   = "$($_.HotFixID)"
                     desc = "$($_.Description)"
-                    date = if ($_.InstalledOn) { $_.InstalledOn.ToString("dd/MM/yyyy") } else { "" }
+                    date = if ($_.InstalledOn) { $_.InstalledOn.ToString("dd'/'MM'/'yyyy") } else { "" }
                 }
             })
         } catch { }
@@ -2443,7 +2410,7 @@ function reliabilityexport {
                 $wuHistory = @($searcher.QueryHistory(0, [Math]::Min($historyCount, 200)) | Where-Object { $_.Title -notmatch 'Security Intelligence Update' } | Select-Object -First 40 | ForEach-Object {
                     [PSCustomObject]@{
                         title  = "$($_.Title)"
-                        date   = if ($_.Date) { $_.Date.ToString("dd/MM/yyyy HH:mm") } else { "" }
+                        date   = if ($_.Date) { $_.Date.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
                         result = if ($resultMap.ContainsKey([int]$_.ResultCode)) { $resultMap[[int]$_.ResultCode] } else { "Unknown" }
                     }
                 } | Sort-Object date -Descending)
@@ -2591,22 +2558,6 @@ function reliabilityexport {
             }
         } catch { }
 
-        Write-Host "      - Temperatures (30 second sample - please wait)" -ForegroundColor DarkGray
-        $temps = @()
-        $tempWorkDir = Join-Path $env:TEMP "pchh-triage-temp"
-        $weInstalledPawnIO = $false
-        try {
-            New-Item -ItemType Directory -Path $tempWorkDir -Force | Out-Null
-            $lhmDll = Ensure-LibreHardwareMonitorLib -WorkDir $tempWorkDir
-            $weInstalledPawnIO = Install-PawnIOSilent -WorkDir $tempWorkDir
-            $temps = @(Get-TemperatureSamples -DllPath $lhmDll -DurationSeconds 30)
-        } catch {
-            Write-Host "        Could not read temperature sensors - $($_.Exception.Message)" -ForegroundColor Yellow
-        } finally {
-            if ($weInstalledPawnIO) { Uninstall-PawnIOSilent }
-            Remove-Item $tempWorkDir -Recurse -Force -ErrorAction SilentlyContinue
-        }
-
         # Running processes grouped by name (top 150 by memory)
         $procs = @()
         try {
@@ -2628,8 +2579,8 @@ function reliabilityexport {
             $defender = if ($mpStatus) {
                 [PSCustomObject]@{
                     rtp        = "$($mpStatus.RealTimeProtectionEnabled)"
-                    lastQuick  = if ($mpStatus.QuickScanEndTime) { $mpStatus.QuickScanEndTime.ToString("dd/MM/yyyy HH:mm") } else { "" }
-                    lastFull   = if ($mpStatus.FullScanEndTime) { $mpStatus.FullScanEndTime.ToString("dd/MM/yyyy HH:mm") } else { "" }
+                    lastQuick  = if ($mpStatus.QuickScanEndTime) { $mpStatus.QuickScanEndTime.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
+                    lastFull   = if ($mpStatus.FullScanEndTime) { $mpStatus.FullScanEndTime.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
                     sigAge     = "$($mpStatus.AntivirusSignatureAge)"
                     sigVersion = "$($mpStatus.AntivirusSignatureVersion)"
                 }
@@ -2651,7 +2602,7 @@ function reliabilityexport {
                 $threats = @(Get-MpThreatDetection -ErrorAction Stop | Select-Object -First 25 | ForEach-Object {
                     [PSCustomObject]@{
                         name = "$($_.ThreatName)"
-                        time = $_.InitialDetectionTime.ToString("dd/MM/yyyy HH:mm")
+                        time = $_.InitialDetectionTime.ToString("dd'/'MM'/'yyyy HH:mm")
                         act  = "$($_.ActionSuccess)"
                     }
                 })
@@ -3121,7 +3072,7 @@ namespace PCHH {
             $dumps = @(Get-ChildItem -Path $source -ErrorAction SilentlyContinue | ForEach-Object {
                 [PSCustomObject]@{
                     n = $_.Name
-                    d = $_.LastWriteTime.ToString("dd/MM/yyyy HH:mm")
+                    d = $_.LastWriteTime.ToString("dd'/'MM'/'yyyy HH:mm")
                     z = "{0:N1} MB" -f ($_.Length / 1MB)
                 }
             })
@@ -3132,7 +3083,6 @@ namespace PCHH {
         $sysJson   = if ($sysEvents.Count -gt 0) { (ConvertTo-Json @($sysEvents) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $tempsJson = if ($temps.Count -gt 0) { (ConvertTo-Json @($temps) -Compress -Depth 4).Replace('</', '<\/') } else { '[]' }
         $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
         $isLaptopJson = if ($isLaptop) { 'true' } else { 'false' }
         $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -3161,8 +3111,8 @@ namespace PCHH {
         if ($null -eq $specsRaw) { $specsRaw = "" }
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
-        $genStamp = (Get-Date).ToString("dd/MM/yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__TEMPS__*/[]', $tempsJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
+        $genStamp = (Get-Date).ToString("dd'/'MM'/'yyyy HH:mm")
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
