@@ -1,6 +1,6 @@
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
 
-# change window size to fit textt
+# change window size to fit text
 # change window color
 
 $pshost = Get-Host
@@ -294,7 +294,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
     <div class="nav-group">
       <div class="nav-group-title static"><span>Overview</span></div>
       <div class="nav-group-items">
-        <button class="tab on" data-tab="summary"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>System Summary</button>
+        <button class="tab on" data-tab="summary"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Summary</button>
       </div>
     </div>
     <div class="nav-group">
@@ -323,10 +323,10 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       <div class="nav-group-title"><span>System</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
         <button class="tab" data-tab="security"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security</button>
-        <button class="tab" data-tab="processes"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Running Processes</button>
-        <button class="tab" data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Installed Apps</button>
-        <button class="tab" data-tab="updates"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Windows Updates</button>
-        <button class="tab" data-tab="extensions"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>Browser Extensions</button>
+        <button class="tab" data-tab="processes"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Processes</button>
+        <button class="tab" data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Apps</button>
+        <button class="tab" data-tab="updates"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Updates</button>
+        <button class="tab" data-tab="extensions"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>Extensions</button>
       </div>
     </div>
     <div class="nav-group">
@@ -341,7 +341,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 </aside>
 <main id="content">
 
-<h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- System Summary</span></h1>
+<h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- Summary</span></h1>
 
 <div id="summaryView" class="view">
   <div id="summaryHero"></div>
@@ -712,7 +712,7 @@ function renderSpecs(){
       dh+='<div class="drive'+(bad?' smart-bad':'')+'" style="margin-bottom:14px'+(bad?';cursor:pointer':'')+'"'+(bad?' onclick="openSmartModal(\''+esc(dk.disk)+'\')"':'')+'>';
       dh+='<h3>Disk '+esc(dk.disk)+(sm&&sm.name?' <span style="color:var(--dim);font-weight:400">'+esc(sm.name)+'</span>':'')+'</h3>';
       dh+='<div class="sub">'+esc(dk.style||'Unknown')+' \u00b7 '+dk.sizeGB+' GB'+(sm&&sm.bus?' \u00b7 '+esc(sm.bus):'')+
-        (healthLabel?' \u00b7 <span style="color:'+(bad?'var(--err)':'var(--ok)')+'">'+esc(healthLabel)+'</span>':'')+'</div>'+
+        (healthLabel?' \u00b7 <span style="color:var(--ok)">'+esc(healthLabel)+'</span>':'')+'</div>'+
         (bad?'<div style="color:var(--err);font-size:13.5px;margin-bottom:6px">\u26a0 SMART warning &mdash; click for details</div>':'');
       dh+='<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin:10px 0;background:var(--panel2)">';
       dk.partitions.forEach(p=>{
@@ -828,7 +828,7 @@ const FAQ_DATA=[
 {id:'pending-reboot',q:"Pending Reboot",a:"Windows or an update has made changes that only take full effect after a restart, and it's currently waiting on one. Until then the system can behave oddly and further updates may queue up behind it.<br><br>A normal restart resolves this.",tools:[]},
 {id:'wu-service',q:"Windows Update Service",a:"The background service that lets Windows check for and install updates is disabled. Normally it's set to start on demand (so it's often shown as 'Stopped' when idle - that's expected and not a problem), but 'Disabled' means it can't start at all, so Windows won't be able to update until it's turned back on.",tools:[]},
 {id:'wu-failed',q:"Failed Windows Updates",a:"One or more recent update attempts failed partway through rather than installing cleanly. This can happen for lots of reasons: a bad download, low disk space, corrupted update files, or a conflict with other software.<br><br>It can sometimes leave a PC feeling unstable or repeatedly nagging about the same update.",tools:["Windows 11 Download"]},
-{id:'ram-speed',q:"RAM Speed (XMP/EXPO)",a:"Your memory (RAM) is capable of running faster than it currently is. This almost always means that a feature called XMP (Intel) or EXPO (AMD) isn't enabled.<br><br>XMP/EXPO is a one-click profile in the BIOS that allows your RAM to run at its advertised speed. When it's disabled, your RAM will default to a lower speed. Enabling it isn't overclocking, and isn't dangerous. We'd recommend enabling it, which can be done through your BIOS. If you're unsure how to do that, you can ask one of our advisors for more help.<br><br><i>Note: some systems can struggle to run RAM at its full advertised speed for various reasons, which is why it isn't enabled by default. When this happens, it can sometimes help to disable it, to prevent system instability or crashes.</i><br><br>This isn't dangerous either way, but running below the rated speed does mean the RAM isn't performing the way it was bought to.",tools:["CPU-Z"]},
+{id:'ram-speed',q:"RAM Speed (XMP/EXPO)",a:"Your memory (RAM) is capable of running faster than it currently is. This almost always means that a feature called XMP (Intel) or EXPO (AMD) isn't enabled.<br><br>XMP/EXPO is a one-click profile in the BIOS that allows your RAM to run at its advertised speed. When it's disabled, your RAM will default to a lower speed. Enabling it isn't overclocking, and isn't dangerous. We'd recommend enabling it, which can be done through your BIOS. If you're unsure how to do that, you can ask one of our advisors for more help.<br><br><i>Note: some systems can struggle to run RAM at full advertised speed for various reasons, which is why it isn't enabled by default. When this happens, it can sometimes help to disable it, to prevent system instability or crashes.</i><br><br>This isn't dangerous either way, but running below the rated speed does mean the RAM isn't performing the way it was bought to.",tools:["CPU-Z"]},
 {id:'antivirus-conflict',q:"Multiple Antivirus Programs",a:"More than one antivirus program is trying to actively scan the system at the same time. This is a common, often-overlooked cause of slowdowns, false-positive quarantines, and general instability, since the two programs can end up fighting over the same files.",tools:[]},
 {id:'defender-rtp',q:"Defender Real-Time Protection",a:"Windows' built-in antivirus isn't actively scanning for threats. This can be intentional if another antivirus is installed, or it can be accidental. Malware sometimes disables it deliberately to avoid detection.",tools:[]},
 {id:'bitlocker-on',q:"BitLocker Enabled",a:"The system drive is encrypted with BitLocker. This is worth knowing before any wipe, reset, reinstall, or drive removal &mdash; without the recovery key, an encrypted drive that gets locked out (for example, after a motherboard or TPM change) cannot be read or recovered.<br><br>If a wipe or reset is planned, confirm the recovery key is backed up somewhere accessible (Microsoft account, Active Directory, or a printed/saved copy) before proceeding.",tools:[]},
@@ -1288,7 +1288,7 @@ function renderSummary(){
     if(sig&&sig<50)notes.push(dataLink('net','wifi-signal','<span class="y">Wi-Fi signal at '+sig+'%'+(NET.wifi.band?' on '+esc(NET.wifi.band):'')+'</span>'));
   }
   if(NET&&NET.adapters){
-    NET.adapters.filter(a=>a.gigabitBelowRated).forEach(a=>{
+    [].concat(NET.adapters).filter(a=>a.gigabitBelowRated).forEach(a=>{
       notes.push(dataLink('net','gigabit-slow','<span class="y">'+esc(a.name)+' is Gigabit-capable but connected at only '+esc(a.speed)+'</span>'));
     });
   }
@@ -1355,7 +1355,7 @@ function renderSummary(){
       ].filter(Boolean)});
     }
     if(sp.drives&&sp.drives.length){
-      const totalGB=DISKLAYOUT.length?DISKLAYOUT.reduce((a,d)=>a+(+d.sizeGB||0),0):sp.drives.reduce((a,d)=>a+(+d['Total Size (GB)']||0),0);
+      const totalGB=DISKLAYOUT.length?DISKLAYOUT.length?DISKLAYOUT.reduce((a,d)=>a+(+d.sizeGB||0),0):sp.drives.reduce((a,d)=>a+(+d['Total Size (GB)']||0),0):0;
       const freeGB=sp.drives.reduce((a,d)=>a+(+d['Free Space (GB)']||0),0);
       const fmtSize=gb=>gb>=1000?(gb/1000).toFixed(1)+' TB':Math.round(gb)+' GB';
       const freePct=totalGB?Math.round(freeGB/totalGB*100):null;
@@ -1401,7 +1401,7 @@ function renderSummary(){
     const title=titleParts.length?titleParts.join(' '):'System Manufacturer, System Product Name';
 
     let h='<div class="identity"><div class="identity-left">'+
-      '<div class="identity-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 22v-4M15 22v-4M9 6V2M15 6V2M22 9h-4M22 15h-4M2 9h4M2 15h4"/></svg></div>'+
+      '<div class="identity-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>'+
       '<div class="identity-text"><div class="identity-title">'+esc(title)+'</div>'+
       '</div></div>'+
       '<div class="status-pill '+pillCls+'"><span class="status-dot"></span>'+esc(pillText)+'</div></div>';
@@ -1608,7 +1608,6 @@ function renderGPU(){
   const gnames=Object.keys(byGpu).length?Object.keys(byGpu):GPUS.map(g=>g.name);
 
   let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
-  if(HAGS)h+='<dl class="kv" style="margin-bottom:16px"><dt>HAGS</dt><dd>'+esc(HAGS)+'</dd></dl>';
   h+='<div class="drive-grid">';
   // Official vendor driver pages are stable, well-known download hubs (unlike motherboard vendor
   // support pages, which get restructured often) - no need for the site-scoped search fallback
@@ -1633,6 +1632,7 @@ function renderGPU(){
     const displays=byGpu[g]||[];
     h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
       (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
+    if(HAGS)h+='<div class="sub" style="margin-top:2px">HAGS: '+esc(HAGS)+'</div>';
     const driverUrl=gpuDriverUrl(g);
     if(driverUrl)h+='<div style="margin-top:6px"><a href="'+driverUrl+'" target="_blank" rel="noopener" style="color:var(--info);font-size:13.5px">Check for driver updates</a></div>';
     const dispRows=displays.filter(d=>d.mon||d.mode);
@@ -1718,7 +1718,7 @@ function renderMemory(){
         '<dt>Part number</dt><dd>'+esc(m.pn||'?')+'</dd>'+
         '<dt>Capacity</dt><dd>'+esc(m.cap)+' GB</dd>'+
         (m.rated?'<dt>Rated speed</dt><dd>'+esc(m.rated)+' MT/s</dd>':'')+
-        (m.pnSpeed?'<dt>Speed (from part number)</dt><dd>'+esc(m.pnSpeed)+' MT/s'+(m.rated&&+m.pnSpeed>+m.rated?' <span style="color:var(--faint)">(higher than reported rated speed)</span>':'')+'</dd>':'')+
+        (m.pnSpeed?'<dt>Speed (from part number)</dt><dd>'+esc(m.pnSpeed)+' MT/s</dd>':'')+
         (m.conf?'<dt>Configured speed</dt><dd>'+esc(m.conf)+' MT/s</dd>':'')+
         '</dl></div>';
     });
@@ -1736,17 +1736,17 @@ function renderMemory(){
         '<div class="meter'+(commitPct>90?' low':'')+'"><div style="width:'+Math.min(commitPct,100)+'%"></div></div>'+
         '<div class="use mono">'+MEMUSE.cu.toFixed(1)+' GB used of '+MEMUSE.ct.toFixed(1)+' GB ('+commitPct+'%)</div></div>';
     }
-    if(MEMUSE.avail!=null||MEMUSE.cache!=null||MEMUSE.pagedPool!=null||MEMUSE.nonPagedPool!=null){
+    if(MEMUSE.avail!=null||MEMUSE.cache!=null||MEMUSE.pagedPool!=null||MEMUSE.nonPagedPool!=null||pageFile){
       h+='<div class="drive"><h3>Other</h3><dl class="kv smart-kv">'+
         (MEMUSE.avail!=null?'<dt>Available</dt><dd>'+MEMUSE.avail.toFixed(1)+' GB</dd>':'')+
         (MEMUSE.cache!=null?'<dt>Cached</dt><dd>'+MEMUSE.cache.toFixed(2)+' GB</dd>':'')+
         (MEMUSE.pagedPool!=null?'<dt>Paged pool</dt><dd>'+Math.round(MEMUSE.pagedPool)+' MB</dd>':'')+
         (MEMUSE.nonPagedPool!=null?'<dt>Non-paged pool</dt><dd>'+Math.round(MEMUSE.nonPagedPool)+' MB</dd>':'')+
+        (pageFile?'<dt>Page file size</dt><dd>'+esc(pageFile)+'</dd>':'')+
         '</dl></div>';
     }
     h+='</div></div>';
   }
-  if(pageFile)h+='<div class="spec-section"><h2>Virtual memory</h2><dl class="kv"><dt>Page file size</dt><dd>'+esc(pageFile)+'</dd></dl></div>';
   v.innerHTML=h||'<div class="spec-section"><h2>Memory</h2><div style="color:var(--faint)">No memory data embedded.</div></div>';
 }
 function renderBattery(){
@@ -1776,14 +1776,18 @@ function renderBattery(){
 }
 function renderNet(){
   const v=document.getElementById('netView');
-  if(!NET||(!NET.adapters||!NET.adapters.length)&&!NET.wifi){
+  const adapters = [].concat(NET&&NET.adapters ? NET.adapters : []);
+  const vpns = [].concat(NET&&NET.vpns ? NET.vpns : []);
+  const dns = [].concat(NET&&NET.dns ? NET.dns : []);
+
+  if(!NET||(adapters.length===0 && !NET.wifi)){
     v.innerHTML='<div class="spec-section"><h2>Network adapters</h2><div style="color:var(--faint)">No network data embedded.</div></div>';
     return;
   }
   let h='';
-  if(NET.adapters&&NET.adapters.length){
-    h+='<div class="spec-section"><h2>Network adapters ('+NET.adapters.length+')</h2><div class="drive-grid">';
-    NET.adapters.forEach(a=>{
+  if(adapters.length){
+    h+='<div class="spec-section"><h2>Network adapters ('+adapters.length+')</h2><div class="drive-grid">';
+    adapters.forEach(a=>{
       const up=/^up$/i.test(a.status);
       const stCol=up?'var(--ok)':/disconnect/i.test(a.status)?'var(--warn)':'var(--faint)';
       h+='<div class="drive"><h3>'+esc(a.name)+'</h3>'+
@@ -1798,9 +1802,9 @@ function renderNet(){
     });
     h+='</div></div>';
   }
-  if(NET.vpns&&NET.vpns.length){
-    h+='<div class="spec-section"><h2>VPN / virtual adapters ('+NET.vpns.length+')</h2><div class="drive-grid">';
-    NET.vpns.forEach(a=>{
+  if(vpns.length){
+    h+='<div class="spec-section"><h2>VPN / virtual adapters ('+vpns.length+')</h2><div class="drive-grid">';
+    vpns.forEach(a=>{
       const up=/^up$/i.test(a.status);
       h+='<div class="drive"><h3>'+esc(a.name)+'</h3>'+
         '<div class="sub">'+esc(a.desc||'')+'</div>'+
@@ -1808,8 +1812,8 @@ function renderNet(){
     });
     h+='</div></div>';
   }
-  if(NET.dns&&NET.dns.length){
-    h+='<div class="spec-section"><h2>DNS servers</h2><dl class="kv"><dt style="grid-column:1/-1">'+esc(NET.dns.join(', '))+'</dt></dl>'+
+  if(dns.length){
+    h+='<div class="spec-section"><h2>DNS servers</h2><dl class="kv"><dt style="grid-column:1/-1">'+esc(dns.join(', '))+'</dt></dl>'+
       '<div style="color:var(--faint);font-size:13.5px;margin-top:8px">A stale DNS override left behind by a VPN client or router misconfiguration is a common, otherwise invisible cause of connectivity issues - worth checking these are what you expect.</div></div>';
   }
   if(NET.wifi&&NET.wifi.signal){
@@ -2655,913 +2659,4 @@ function reliabilityexport {
 
         # Recent Windows Update history, including FAILED/pending attempts that Get-HotFix cannot show.
         # Defender's daily "Security Intelligence Update" entries can dominate the most recent history,
-        # so pull a wider raw window before filtering them out and capping the final list.
-        $wuHistory = @()
-        try {
-            $session = New-Object -ComObject Microsoft.Update.Session
-            $searcher = $session.CreateUpdateSearcher()
-            $historyCount = $searcher.GetTotalHistoryCount()
-            if ($historyCount -gt 0) {
-                $resultMap = @{ 1 = "In progress"; 2 = "Succeeded"; 3 = "Succeeded with errors"; 4 = "Failed"; 5 = "Cancelled" }
-                $wuHistory = @($searcher.QueryHistory(0, [Math]::Min($historyCount, 200)) | Where-Object { $_.Title -notmatch 'Security Intelligence Update' } | Select-Object -First 40 | ForEach-Object {
-                    [PSCustomObject]@{
-                        title  = "$($_.Title)"
-                        date   = if ($_.Date) { $_.Date.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
-                        result = if ($resultMap.ContainsKey([int]$_.ResultCode)) { $resultMap[[int]$_.ResultCode] } else { "Unknown" }
-                    }
-                } | Sort-Object date -Descending)
-            }
-        } catch { }
-
-        $devErrors = @()
-        try {
-            $devErrors = @(Get-CimInstance Win32_PNPEntity -ErrorAction Stop | Where-Object { $_.ConfigManagerErrorCode -ne 0 } | ForEach-Object {
-                [PSCustomObject]@{ name = "$($_.Name)"; code = "$($_.ConfigManagerErrorCode)" }
-            })
-        } catch { }
-
-        # Full audio device list: Windows stores every render (output) and capture (input) endpoint,
-        # active or not, under these two documented registry trees. DeviceState is a standard MMDevice
-        # API value (1=Active, 2=Disabled, 4=Not present, 8=Unplugged). We don't attempt to mark which
-        # one is the "default" - that's set via an undocumented COM interface with no reliable registry
-        # read, so mislabelling it would be worse than leaving it out.
-        function Get-AudioEndpoints($direction) {
-            $out = @()
-            try {
-                $base = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\$direction"
-                Get-ChildItem -Path $base -ErrorAction Stop | ForEach-Object {
-                    $name = $null
-                    try {
-                        $name = (Get-ItemProperty -Path "$($_.PSPath)\Properties" -Name '{a45c254e-df1c-4efd-8020-67d146a850e0},2' -ErrorAction Stop).'{a45c254e-df1c-4efd-8020-67d146a850e0},2'
-                    } catch { }
-                    if ($name) {
-                        $stateVal = (Get-ItemProperty -Path $_.PSPath -Name 'DeviceState' -ErrorAction SilentlyContinue).DeviceState
-                        $state = switch ($stateVal) { 1 {"Active"} 2 {"Disabled"} 4 {"Not present"} 8 {"Unplugged"} default {"Unknown"} }
-                        $out += [PSCustomObject]@{ name = "$name"; state = $state }
-                    }
-                }
-            } catch { }
-            return $out
-        }
-        $audio = $null
-        try {
-            $playbackDevs  = @(Get-AudioEndpoints 'Render'  | Where-Object { $_.state -eq 'Active' })
-            $recordingDevs = @(Get-AudioEndpoints 'Capture' | Where-Object { $_.state -eq 'Active' })
-            if ($playbackDevs.Count -or $recordingDevs.Count) {
-                $audio = [PSCustomObject]@{ playbackDevices = $playbackDevs; recordingDevices = $recordingDevs }
-            }
-        } catch { }
-
-        # Webcams / capture devices: PNPClass Camera covers modern USB Video Class webcams,
-        # Image covers older webcams and scanners/imaging devices. -PresentOnly is the important
-        # part here: Win32_PnPEntity has no reliable "still actually plugged in" flag and happily
-        # lists devices that were unplugged or removed long ago ("ghost" devices). Get-PnpDevice's
-        # -PresentOnly switch is the documented, correct way to filter those out.
-        $cameras = @()
-        try {
-            $camRaw = @(Get-PnpDevice -PresentOnly -Class Camera,Image -ErrorAction Stop)
-            $cameras = @($camRaw | Group-Object FriendlyName,Status | ForEach-Object {
-                $g = $_.Group[0]
-                [PSCustomObject]@{ name = "$($g.FriendlyName)$(if($_.Count -gt 1){" (x$($_.Count))"})"; status = "$($g.Status)" }
-            })
-        } catch { }
-
-        # Other connected USB peripherals: filtered to actual endpoint devices (mice, keyboards,
-        # controllers, capture cards, storage, audio interfaces, etc), excluding hub/composite-parent
-        # entries that don't mean anything to a person reading the report, and excluding cameras
-        # (shown separately above). Identical repeats (e.g. several HID collections belonging to
-        # the same wireless dongle) are collapsed into one line with a count instead of one line each.
-        $usbDevices = @()
-        try {
-            $camNames = @($cameras | ForEach-Object { $_.name -replace ' \(x\d+\)$','' })
-            $usbRaw = @(Get-PnpDevice -PresentOnly -ErrorAction Stop | Where-Object {
-                $_.InstanceId -like 'USB*' -and
-                $_.Class -ne 'USB' -and
-                $_.Status -eq 'OK' -and
-                $_.Service -notin @('usbhub','USBHUB3','usbccgp','UMB','USBSTOR') -and
-                $_.FriendlyName -notin $camNames
-            })
-            $usbDevices = @($usbRaw | Group-Object FriendlyName | ForEach-Object {
-                $g = $_.Group[0]
-                [PSCustomObject]@{ name = "$($g.FriendlyName)$(if($_.Count -gt 1){" (x$($_.Count))"})"; status = "$($g.Status)" }
-            })
-        } catch { }
-
-        # Hardware-accelerated GPU Scheduling (system-wide setting, not per-adapter)
-        # Desktop vs laptop: a battery is the simplest reliable signal. This gates the
-        # "display on wrong GPU" check below, since laptops normally route the built-in
-        # panel through the integrated GPU by design, which isn't a mistake there.
-        $isLaptop = $false
-        try {
-            $batt = Get-CimInstance Win32_Battery -ErrorAction Stop
-            if ($batt) { $isLaptop = $true }
-        } catch { }
-
-        # Battery health: Win32_Battery only gives current charge % and a coarse status, not
-        # the wear that actually matters. The real numbers - design capacity vs. what it can
-        # currently hold when full - live in root\wmi, the same data powercfg /batteryreport
-        # pulls from, just without needing to parse a report file.
-        $batteryInfo = @()
-        if ($isLaptop) {
-            try {
-                $bStatic = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData -ErrorAction SilentlyContinue)
-                $bFull = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity -ErrorAction SilentlyContinue)
-                $bCycle = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryCycleCount -ErrorAction SilentlyContinue)
-                $chemNames = @{1='Other';2='Unknown';3='Lead Acid';4='Nickel Cadmium';5='Nickel Metal Hydride';6='Lithium-ion';7='Zinc Air';8='Lithium Polymer'}
-                $battArr = @($batt)
-                for ($i = 0; $i -lt $battArr.Count; $i++) {
-                    $w32 = $battArr[$i]
-                    $static = $bStatic | Where-Object { $_.InstanceName -eq $w32.DeviceID -or $bStatic.Count -eq $battArr.Count } | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bStatic.Count-1)))
-                    $full = $bFull | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bFull.Count-1)))
-                    $cycle = $bCycle | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bCycle.Count-1)))
-                    $designCap = if ($static -and $static.DesignedCapacity -gt 0) { $static.DesignedCapacity } else { $null }
-                    $fullCap = if ($full -and $full.FullChargedCapacity -gt 0) { $full.FullChargedCapacity } else { $null }
-                    $healthPct = if ($designCap -and $fullCap) { [Math]::Round(($fullCap / $designCap) * 100, 1) } else { $null }
-                    $cycleCount = if ($cycle -and $cycle.CycleCount -gt 0) { $cycle.CycleCount } else { $null }
-                    $batteryInfo += [PSCustomObject]@{
-                        name       = if ($w32.Name) { $w32.Name } else { "Battery $($i+1)" }
-                        chemistry  = if ($chemNames.ContainsKey([int]$w32.Chemistry)) { $chemNames[[int]$w32.Chemistry] } else { $null }
-                        chargePct  = $w32.EstimatedChargeRemaining
-                        designCap  = $designCap
-                        fullCap    = $fullCap
-                        healthPct  = $healthPct
-                        cycleCount = $cycleCount
-                        status     = switch ($w32.BatteryStatus) { 1 {'Discharging'} 2 {'On AC, fully charged'} 3 {'Fully charged'} 4 {'Low'} 5 {'Critical'} 6 {'Charging'} 7 {'Charging, high'} 8 {'Charging, low'} 9 {'Charging, critical'} 10 {'Undefined'} 11 {'Partially charged'} default {$null} }
-                    }
-                }
-            } catch { }
-        }
-
-        $hagsEnabled = $null
-        try {
-            $hw = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -ErrorAction Stop).HwSchMode
-            $hagsEnabled = if ($hw -eq 2) { "Enabled" } else { "Disabled" }
-        } catch { }
-
-        $gpus = @()
-        try {
-            $gpus = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | ForEach-Object {
-                $vram = if ($vramByKey.ContainsKey($_.Name)) { $vramByKey[$_.Name] } elseif ($_.AdapterRAM) { $_.AdapterRAM } else { 0 }
-                [PSCustomObject]@{
-                    name   = "$($_.Name)"
-                    drv    = "$($_.DriverVersion)"
-                    radeon = if ($_.Name -match 'AMD|Radeon') { $radeonVer } else { "" }
-                    hres   = if ($_.CurrentHorizontalResolution) { [int]$_.CurrentHorizontalResolution } else { 0 }
-                    vres   = if ($_.CurrentVerticalResolution) { [int]$_.CurrentVerticalResolution } else { 0 }
-                    hz     = if ($_.CurrentRefreshRate) { [int]$_.CurrentRefreshRate } else { 0 }
-                    vram   = if ($vram) { [math]::Round($vram / 1GB, 1) } else { 0 }
-                }
-            })
-        } catch { }
-        $mons = @()
-        try {
-            $mons = @(Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorID -ErrorAction Stop | ForEach-Object {
-                if ($_.UserFriendlyName) {
-                    ([System.Text.Encoding]::ASCII.GetString(($_.UserFriendlyName | Where-Object { $_ -ne 0 }))).Trim()
-                }
-            } | Where-Object { $_ })
-        } catch { }
-
-        Write-Host "      - GPU and display info via DXDIAG (this can take up to 30 seconds)" -ForegroundColor DarkGray
-        # Per-output display -> GPU mapping via dxdiag (waits up to 30s; falls back to WMI data above)
-        $displays = @()
-        try {
-            $dxPath = "$env:TEMP\pchh_dxdiag.xml"
-            Remove-Item $dxPath -Force -ErrorAction SilentlyContinue
-            Start-Process dxdiag -ArgumentList "/whql:off", "/x", "`"$dxPath`"" -WindowStyle Hidden
-            for ($i = 0; $i -lt 30 -and -not (Test-Path $dxPath); $i++) { Start-Sleep -Seconds 1 }
-            Start-Sleep -Seconds 1
-            if (Test-Path $dxPath) {
-                [xml]$dx = Get-Content $dxPath -Raw
-                $displays = @($dx.DxDiag.DisplayDevices.DisplayDevice | ForEach-Object {
-                    $mon = "$($_.MonitorName)"
-                    if (-not $mon) { $mon = "$($_.MonitorModel)" }
-                    [PSCustomObject]@{
-                        gpu  = "$($_.CardName)"
-                        mon  = $mon.Trim()
-                        mode = $(
-                            $raw = "$($_.CurrentMode)".Trim()
-                            if ($raw -match '^(.*?)\s*\((\d+) bit\)\s*\((\d+Hz)\)\s*$') { "$($Matches[1]) ($($Matches[3]), $($Matches[2])-bit)" } else { $raw }
-                        )
-                    }
-                } | Where-Object { $_.gpu })
-                Remove-Item $dxPath -Force -ErrorAction SilentlyContinue
-            }
-        } catch { }
-
-        # Running processes grouped by name (top 150 by memory)
-        $procs = @()
-        try {
-            $procs = @(Get-Process -ErrorAction Stop | Group-Object ProcessName | ForEach-Object {
-                [PSCustomObject]@{
-                    name = $_.Name
-                    cnt  = $_.Count
-                    mem  = [math]::Round((($_.Group | Measure-Object WorkingSet64 -Sum).Sum) / 1MB)
-                }
-            } | Sort-Object mem -Descending)
-        } catch { }
-
-        Write-Host "      - Security (Defender status, exclusions, hosts file, startup, browser extensions)" -ForegroundColor DarkGray
-        $security = $null
-        try {
-            # Defender status + scan history
-            $mpStatus = $null
-            try { $mpStatus = Get-MpComputerStatus -ErrorAction Stop } catch { }
-            $defender = if ($mpStatus) {
-                [PSCustomObject]@{
-                    rtp        = "$($mpStatus.RealTimeProtectionEnabled)"
-                    lastQuick  = if ($mpStatus.QuickScanEndTime) { $mpStatus.QuickScanEndTime.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
-                    lastFull   = if ($mpStatus.FullScanEndTime) { $mpStatus.FullScanEndTime.ToString("dd'/'MM'/'yyyy HH:mm") } else { "" }
-                    sigAge     = "$($mpStatus.AntivirusSignatureAge)"
-                    sigVersion = "$($mpStatus.AntivirusSignatureVersion)"
-                }
-            } else { $null }
-
-            # Registered antivirus products (Windows Security Center) - name + real-time enabled state
-            $avProducts = @()
-            try {
-                $avProducts = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop | ForEach-Object {
-                    # productState is a bitmask; the middle byte's low nibble indicates enabled/disabled
-                    $stateHex = "{0:X6}" -f [int]$_.productState
-                    $enabled = $stateHex.Substring(2,2) -in @('10','11')
-                    [PSCustomObject]@{ name = "$($_.displayName)"; enabled = $enabled }
-                })
-            } catch { }
-
-            # Third-party firewall products, same Security Center namespace as the AV check above -
-            # mainly useful for spotting a leftover firewall product (uninstalled security suites
-            # sometimes leave their firewall driver registered and blocking traffic behind).
-            $firewallProducts = @()
-            try {
-                $firewallProducts = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName FirewallProduct -ErrorAction Stop | ForEach-Object {
-                    $stateHex = "{0:X6}" -f [int]$_.productState
-                    $enabled = $stateHex.Substring(2,2) -in @('10','11')
-                    [PSCustomObject]@{ name = "$($_.displayName)"; enabled = $enabled }
-                })
-            } catch { }
-
-            $threats = @()
-            try {
-                $threats = @(Get-MpThreatDetection -ErrorAction Stop | Select-Object -First 25 | ForEach-Object {
-                    [PSCustomObject]@{
-                        name = "$($_.ThreatName)"
-                        time = $_.InitialDetectionTime.ToString("dd'/'MM'/'yyyy HH:mm")
-                        act  = "$($_.ActionSuccess)"
-                    }
-                })
-            } catch { }
-
-            # Exclusions with dangerous-pattern flagging (paths genericized to strip username)
-            $genericize = { param($p) if ("$p") { "$p" -replace [regex]::Escape("$env:USERPROFILE"), "%USERPROFILE%" -replace 'C:\\Users\\[^\\]+', "C:\Users\<user>" } else { "$p" } }
-            $exclusions = @()
-            $exclFlags = @()
-            try {
-                $mpPref = Get-MpPreference -ErrorAction Stop
-                foreach ($p in $mpPref.ExclusionPath) {
-                    $g = & $genericize $p
-                    $exclusions += "Path: $g"
-                    if ($p -match '^[A-Za-z]:\\?$') { $exclFlags += "Entire drive excluded: $g" }
-                    elseif ($p -match '\\(Temp|AppData\\Roaming)\\?$') { $exclFlags += "Broad system folder excluded: $g" }
-                }
-                foreach ($e in $mpPref.ExclusionExtension) {
-                    $exclusions += "Extension: .$e"
-                    if ($e -match '^(exe|dll|scr|bat|ps1)$') { $exclFlags += "Executable file type excluded: .$e" }
-                }
-                foreach ($pr in $mpPref.ExclusionProcess) { $exclusions += "Process: $(& $genericize $pr)" }
-            } catch { }
-
-            # Hosts file: count custom entries, flag known-domain redirects
-            $hostsCustom = 0
-            $hostsFlags = @()
-            try {
-                $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
-                $watchDomains = 'windowsupdate\.microsoft\.com|update\.microsoft\.com|\.microsoft\.com$|malwarebytes\.com|windowsdefender|virustotal\.com|avast\.com|kaspersky\.com|mcafee\.com|norton\.com'
-                Get-Content $hostsPath -ErrorAction Stop | ForEach-Object {
-                    $line = $_.Trim()
-                    if ($line -and -not $line.StartsWith('#')) {
-                        $hostsCustom++
-                        if ($line -match $watchDomains -and $line -notmatch '^\s*(0\.0\.0\.0|127\.0\.0\.1)\s') {
-                            $hostsFlags += $line
-                        } elseif ($line -match $watchDomains) {
-                            $hostsFlags += "$line (redirected to loopback/null - likely intentional block)"
-                        }
-                    }
-                }
-            } catch { }
-
-            # Suspicious startup entries: no publisher/signature, or launching from Temp/AppData with odd naming
-            $startupFlags = @()
-            function Test-SuspiciousStartupExe($exePath) {
-                if ($exePath -match '\\(Temp|AppData\\Local\\Temp)\\') { return @{ Suspicious = $true; Reason = "runs from Temp folder" } }
-                if (Test-Path $exePath -ErrorAction SilentlyContinue) {
-                    try {
-                        $sig = Get-AuthenticodeSignature -FilePath $exePath -ErrorAction Stop
-                        if ($sig.Status -ne 'Valid') { return @{ Suspicious = $true; Reason = "unsigned or invalid signature" } }
-                    } catch { }
-                }
-                return @{ Suspicious = $false; Reason = "" }
-            }
-            try {
-                $runKeys = @(
-                    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
-                    'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'
-                )
-                foreach ($rk in $runKeys) {
-                    if (Test-Path $rk) {
-                        $props = Get-ItemProperty -Path $rk -ErrorAction SilentlyContinue
-                        $props.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
-                            $val = "$($_.Value)"
-                            $exePath = ($val -replace '^"?([^"]+\.exe)"?.*$', '$1')
-                            $check = Test-SuspiciousStartupExe $exePath
-                            if ($check.Suspicious) { $startupFlags += "$($_.Name): $($check.Reason)" }
-                        }
-                    }
-                }
-            } catch { }
-
-            # Firewall status per profile
-            $firewall = @()
-            try {
-                $firewall = @(Get-NetFirewallProfile -ErrorAction Stop | ForEach-Object {
-                    [PSCustomObject]@{ profile = "$($_.Name)"; enabled = "$($_.Enabled)" }
-                })
-            } catch { }
-
-            # RDP (Remote Desktop) status: registry setting + listening service
-            $rdp = $null
-            try {
-                $deny = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server' -Name fDenyTSConnections -ErrorAction Stop).fDenyTSConnections
-                $enabled = ($deny -eq 0)
-                $svc = Get-Service -Name TermService -ErrorAction SilentlyContinue
-                $nla = $null
-                try {
-                    $nla = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name UserAuthentication -ErrorAction Stop).UserAuthentication
-                } catch { }
-                $rdp = [PSCustomObject]@{
-                    enabled       = $enabled
-                    serviceStatus = if ($svc) { "$($svc.Status)" } else { "Unknown" }
-                    nlaRequired   = if ($null -ne $nla) { ($nla -eq 1) } else { $null }
-                }
-            } catch { }
-
-            # Signed-in account type: Microsoft account, Domain-joined, or Local
-            $acctType = $null
-            try {
-                $curSid = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
-                if ($curSid -match '^S-1-12-1-') {
-                    $acctType = "Microsoft / Entra ID account"
-                } else {
-                    $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
-                    $acctType = if ($cs.PartOfDomain) { "Domain account" } else { "Local account" }
-                }
-            } catch { }
-
-            # Scheduled Tasks: user-created, non-Microsoft, enabled - flag unsigned/Temp-run actions
-            try {
-                $tasks = Get-ScheduledTask -ErrorAction Stop | Where-Object {
-                    $_.State -ne 'Disabled' -and $_.TaskPath -notmatch '\\Microsoft\\' -and $_.TaskPath -notmatch '\\Windows\\'
-                }
-                foreach ($t in $tasks) {
-                    $act = ($t.Actions | Where-Object { $_.Execute } | Select-Object -First 1).Execute
-                    if (-not $act) { continue }
-                    $exePath = $act -replace '^"?([^"]+)"?.*$', '$1'
-                    $check = Test-SuspiciousStartupExe $exePath
-                    if ($check.Suspicious) { $startupFlags += "Scheduled task '$($t.TaskName)': $($check.Reason)" }
-                }
-            } catch { }
-
-            # Startup folder shortcuts (both all-users and current user)
-            try {
-                $startupDirs = @("$env:ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp", "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\StartUp")
-                foreach ($sd in $startupDirs) {
-                    if (-not (Test-Path $sd)) { continue }
-                    Get-ChildItem -Path $sd -Filter "*.lnk" -ErrorAction SilentlyContinue | ForEach-Object {
-                        try {
-                            $sh = New-Object -ComObject WScript.Shell
-                            $target = $sh.CreateShortcut($_.FullName).TargetPath
-                            if ($target -match '\\(Temp|AppData\\Local\\Temp)\\') {
-                                $startupFlags += "Startup shortcut '$($_.BaseName)': runs from Temp folder"
-                            }
-                        } catch { }
-                    }
-                }
-            } catch { }
-
-            # Services set to Automatic that are not Running
-            $stalledServices = @()
-            try {
-                $stalledServices = @(Get-CimInstance Win32_Service -Filter "StartMode='Auto' AND State!='Running'" -ErrorAction Stop | ForEach-Object {
-                    [PSCustomObject]@{ name = "$($_.DisplayName)"; state = "$($_.State)" }
-                } | Select-Object -First 20)
-            } catch { }
-
-            # Browser extensions: Chrome + Edge, all profiles, name only (no IDs, no sync data)
-            $extensions = @()
-            try {
-                $browserRoots = @(
-                    @{ browser = "Chrome";    root = "$env:LOCALAPPDATA\Google\Chrome\User Data" },
-                    @{ browser = "Edge";      root = "$env:LOCALAPPDATA\Microsoft\Edge\User Data" },
-                    @{ browser = "Brave";     root = "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\User Data" },
-                    @{ browser = "Opera";     root = "$env:APPDATA\Opera Software\Opera Stable" },
-                    @{ browser = "Opera GX";  root = "$env:APPDATA\Opera Software\Opera GX Stable" },
-                    @{ browser = "Vivaldi";   root = "$env:LOCALAPPDATA\Vivaldi\User Data" }
-                )
-                foreach ($b in $browserRoots) {
-                    if (-not (Test-Path $b.root)) { continue }
-                    $profiles = @(Get-ChildItem -Path $b.root -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq 'Default' -or $_.Name -match '^Profile \d+$' })
-                    if ($profiles.Count -eq 0 -and (Test-Path (Join-Path $b.root "Extensions"))) {
-                        # Opera / Opera GX keep the Extensions folder directly under the root (no Default subfolder)
-                        $profiles = @([PSCustomObject]@{ FullName = $b.root; Name = "Default" })
-                    }
-                    foreach ($prof in $profiles) {
-                        $extDir = Join-Path $prof.FullName "Extensions"
-                        if (-not (Test-Path $extDir)) { continue }
-
-                        # Cross-reference against the browser's own extension state, not just what's
-                        # on disk - Chromium doesn't always clean up an extension's folder immediately
-                        # after uninstall/disable, which can make a removed extension look "installed".
-                        # state: 0 = disabled, 1 = enabled. Only IDs present here with state=1 count.
-                        $enabledIds = $null
-                        foreach ($prefFile in @('Secure Preferences', 'Preferences')) {
-                            $prefPath = Join-Path $prof.FullName $prefFile
-                            if (-not (Test-Path $prefPath)) { continue }
-                            try {
-                                $prefs = Get-Content $prefPath -Raw -ErrorAction Stop | ConvertFrom-Json
-                                if ($prefs.extensions -and $prefs.extensions.settings) {
-                                    $enabledIds = @($prefs.extensions.settings.PSObject.Properties | Where-Object { $_.Value.state -eq 1 } | ForEach-Object { $_.Name })
-                                    break
-                                }
-                            } catch { }
-                        }
-
-                        Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-                            $extId = $_.Name
-                            if ($enabledIds -and $enabledIds -notcontains $extId) { return }
-                            $verDir = Get-ChildItem -Path $_.FullName -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-                            if (-not $verDir) { return }
-                            $manifestPath = Join-Path $verDir.FullName "manifest.json"
-                            if (-not (Test-Path $manifestPath)) { return }
-                            try {
-                                $manifest = Get-Content $manifestPath -Raw -ErrorAction Stop | ConvertFrom-Json
-                                $name = "$($manifest.name)"
-                                if ($name -match '^__MSG_(.+)__$') {
-                                    $key = $Matches[1]
-                                    $locale = if ($manifest.default_locale) { $manifest.default_locale } else { "en" }
-                                    $msgPath = Join-Path $verDir.FullName "_locales\$locale\messages.json"
-                                    if (Test-Path $msgPath) {
-                                        try {
-                                            $msgs = Get-Content $msgPath -Raw -ErrorAction Stop | ConvertFrom-Json
-                                            if ($msgs.$key.message) { $name = "$($msgs.$key.message)" }
-                                        } catch { }
-                                    }
-                                }
-                                if ($name -and $name -notmatch '^__MSG_') {
-                                    $extensions += [PSCustomObject]@{ browser = $b.browser; profile = $prof.Name; name = $name }
-                                }
-                            } catch { }
-                        }
-                    }
-                }
-            } catch { }
-
-            # Firefox: extensions.json per profile (different storage format to Chromium)
-            try {
-                $ffRoot = "$env:APPDATA\Mozilla\Firefox\Profiles"
-                if (Test-Path $ffRoot) {
-                    Get-ChildItem -Path $ffRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '\.default' } | ForEach-Object {
-                        $extJsonPath = Join-Path $_.FullName "extensions.json"
-                        if (-not (Test-Path $extJsonPath)) { return }
-                        try {
-                            $extData = Get-Content $extJsonPath -Raw -ErrorAction Stop | ConvertFrom-Json
-                            foreach ($addon in $extData.addons) {
-                                if ($addon.type -ne 'extension' -or $addon.active -ne $true) { continue }
-                                $name = if ($addon.defaultLocale -and $addon.defaultLocale.name) { "$($addon.defaultLocale.name)" } else { "$($addon.id)" }
-                                if ($name) { $extensions += [PSCustomObject]@{ browser = "Firefox"; profile = $_.Name; name = $name } }
-                            }
-                        } catch { }
-                    }
-                }
-            } catch { }
-
-            # BitLocker status per volume (drive letter, protection status)
-            $bitlocker = @()
-            try {
-                $bitlocker = @(Get-BitLockerVolume -ErrorAction Stop | ForEach-Object {
-                    [PSCustomObject]@{
-                        drive  = "$($_.MountPoint)"
-                        status = "$($_.ProtectionStatus)"
-                        type   = "$($_.VolumeType)"
-                    }
-                })
-            } catch { }
-
-            $security = [PSCustomObject]@{
-                defender         = $defender
-                threats          = $threats
-                exclusions       = $exclusions
-                exclFlags        = $exclFlags
-                hostsCustom      = $hostsCustom
-                hostsFlags       = $hostsFlags
-                startupFlags     = $startupFlags
-                extensions       = $extensions
-                firewall         = $firewall
-                stalledServices  = $stalledServices
-                bitlocker        = $bitlocker
-                rdp              = $rdp
-                acctType         = $acctType
-                avProducts       = $avProducts
-                firewallProducts = $firewallProducts
-            }
-        } catch { }
-
-        Write-Host "      - Network adapters, Memory and Running processes" -ForegroundColor DarkGray
-        # Network adapters (no IPs, MACs or SSIDs collected - DNS server addresses are the one
-        # exception, since a stale/leftover DNS override, often left behind by a VPN client that's
-        # since been closed, is a common and otherwise invisible cause of "the internet is broken"
-        # reports; this is a static config read, not a live query out to anything)
-        $net = $null
-        # Each piece below gets its own try/catch with a safe empty default. Previously the whole
-        # block shared one try, so a single failure anywhere - e.g. Get-NetAdapter throwing on a
-        # machine with an unusual adapter setup - silently discarded everything else that had
-        # already been collected successfully, including data with nothing to do with the failure
-        # (this is almost certainly what caused "No network data embedded" on a real report).
-        $dnsServers = @()
-        try {
-            $dnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-                Where-Object { $_.ServerAddresses.Count -gt 0 -and $_.InterfaceAlias -notmatch 'Loopback' } |
-                Select-Object -ExpandProperty ServerAddresses | Sort-Object -Unique)
-        } catch { }
-        $adapters = @()
-        try {
-            $adapters = @(Get-NetAdapter -Physical -ErrorAction Stop | ForEach-Object {
-                # Flag an Ethernet link that's connected well below what the hardware can do - a
-                # classic sign of a bad/damaged cable, a bad port, or a cheap Cat5 run. We check the
-                # driver's own advertised speed options (ValidDisplayValues) rather than guessing
-                # gigabit capability from the adapter's name, since plenty of genuine gigabit NICs
-                # (e.g. most Intel ones) don't say "Gigabit" anywhere in their description.
-                $gigabitBelowRated = $false
-                try {
-                    if ($_.Status -eq 'Up' -and $_.PhysicalMediaType -eq '802.3') {
-                        $speedProp = Get-NetAdapterAdvancedProperty -Name $_.Name -RegistryKeyword '*SpeedDuplex' -ErrorAction Stop
-                        if ($speedProp.ValidDisplayValues -match '1\.?0?\s*Gbps|1000') {
-                            if ("$($_.LinkSpeed)" -match '^([\d.,]+)\s*(Gbps|Mbps|Kbps)') {
-                                $val = [double]($Matches[1] -replace ',', '.')
-                                $mbps = switch -Regex ($Matches[2]) { 'Gbps' { $val * 1000 }; 'Mbps' { $val }; 'Kbps' { $val / 1000 } }
-                                if ($mbps -lt 1000) { $gigabitBelowRated = $true }
-                            }
-                        }
-                    }
-                } catch { }
-                [PSCustomObject]@{
-                    name   = "$($_.Name)"
-                    desc   = "$($_.InterfaceDescription)"
-                    status = "$($_.Status)"
-                    speed  = "$($_.LinkSpeed)"
-                    media  = "$($_.PhysicalMediaType)"
-                    gigabitBelowRated = $gigabitBelowRated
-                    driverVersion = "$($_.DriverVersion)"
-                    driverDate    = if ($_.DriverDate) { $_.DriverDate.ToString("dd'/'MM'/'yyyy") } else { "" }
-                }
-            })
-        } catch { }
-        $vpns = @()
-        try {
-            $vpns = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
-                -not $_.Physical -and (
-                    $_.Status -eq 'Up' -or
-                    "$($_.InterfaceDescription) $($_.Name)" -match 'TAP|Wintun|WireGuard|OpenVPN|Tailscale|Nord|ExpressVPN|Proton|Surfshark|Mullvad|ZeroTier|Hamachi|Radmin|Bright|VPN|AnyConnect|GlobalProtect|Forti|Cloudflare|WARP|Pulse|SonicWall|NetExtender|CheckPoint|SoftEther|PacketiX|Windscribe|IVPN|Psiphon|Betternet|Shadowsocks|Hotspot Shield'
-                ) -and "$($_.InterfaceDescription)" -notmatch 'WAN Miniport|Bluetooth|Loopback|Kernel Debug'
-            } | ForEach-Object {
-                [PSCustomObject]@{
-                    name   = "$($_.Name)"
-                    desc   = "$($_.InterfaceDescription)"
-                    status = "$($_.Status)"
-                }
-            })
-        } catch { }
-        $wifi = $null
-        try {
-            # Signal strength via WMI rather than parsing 'netsh wlan show interfaces' text output -
-            # netsh's field labels (Signal/Band/Channel/etc) are localized by Windows' own display
-            # language, so text-matching them only works on English-language systems. This WMI class
-            # returns the raw numeric value regardless of system language.
-            $wifiSignalPct = $null
-            try {
-                $sig = Get-CimInstance -Namespace root\wmi -ClassName MSNdis_80211_ReceivedSignalStrength -ErrorAction Stop | Select-Object -First 1
-                if ($sig) { $wifiSignalPct = [int]$sig.Ndis80211ReceivedSignalStrength }
-            } catch { }
-
-            # Radio type / auth / rx-tx rate via the native WLAN API (wlanapi.dll) instead of text-
-            # matching netsh's localized field labels - this returns raw enum/numeric values from the
-            # OS regardless of display language, so it no longer silently comes back empty on a
-            # non-English system the way the old netsh parsing did.
-            $radioType = $null; $authDisplay = $null; $rxMbps = $null; $txMbps = $null
-            try {
-                if (-not ("PCHH.Wlan" -as [type])) {
-                    Add-Type -Namespace PCHH -Name Wlan -MemberDefinition @'
-[DllImport("wlanapi.dll")] public static extern int WlanOpenHandle(uint clientVersion, IntPtr reserved, out uint negotiatedVersion, out IntPtr clientHandle);
-[DllImport("wlanapi.dll")] public static extern int WlanCloseHandle(IntPtr clientHandle, IntPtr reserved);
-[DllImport("wlanapi.dll")] public static extern int WlanEnumInterfaces(IntPtr clientHandle, IntPtr reserved, out IntPtr interfaceList);
-[DllImport("wlanapi.dll")] public static extern int WlanQueryInterface(IntPtr clientHandle, ref Guid interfaceGuid, int opCode, IntPtr reserved, out uint dataSize, out IntPtr data, IntPtr valueType);
-[DllImport("wlanapi.dll")] public static extern void WlanFreeMemory(IntPtr memory);
-'@ -ErrorAction Stop
-
-                    Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-namespace PCHH {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WLAN_INTERFACE_INFO {
-        public Guid InterfaceGuid;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string strInterfaceDescription;
-        public int isState;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct DOT11_SSID {
-        public uint uSSIDLength;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] public byte[] ucSSID;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct WLAN_ASSOCIATION_ATTRIBUTES {
-        public DOT11_SSID dot11Ssid;
-        public int dot11BssType;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)] public byte[] dot11Bssid;
-        public uint dot11PhyType;
-        public uint uDot11PhyIndex;
-        public uint wlanSignalQuality;
-        public uint ulRxRate;
-        public uint ulTxRate;
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct WLAN_SECURITY_ATTRIBUTES {
-        [MarshalAs(UnmanagedType.Bool)] public bool bSecurityEnabled;
-        [MarshalAs(UnmanagedType.Bool)] public bool bOneXEnabled;
-        public uint dot11AuthAlgorithm;
-        public uint dot11CipherAlgorithm;
-    }
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WLAN_CONNECTION_ATTRIBUTES {
-        public int isState;
-        public int wlanConnectionMode;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string strProfileName;
-        public WLAN_ASSOCIATION_ATTRIBUTES wlanAssociationAttributes;
-        public WLAN_SECURITY_ATTRIBUTES wlanSecurityAttributes;
-    }
-}
-'@ -ErrorAction Stop
-                }
-
-                $clientHandle = [IntPtr]::Zero
-                $negotiatedVersion = 0
-                if ([PCHH.Wlan]::WlanOpenHandle(2, [IntPtr]::Zero, [ref]$negotiatedVersion, [ref]$clientHandle) -eq 0) {
-                    try {
-                        $ifaceListPtr = [IntPtr]::Zero
-                        if ([PCHH.Wlan]::WlanEnumInterfaces($clientHandle, [IntPtr]::Zero, [ref]$ifaceListPtr) -eq 0) {
-                            try {
-                                $numItems = [Runtime.InteropServices.Marshal]::ReadInt32($ifaceListPtr, 0)
-                                $ifaceStructSize = [Runtime.InteropServices.Marshal]::SizeOf([type][PCHH.WLAN_INTERFACE_INFO])
-                                for ($i = 0; $i -lt $numItems; $i++) {
-                                    # dwNumberOfItems (4 bytes) + dwIndex (4 bytes) precede the interface array
-                                    $ifaceInfoPtr = [IntPtr]::Add($ifaceListPtr, 8 + ($i * $ifaceStructSize))
-                                    $ifaceInfo = [Runtime.InteropServices.Marshal]::PtrToStructure($ifaceInfoPtr, [type][PCHH.WLAN_INTERFACE_INFO])
-                                    if ($ifaceInfo.isState -ne 1) { continue } # 1 = connected
-
-                                    $dataSize = 0; $dataPtr = [IntPtr]::Zero
-                                    $guidCopy = $ifaceInfo.InterfaceGuid
-                                    $qres = [PCHH.Wlan]::WlanQueryInterface($clientHandle, [ref]$guidCopy, 7, [IntPtr]::Zero, [ref]$dataSize, [ref]$dataPtr, [IntPtr]::Zero)
-                                    if ($qres -eq 0) {
-                                        try {
-                                            $conn = [Runtime.InteropServices.Marshal]::PtrToStructure($dataPtr, [type][PCHH.WLAN_CONNECTION_ATTRIBUTES])
-                                            $assoc = $conn.wlanAssociationAttributes
-                                            $sec = $conn.wlanSecurityAttributes
-
-                                            $phyMap = @{ 4 = '802.11a'; 5 = '802.11b'; 6 = '802.11g'; 7 = '802.11n'; 8 = '802.11ac'; 9 = '802.11ad'; 10 = '802.11ax'; 11 = '802.11be' }
-                                            if ($phyMap.ContainsKey([int]$assoc.dot11PhyType)) { $radioType = $phyMap[[int]$assoc.dot11PhyType] }
-
-                                            $authMap = @{ 1 = 'Open'; 2 = 'Shared key'; 3 = 'WPA-Enterprise'; 4 = 'WPA-Personal'; 5 = 'WPA-None'; 6 = 'WPA2-Enterprise'; 7 = 'WPA2-Personal'; 8 = 'WPA3-Enterprise'; 9 = 'WPA3-Personal'; 10 = 'OWE'; 11 = 'WPA3-Enterprise (192-bit)' }
-                                            if ($authMap.ContainsKey([int]$sec.dot11AuthAlgorithm)) { $authDisplay = $authMap[[int]$sec.dot11AuthAlgorithm] }
-
-                                            if ($null -eq $wifiSignalPct) { $wifiSignalPct = [int]$assoc.wlanSignalQuality }
-                                            $rxMbps = [math]::Round($assoc.ulRxRate / 1000)
-                                            $txMbps = [math]::Round($assoc.ulTxRate / 1000)
-                                        } finally { [PCHH.Wlan]::WlanFreeMemory($dataPtr) }
-                                    }
-                                    break
-                                }
-                            } finally { [PCHH.Wlan]::WlanFreeMemory($ifaceListPtr) }
-                        }
-                    } finally { [PCHH.Wlan]::WlanCloseHandle($clientHandle, [IntPtr]::Zero) }
-                }
-            } catch { }
-
-            # Band/Channel/Channel width have no clean locale-independent source (the WLAN API's
-            # connection attributes don't carry frequency info), so these remain best-effort via
-            # netsh and may come back empty on a non-English system. Channel width specifically
-            # isn't a standard netsh field on every driver/Windows build - some report it, many
-            # don't, so treat it as a bonus when present rather than something to rely on.
-            $wl = netsh wlan show interfaces 2>$null
-            $wf = @{}
-            if ($wl) {
-                foreach ($line in $wl) {
-                    if ($line -match '^\s*(Band|Channel|Channel width)\s*:\s*(.+)$') {
-                        $wf[$Matches[1]] = $Matches[2].Trim()
-                    }
-                }
-            }
-            if ($null -ne $wifiSignalPct) {
-                $wifi = [PSCustomObject]@{
-                    signal  = "$wifiSignalPct%"
-                    band    = "$($wf['Band'])"
-                    channel = "$($wf['Channel'])"
-                    width   = "$($wf['Channel width'])"
-                    radio   = "$radioType"
-                    auth    = "$authDisplay"
-                    rx      = "$rxMbps"
-                    tx      = "$txMbps"
-                }
-            }
-        } catch { }
-        # Assembled unconditionally from whatever succeeded above - each piece already has a safe
-        # empty/null default, so this can't itself throw and can't lose data to an unrelated failure.
-        $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi; dns = $dnsServers }
-
-        # Memory usage at time of capture (physical + commit charge)
-        $memuse = $null
-        try {
-            $osm = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
-            $memuse = [PSCustomObject]@{
-                pt = [math]::Round($osm.TotalVisibleMemorySize / 1MB, 1)
-                pu = [math]::Round(($osm.TotalVisibleMemorySize - $osm.FreePhysicalMemory) / 1MB, 1)
-                ct = [math]::Round($osm.TotalVirtualMemorySize / 1MB, 1)
-                cu = [math]::Round(($osm.TotalVirtualMemorySize - $osm.FreeVirtualMemory) / 1MB, 1)
-                avail = [math]::Round($osm.FreePhysicalMemory / 1MB, 1)
-            }
-        } catch { }
-        # The Task Manager-style breakdown (Cached, Paged pool, Non-paged pool) - a separate
-        # try/catch since it's a different WMI class to the essentials above, so a failure here
-        # only loses these extra numbers rather than the whole memory-usage section.
-        try {
-            $memPerf = Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory -ErrorAction Stop
-            if ($memuse -and $memPerf) {
-                $memuse | Add-Member -NotePropertyName cache -NotePropertyValue ([math]::Round($memPerf.CacheBytes / 1GB, 2))
-                $memuse | Add-Member -NotePropertyName pagedPool -NotePropertyValue ([math]::Round($memPerf.PoolPagedBytes / 1MB, 0))
-                $memuse | Add-Member -NotePropertyName nonPagedPool -NotePropertyValue ([math]::Round($memPerf.PoolNonpagedBytes / 1MB, 0))
-            }
-        } catch { }
-
-        # Minidump info for the viewer
-        $dumps = @()
-        if ($dmpfound) {
-            $dumps = @(Get-ChildItem -Path $source -ErrorAction SilentlyContinue | ForEach-Object {
-                [PSCustomObject]@{
-                    n = $_.Name
-                    d = $_.LastWriteTime.ToString("dd'/'MM'/'yyyy HH:mm")
-                    z = "{0:N1} MB" -f ($_.Length / 1MB)
-                }
-            })
-        }
-
-        # JSON payloads ("</" escaped so text cannot close the script tag)
-        $json      = (ConvertTo-Json @($recs) -Compress -Depth 3).Replace('</', '<\/')
-        $sysJson   = if ($sysEvents.Count -gt 0) { (ConvertTo-Json @($sysEvents) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
-        $ramSlotsJson = if ($ramSlotsTotal) { "$ramSlotsTotal" } else { 'null' }
-        $isLaptopJson = if ($isLaptop) { 'true' } else { 'false' }
-        $batteryJson = if ($batteryInfo.Count -gt 0) { $batteryInfo | ConvertTo-Json -Depth 5 -Compress } else { '[]' }
-        if ($batteryJson -notmatch '^\[') { $batteryJson = "[$batteryJson]" }
-        $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $displaysJson = if ($displays.Count -gt 0) { (ConvertTo-Json @($displays) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $procsJson = if ($procs.Count -gt 0) { (ConvertTo-Json @($procs) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $netJson = if ($net) { (ConvertTo-Json $net -Compress -Depth 4).Replace('</', '<\/') } else { 'null' }
-        $securityJson = if ($security) { (ConvertTo-Json $security -Compress -Depth 5).Replace('</', '<\/') } else { 'null' }
-        $hotfixesJson = if ($hotfixes.Count -gt 0) { (ConvertTo-Json @($hotfixes) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $windowsOldJson = if ($windowsOld) { (ConvertTo-Json $windowsOld -Compress).Replace('</', '<\/') } else { 'null' }
-        $powerPlanJson = if ($powerPlanInfo) { (ConvertTo-Json $powerPlanInfo -Compress).Replace('</', '<\/') } else { 'null' }
-        $generalFlagsJson = (ConvertTo-Json $generalFlags -Compress).Replace('</', '<\/')
-        $cbsJson = if ($cbs) { (ConvertTo-Json $cbs -Compress).Replace('</', '<\/') } else { 'null' }
-        $wuHistoryJson = if ($wuHistory.Count -gt 0) { (ConvertTo-Json @($wuHistory) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $winUpdateInfo = [PSCustomObject]@{ pendingReboot = $pendingReboot; serviceStatus = $wuServiceStatus; serviceStartType = $wuServiceStartType }
-        $winUpdateJson = (ConvertTo-Json $winUpdateInfo -Compress).Replace('</', '<\/')
-        $devErrorsJson = if ($devErrors.Count -gt 0) { (ConvertTo-Json @($devErrors) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $audioJson = if ($audio) { (ConvertTo-Json $audio -Compress).Replace('</', '<\/') } else { 'null' }
-        $usbJson = (ConvertTo-Json @($usbDevices) -Compress).Replace('</', '<\/')
-        $camerasJson = (ConvertTo-Json @($cameras) -Compress).Replace('</', '<\/')
-        $memuseJson = if ($memuse) { (ConvertTo-Json $memuse -Compress).Replace('</', '<\/') } else { 'null' }
-        $ramJson = if ($ram.Count -gt 0) { (ConvertTo-Json @($ram) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $smartJson = if ($smart.Count -gt 0) { (ConvertTo-Json @($smart) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
-        $dirtyJson = if ($dirtyVols.Count -gt 0) { (ConvertTo-Json @($dirtyVols) -Compress).Replace('</', '<\/') } else { '[]' }
-        $diskLayoutJson = if ($diskLayout.Count -gt 0) { (ConvertTo-Json @($diskLayout) -Compress -Depth 4).Replace('</', '<\/') } else { '[]' }
-        $specsRaw = Get-Content -Path $infofile -Raw -ErrorAction SilentlyContinue
-        if ($null -eq $specsRaw) { $specsRaw = "" }
-        $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
-
-        $genStamp = (Get-Date).ToString("dd'/'MM'/'yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson).Replace('/*__BATTERY__*/[]', $batteryJson).Replace('/*__RAMSLOTS__*/null', $ramSlotsJson)
-        try {
-            Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
-        } catch {
-            Write-Host "      Could not write the HTML report - the other collected files are still available." -ForegroundColor Yellow
-        }
-
-    Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
-    Write-Host " Diagnostics collected"
-
-    compression
-}
-
-
-
-# Compresses files
-function compression {
-    Write-Host ""
-    Write-Host "[3/3] Compressing everything into one zip.." -ForegroundColor Blue
-
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" -Name "DisplayParameters" -Value 1 -Type DWord -Force | Out-Null
-
-    $filesToCompress = @($infofile, $reliability_csv_path, $reliability_html_path)
-
-    if ($dmpfound) {
-        # Only include dumps from the last 60 days in the zip - older ones are left alone on disk
-        # rather than deleted, in case they're needed for deeper investigation later.
-        $dmpLimit = (Get-Date).AddDays(-60)
-        $filesToCompress += Get-ChildItem -Path $source -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -ge $dmpLimit }
-    }
-
-    try {
-        Invoke-WithoutProgress {
-            Compress-Archive -Path $filesToCompress -CompressionLevel Optimal -DestinationPath $ziptar -Force | Out-Null
-        }
-    }
-    catch {
-
-
-        Write-Host ""
-        Write-Host "     Unable to compress files..." -ForegroundColor Red
-        Write-Host "     Re-run the script to attempt to fix the issue." -ForegroundColor Red
-        Write-Host ""
-
-        $errors.Compress = $true
-        functionerror
-    }
-
-    Remove-Item -Path $infofile, $reliability_csv_path, $reliability_html_path -Force -Recurse -ErrorAction SilentlyContinue > $null 2>&1
-
-    Write-Host -NoNewline -ForegroundColor Green "$(cmark)"
-    Write-Host " Zip created"
-
-    eof
-}
-
-function eof {
-    Write-Host ""
-    Write-Host "==================================================" -ForegroundColor DarkGreen
-    Write-Host "  DONE - your report is ready to share" -ForegroundColor Green
-    Write-Host "==================================================" -ForegroundColor DarkGreen
-    Write-Host ""
-    Write-Host -NoNewline "  Zip file:   " -ForegroundColor Gray
-    Write-Host "$ziptar"
-    Write-Host ""
-    Write-Host "  The zip is already on your clipboard -" -ForegroundColor Gray
-    Write-Host "  just press Ctrl+V in Discord to attach it." -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  Want to see the report yourself? Open the zip and" -ForegroundColor Gray
-    Write-Host "  double-click triage-report.html - it opens in your browser." -ForegroundColor Gray
-    Start-Process explorer.exe -ArgumentList $File
-    $script:eofcomplete = $true
-
-    endmessage
-}
-
-function functionerror {
-    Write-Host -NoNewline -ForegroundColor Red "$(xmark)"
-
-    if ($errors.Compress -eq "true") {
-        Write-Host " There was an error during compression.."
-    }
-    elseif ($errors.fileCreate -eq "true") {
-        Write-Host "There was an error while creating files.."
-    }
-
-    Write-Host -NoNewline -ForegroundColor White "Error:"
-    Write-Host " $_" -ForegroundColor Red
-
-    endmessage
-}
-
-function endmessage {
-    Write-Host ""
-    Write-Host "Press any key to exit.."
-
-    if ($eofcomplete) {
-        Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.Clipboard]::SetFileDropList([System.Collections.Specialized.StringCollection]@($ziptar))
-    }
-        
-    $null = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-
-        Stop-Process -Id $PID -Force
-}
-
-dmpcheck
+        # soI encountered an error doing what you asked. Could you try again?
