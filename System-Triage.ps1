@@ -174,6 +174,14 @@ body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.t
 .kv dd{word-break:break-word}
 .kv dd.flag-off{color:var(--warn)}
 .drive-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+.gfx-node{transition:filter .12s}
+.gfx-node:hover{filter:brightness(1.15)}
+.gfx-callout{margin-top:16px;padding:12px 14px;border-radius:8px;background:color-mix(in srgb,var(--warn) 12%,transparent);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);color:var(--warn);font-size:14px;display:flex;gap:10px;align-items:flex-start}
+.gfx-callout svg{flex-shrink:0;margin-top:2px}
+.gfx-legend{display:flex;gap:20px;margin-top:14px;font-size:13px;color:var(--faint);flex-wrap:wrap}
+.gfx-legend span{display:inline-flex;align-items:center;gap:7px}
+.gfx-legend i{width:16px;height:0;border-top:2px solid}
+.gfx-legend i.dash{border-top-style:dashed}
 .drive{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
 .tool-card{display:block;text-decoration:none;color:inherit;cursor:pointer;transition:border-color .12s,background .12s}
 .tool-card:hover{border-color:var(--info);background:var(--panel2)}
@@ -1061,6 +1069,49 @@ function friendlyDriver(gpuName,ver,radeon){
   return ver;
 }
 function specVal(info,key){const f=info.find(([k])=>k===key);return f?f[1]:null;}
+function driverAgeLabel(dateStr){
+  if(!dateStr)return '';
+  const then=new Date(dateStr),now=new Date();
+  const months=(now.getFullYear()-then.getFullYear())*12+(now.getMonth()-then.getMonth());
+  if(months<12)return '';
+  const years=Math.floor(months/12);
+  return years>=1?' ('+years+'y old)':'';
+}
+// Rough average glyph width for Albert Sans / IBM Plex Mono at a given size, used to keep
+// GPU/monitor node text inside its box instead of overflowing.
+function fitText(text,maxWidth,fontSize,opts){
+  opts=opts||{};
+  const perChar=fontSize*(opts.mono?0.6:(opts.bold?0.62:0.56));
+  if(text.length*perChar<=maxWidth)return esc(text);
+  const maxChars=Math.max(1,Math.floor(maxWidth/perChar)-1);
+  return esc(text.slice(0,maxChars).trimEnd())+'\u2026';
+}
+// Wraps onto up to maxLines lines by word, truncating the final line with an ellipsis if
+// it still doesn't fit. Used for GPU names, which can run long.
+function wrapText(text,maxWidth,fontSize,opts,maxLines){
+  opts=opts||{};
+  const perChar=fontSize*(opts.mono?0.6:(opts.bold?0.62:0.56));
+  const maxChars=Math.max(1,Math.floor(maxWidth/perChar));
+  const words=text.split(' ');
+  const lines=[];
+  let cur='';
+  for(const w of words){
+    const test=cur?cur+' '+w:w;
+    if(test.length<=maxChars||!cur){
+      cur=test.length<=maxChars?test:w;
+      if(test.length>maxChars&&cur===w){lines.push(cur);cur='';}
+    }else{
+      lines.push(cur);
+      cur=w;
+    }
+    if(lines.length>=maxLines)break;
+  }
+  if(cur&&lines.length<maxLines)lines.push(cur);
+  if(lines.length>maxLines)lines.length=maxLines;
+  const last=lines[lines.length-1]||'';
+  if(last.length>maxChars)lines[lines.length-1]=last.slice(0,maxChars-1).trimEnd()+'\u2026';
+  return lines.map(l=>esc(l));
+}
 function realSpec(v){
   if(!v)return '';
   if(/^(system manufacturer|system product name|to be filled by o\.e\.m\.?|default string|not applicable|unknown|n\/a)$/i.test(v.trim()))return '';
@@ -1309,7 +1360,7 @@ function renderSummary(){
   if(WINDOWSOLD&&WINDOWSOLD.present)notes.push(flagLink('windows-old','<span style="color:var(--dim)">Windows.old folder present. Windows was upgraded or reset around '+esc(WINDOWSOLD.date)+'</span>'));
   if(POWERPLAN&&!POWERPLAN.isDefault)notes.push('<span style="color:var(--dim)">Non-default power plan active: '+esc(POWERPLAN.name)+'</span>');
   if(GENFLAGS&&GENFLAGS.tpmDisabled)notes.push(flagLink('tpm','<span style="color:var(--dim)">TPM is present but disabled</span>'));
-  if(GENFLAGS&&GENFLAGS.secureBootDisabled)notes.push(flagLink('secure-boot','<span style="color:var(--dim)">Secure Boot disabled</span>'));
+  if(GENFLAGS&&GENFLAGS.secureBootDisabled)notes.push(dataLink('security','secure-boot','<span style="color:var(--dim)">Secure Boot disabled</span>'));
   if(CBS&&CBS.unresolvedCount>0)notes.push(dataLink('sys','cbs-corruption','<span class="r"><b>'+CBS.unresolvedCount+'</b> unresolved component corruption entr'+(CBS.unresolvedCount>1?'ies':'y')+' in CBS.log</span>'));
   if(up){
     const upDays=parseInt((up.match(/^(\d+)\s*days?/i)||[])[1]||'0',10);
@@ -1601,13 +1652,7 @@ function renderGPU(){
     v.innerHTML='<div class="spec-section"><h2>Graphics</h2><div style="color:var(--faint)">No GPU data embedded.</div></div>';
     return;
   }
-  const byGpu={};
-  DISPLAYS.forEach(d=>{(byGpu[d.gpu]=byGpu[d.gpu]||[]).push(d);});
-  const drvByName={},radByName={},vramByName={};
-  GPUS.forEach(g=>{if(g.name){drvByName[g.name]=g.drv;radByName[g.name]=g.radeon||'';vramByName[g.name]=g.vram||0;}});
-  const gnames=Object.keys(byGpu).length?Object.keys(byGpu):GPUS.map(g=>g.name);
 
-  let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2><div class="drive-grid">';
   // Official vendor driver pages are stable, well-known download hubs (unlike motherboard vendor
   // support pages, which get restructured often) - no need for the site-scoped search fallback
   // used for BIOS updates.
@@ -1622,30 +1667,156 @@ function renderGPU(){
   // Windows shows "Generic PnP Monitor" here even when it has perfectly good EDID data (which
   // is exactly how Settings > Display gets the real model name to show). Swap in the real
   // name from MONS (read via WmiMonitorID/EDID) wherever dxdiag's name is one of these generic
-  // placeholders, consuming MONS entries in order across all adapters for multi-monitor setups.
+  // placeholders, consuming MONS entries in order for multi-monitor setups.
   const genericMonRe=/^(generic\s+(pnp|non-pnp|plug\s*and\s*play)\s+monitor|default\s+monitor|pnp\s+monitor)\s*$/i;
   const monsPool=MONS.slice();
-  gnames.forEach(g=>{
-    const drv=drvByName[g]?friendlyDriver(g,esc(drvByName[g]),radByName[g]?esc(radByName[g]):''):'';
-    const vram=vramByName[g];
-    const displays=byGpu[g]||[];
-    h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
-      (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
-    if(HAGS)h+='<dl class="kv smart-kv" style="margin-top:10px"><dt>HAGS</dt><dd>'+esc(HAGS)+'</dd></dl>';
-    const driverUrl=gpuDriverUrl(g);
-    if(driverUrl)h+='<div style="margin-top:6px"><a href="'+driverUrl+'" target="_blank" rel="noopener" style="color:var(--info);font-size:13.5px">Check for driver updates</a></div>';
-    const dispRows=displays.filter(d=>d.mon||d.mode);
-    dispRows.forEach(d=>{ if(!d.mon||genericMonRe.test(d.mon.trim())){ const real=monsPool.shift(); if(real)d.mon=real; } });
-    const fallbackMons=(!Object.keys(byGpu).length && monsPool.length)?monsPool.splice(0):[];
-    if(dispRows.length||fallbackMons.length){
-      h+='<div class="sev-head" style="color:var(--dim);padding:12px 0 5px 0">Connected Display'+((dispRows.length+fallbackMons.length)>1?'s':'')+'</div><dl class="kv smart-kv" style="font-size:15.5px">';
-      dispRows.forEach(d=>{h+='<dt>'+esc(d.mon||'Display')+'</dt><dd>'+esc(d.mode||'')+'</dd>';});
-      fallbackMons.forEach(m=>{h+='<dt>Connected Display</dt><dd>'+esc(m)+'</dd>';});
-      h+='</dl>';
-    }
-    h+='</div>';
+  const displays=DISPLAYS.filter(d=>d.gpu&&(d.mon||d.res));
+  displays.forEach(d=>{ if(!d.mon||genericMonRe.test(d.mon.trim())){ const real=monsPool.shift(); if(real)d.mon=real; } });
+  // Only treat leftover MONS entries as "unidentified displays" when dxdiag gave us nothing
+  // to map them against - otherwise they've already been consumed above.
+  const unmatchedMons=(!displays.length&&monsPool.length)?monsPool.splice(0):[];
+
+  const byGpu={};
+  displays.forEach(d=>{(byGpu[d.gpu]=byGpu[d.gpu]||[]).push(d);});
+
+  // Same wrong-GPU-slot detection used for the Summary tab note: a dedicated GPU sitting
+  // unused while the display is actually being driven by the integrated one.
+  const isIGPU=g=>/Intel\(R\)?\s*(UHD|HD|Iris)/i.test(g.name)||/^AMD Radeon(\(TM\))?\s*Graphics$/i.test(g.name.trim());
+  const isDGPU=g=>/NVIDIA|GeForce|RTX|GTX|Quadro|Radeon\s*(RX|VII|Pro\s*W)/i.test(g.name);
+  const igpu=GPUS.find(isIGPU),dgpu=GPUS.find(isDGPU);
+  let mismatchActive=null;
+  if(igpu&&dgpu){
+    const igpuActive=!!byGpu[igpu.name],dgpuActive=!!byGpu[dgpu.name];
+    if(igpuActive&&!dgpuActive)mismatchActive='igpu';
+  }
+
+  const gpuGap=22,monGap=22;
+  const colGpuX=20,colGpuW=310;
+  const colMonX=400,colMonW=260;
+  const svgW=680;
+  const titleMaxW=colGpuW-44-14;
+  const monTitleMaxW=colMonW-42-14;
+  const vramMax=Math.max(1,...GPUS.map(g=>g.vram||0));
+
+  const gpuInfo=GPUS.map(g=>{
+    const titleLines=wrapText(g.name,titleMaxW,14,{bold:true},2);
+    const titleBlockEnd=22+(titleLines.length-1)*16;
+    const statusY=titleBlockEnd+16;
+    const driverY=statusY+20;
+    const barY=driverY+10;
+    const height=barY+18;
+    return {titleLines,statusY,driverY,barY,height};
   });
-  h+='</div></div>';
+  const gpuY=[];
+  { let cursor=24; gpuInfo.forEach(info=>{gpuY.push(cursor);cursor+=info.height+gpuGap;}); }
+
+  const monInfo=displays.map(d=>{
+    const height=76;
+    return {height};
+  });
+  const monY=[];
+  { let cursor=24; monInfo.forEach(info=>{monY.push(cursor);cursor+=info.height+monGap;}); }
+
+  const UNMATCHED_H=60;
+  const monBottom=monY.length?monY[monY.length-1]+monInfo[monInfo.length-1].height:24;
+  const unmatchedY=unmatchedMons.map((_,i)=>monBottom+monGap+i*(UNMATCHED_H+monGap));
+  const unmatchedBottom=unmatchedMons.length?unmatchedY[unmatchedY.length-1]+UNMATCHED_H:monBottom;
+
+  const gpuBottom=gpuY.length?gpuY[gpuY.length-1]+gpuInfo[gpuInfo.length-1].height:24;
+  const svgH=Math.max(gpuBottom,unmatchedBottom)+24;
+
+  let defs='<defs><marker id="gfxDot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5"><circle cx="5" cy="5" r="4" fill="context-stroke"/></marker></defs>';
+  let svg='<svg width="100%" viewBox="0 0 '+svgW+' '+svgH+'" role="img"><title>GPU to display connections</title>'+defs;
+
+  displays.forEach((d,di)=>{
+    const gi=GPUS.findIndex(g=>g.name===d.gpu);
+    if(gi===-1)return;
+    const x1=colGpuX+colGpuW,y1=gpuY[gi]+gpuInfo[gi].height/2;
+    const x2=colMonX,y2=monY[di]+monInfo[di].height/2;
+    const isWarn=mismatchActive==='igpu'&&d.gpu===igpu.name;
+    const stroke=isWarn?'var(--warn)':'var(--ok)';
+    svg+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+stroke+'" stroke-width="2" marker-end="url(#gfxDot)"/>';
+  });
+  if(mismatchActive==='igpu'){
+    const gi=GPUS.findIndex(g=>g.name===dgpu.name);
+    const x1=colGpuX+colGpuW,y1=gpuY[gi]+gpuInfo[gi].height/2;
+    const x2=colMonX,y2=monY[0]+monInfo[0].height/2;
+    svg+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="var(--faint)" stroke-width="1.5" stroke-dasharray="4 5" opacity="0.5"/>';
+  }
+
+  GPUS.forEach((g,i)=>{
+    const y=gpuY[i],info=gpuInfo[i];
+    const active=!!byGpu[g.name];
+    const isWarnNode=mismatchActive==='igpu'&&g.name===igpu.name;
+    const stroke=isWarnNode?'var(--warn)':(active?'var(--ok)':'var(--line)');
+    const iconColor=isWarnNode?'var(--warn)':(active?'var(--ok)':'var(--faint)');
+    const vramPct=g.vram?Math.min(100,Math.round((g.vram/vramMax)*100)):0;
+    const statusLabel=isWarnNode?'Wrong port':(active?'Active':'Idle');
+    const statusColor=isWarnNode?'var(--warn)':(active?'var(--ok)':'var(--faint)');
+    const friendly=g.drv?friendlyDriver(g.name,g.drv,g.radeon||'').replace(/\s*<span[^>]*>.*<\/span>/,''):'';
+    const driverStr=(friendly||g.drv||'Driver unknown')+driverAgeLabel(g.driverDate);
+    const barW=colGpuW-44-60;
+    const titleTspans=info.titleLines.map((line,li)=>'<tspan x="'+(colGpuX+44)+'" dy="'+(li===0?0:16)+'">'+line+'</tspan>').join('');
+
+    svg+='<g class="gfx-node">'+
+      '<rect x="'+colGpuX+'" y="'+y+'" width="'+colGpuW+'" height="'+info.height+'" rx="12" fill="var(--panel2)" stroke="'+stroke+'" stroke-width="1.25"/>'+
+      '<svg x="'+(colGpuX+14)+'" y="'+(y+14)+'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+iconColor+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="11" rx="2"/><circle cx="8" cy="12.5" r="2"/><circle cx="15" cy="12.5" r="2"/><line x1="2" y1="10.5" x2="4" y2="10.5"/></svg>'+
+      '<text font-size="14" font-weight="600" fill="var(--text)" y="'+(y+22)+'">'+titleTspans+'</text>'+
+      '<text x="'+(colGpuX+44)+'" y="'+(y+info.statusY)+'" font-size="11.5" font-weight="600" fill="'+statusColor+'">'+statusLabel+'</text>'+
+      '<text class="mono" x="'+(colGpuX+44)+'" y="'+(y+info.driverY)+'" font-size="11.5" fill="var(--dim)">'+fitText(driverStr,titleMaxW,11.5,{mono:true})+'</text>'+
+      '<rect x="'+(colGpuX+44)+'" y="'+(y+info.barY)+'" width="'+barW+'" height="6" rx="3" fill="var(--panel)"/>'+
+      '<rect x="'+(colGpuX+44)+'" y="'+(y+info.barY)+'" width="'+(barW*vramPct/100).toFixed(1)+'" height="6" rx="3" fill="'+iconColor+'" opacity="0.85"/>'+
+      '<text class="mono" x="'+(colGpuX+colGpuW-14)+'" y="'+(y+info.barY+6)+'" font-size="10.5" fill="var(--faint)" text-anchor="end">'+(g.vram?g.vram+'GB':'?')+'</text>'+
+      '</g>';
+  });
+
+  displays.forEach((d,i)=>{
+    const y=monY[i],info=monInfo[i];
+    svg+='<g class="gfx-node">'+
+      '<rect x="'+colMonX+'" y="'+y+'" width="'+colMonW+'" height="'+info.height+'" rx="12" fill="var(--panel2)" stroke="var(--line)" stroke-width="1.25"/>'+
+      '<svg x="'+(colMonX+14)+'" y="'+(y+12)+'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--info)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'+
+      '<text x="'+(colMonX+42)+'" y="'+(y+22)+'" font-size="13.5" font-weight="600" fill="var(--text)">'+fitText(d.mon||'Display',monTitleMaxW,13.5,{bold:true})+'</text>'+
+      '<text class="mono" x="'+(colMonX+42)+'" y="'+(y+42)+'" font-size="11" fill="var(--dim)">'+fitText(d.res||'',monTitleMaxW,11,{mono:true})+'</text>'+
+      '<text class="mono" x="'+(colMonX+42)+'" y="'+(y+58)+'" font-size="11" fill="var(--dim)">'+fitText(d.hz||'',monTitleMaxW,11,{mono:true})+'</text>'+
+      '</g>';
+  });
+
+  unmatchedMons.forEach((name,ui)=>{
+    const y=unmatchedY[ui];
+    svg+='<g class="gfx-node">'+
+      '<rect x="'+colMonX+'" y="'+y+'" width="'+colMonW+'" height="'+UNMATCHED_H+'" rx="12" fill="var(--panel2)" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4" opacity="0.75"/>'+
+      '<svg x="'+(colMonX+14)+'" y="'+(y+12)+'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'+
+      '<text x="'+(colMonX+42)+'" y="'+(y+22)+'" font-size="13" font-weight="600" fill="var(--dim)">'+fitText(name,monTitleMaxW,13,{bold:true})+'</text>'+
+      '<text class="mono" x="'+(colMonX+42)+'" y="'+(y+42)+'" font-size="11" fill="var(--faint)">Detected via EDID, GPU unknown</text>'+
+      '</g>';
+  });
+
+  svg+='</svg>';
+
+  let h='<div class="spec-section">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">'+
+    '<h2 style="margin:0">Graphics</h2>'+
+    (HAGS?'<span style="font-size:12.5px;color:var(--faint)">HAGS: '+esc(HAGS)+'</span>':'')+
+    '</div>'+svg+
+    '<div class="gfx-legend">'+
+    '<span><i style="border-color:var(--ok)"></i>active connection</span>'+
+    '<span><i class="dash" style="border-color:var(--faint)"></i>idle GPU, no display</span>'+
+    '<span><i style="border-color:var(--warn)"></i>active but likely wrong port</span>'+
+    '</div>';
+
+  if(mismatchActive==='igpu'){
+    h+='<div class="gfx-callout"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9L2.4 18a1 1 0 0 0 .9 1.5h17.4a1 1 0 0 0 .9-1.5L13.7 3.9a1 1 0 0 0-1.7 0z"/></svg>'+
+      '<div>Display is connected to the integrated GPU ('+esc(igpu.name)+'), not the dedicated GPU ('+esc(dgpu.name)+'). Move the monitor cable to the graphics card\'s own ports.</div></div>';
+  }
+
+  const driverUrls=GPUS.map(g=>({name:g.name,url:gpuDriverUrl(g.name)})).filter(x=>x.url);
+  if(driverUrls.length){
+    h+='<div style="margin-top:14px;display:flex;gap:16px;flex-wrap:wrap">'+
+      driverUrls.map(x=>'<a href="'+x.url+'" target="_blank" rel="noopener" style="color:var(--info);font-size:13.5px">Check '+esc(x.name)+' drivers</a>').join('')+
+      '</div>';
+  }
+
+  h+='</div>';
   v.innerHTML=h;
 }
 function renderMotherboard(){
@@ -1810,10 +1981,6 @@ function renderNet(){
     });
     h+='</div></div>';
   }
-  if(NET.dns&&NET.dns.length){
-    h+='<div class="spec-section"><h2>DNS servers</h2><dl class="kv"><dt style="grid-column:1/-1">'+esc(NET.dns.join(', '))+'</dt></dl>'+
-      '<div style="color:var(--faint);font-size:13.5px;margin-top:8px">A stale DNS override left behind by a VPN client or router misconfiguration is a common, otherwise invisible cause of connectivity issues - worth checking these are what you expect.</div></div>';
-  }
   if(NET.wifi&&NET.wifi.signal){
     const w=NET.wifi;
     const sig=parseInt(w.signal)||0;
@@ -1830,6 +1997,9 @@ function renderNet(){
       (w.auth?'<dt>Authentication</dt><dd>'+esc(w.auth)+'</dd>':'')+
       '</dl></div>'+
       '<div style="color:var(--faint);font-size:13.5px;margin-top:10px">SSID, BSSID and IP address are intentionally not collected.</div></div>';
+  }
+  if(NET.dns&&NET.dns.length){
+    h+='<div class="spec-section"><h2>DNS servers</h2><dl class="kv"><dt style="grid-column:1/-1">'+esc(NET.dns.join(', '))+'</dt></dl></div>';
   }
   v.innerHTML=h;
 }
@@ -2804,14 +2974,21 @@ function reliabilityexport {
         try {
             $gpus = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | ForEach-Object {
                 $vram = if ($vramByKey.ContainsKey($_.Name)) { $vramByKey[$_.Name] } elseif ($_.AdapterRAM) { $_.AdapterRAM } else { 0 }
+                # DriverDate comes back as a CIM_DATETIME string (e.g. "20250815000000.000000+000");
+                # convert to a plain ISO date the report's JS can parse with `new Date(...)`.
+                $driverDate = ""
+                if ($_.DriverDate) {
+                    try { $driverDate = ([System.Management.ManagementDateTimeConverter]::ToDateTime($_.DriverDate)).ToString('yyyy-MM-dd') } catch { }
+                }
                 [PSCustomObject]@{
-                    name   = "$($_.Name)"
-                    drv    = "$($_.DriverVersion)"
-                    radeon = if ($_.Name -match 'AMD|Radeon') { $radeonVer } else { "" }
-                    hres   = if ($_.CurrentHorizontalResolution) { [int]$_.CurrentHorizontalResolution } else { 0 }
-                    vres   = if ($_.CurrentVerticalResolution) { [int]$_.CurrentVerticalResolution } else { 0 }
-                    hz     = if ($_.CurrentRefreshRate) { [int]$_.CurrentRefreshRate } else { 0 }
-                    vram   = if ($vram) { [math]::Round($vram / 1GB, 1) } else { 0 }
+                    name       = "$($_.Name)"
+                    drv        = "$($_.DriverVersion)"
+                    driverDate = $driverDate
+                    radeon     = if ($_.Name -match 'AMD|Radeon') { $radeonVer } else { "" }
+                    hres       = if ($_.CurrentHorizontalResolution) { [int]$_.CurrentHorizontalResolution } else { 0 }
+                    vres       = if ($_.CurrentVerticalResolution) { [int]$_.CurrentVerticalResolution } else { 0 }
+                    hz         = if ($_.CurrentRefreshRate) { [int]$_.CurrentRefreshRate } else { 0 }
+                    vram       = if ($vram) { [math]::Round($vram / 1GB, 1) } else { 0 }
                 }
             })
         } catch { }
@@ -2838,13 +3015,20 @@ function reliabilityexport {
                 $displays = @($dx.DxDiag.DisplayDevices.DisplayDevice | ForEach-Object {
                     $mon = "$($_.MonitorName)"
                     if (-not $mon) { $mon = "$($_.MonitorModel)" }
+                    # dxdiag's CurrentMode is one string like "2560 x 1440 (32 bit) (144Hz)" -
+                    # split into resolution/refresh/bit depth so the report can lay each out
+                    # on its own line instead of parsing one long string client-side.
+                    $raw = "$($_.CurrentMode)".Trim()
+                    $res = $raw; $hz = ""; $bits = ""
+                    if ($raw -match '^(.*?)\s*\((\d+) bit\)\s*\((\d+)Hz\)\s*$') {
+                        $res = $Matches[1].Trim(); $bits = $Matches[2]; $hz = "$($Matches[3])Hz"
+                    }
                     [PSCustomObject]@{
                         gpu  = "$($_.CardName)"
                         mon  = $mon.Trim()
-                        mode = $(
-                            $raw = "$($_.CurrentMode)".Trim()
-                            if ($raw -match '^(.*?)\s*\((\d+) bit\)\s*\((\d+Hz)\)\s*$') { "$($Matches[1]) ($($Matches[3]), $($Matches[2])-bit)" } else { $raw }
-                        )
+                        res  = $res
+                        hz   = $hz
+                        bits = $bits
                     }
                 } | Where-Object { $_.gpu })
                 Remove-Item $dxPath -Force -ErrorAction SilentlyContinue
