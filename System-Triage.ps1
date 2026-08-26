@@ -346,7 +346,6 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <div id="summaryView" class="view">
   <div id="summaryHero"></div>
   <div class="spec-section"><h2>General Notes</h2><div id="notesBody"></div></div>
-  <div class="spec-section"><h2>System Specs</h2><div id="specsContent"></div></div>
 </div>
 
 <div id="relView" class="view">
@@ -697,52 +696,6 @@ function splitOnce(text,re){
 }
 function renderSpecs(){
   const sp=parseSpecs(SPECS);
-  const v=document.getElementById('specsContent');
-  let h='';
-  if(sp.info.length){
-    h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
-    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','Windows Install Date','CPU Name','CPU Cores/Threads','CPU Speed','CPU Socket','CPU Architecture','CPU L2 Cache','CPU L3 Cache','CPU Virtualization','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Fast Boot State','Active Power Plan','Ram Capacity','RAM Speed','Page File Size','TPM Status','TPM Version','Secure Boot State','UAC'];
-    const FAQ_KEY={'Secure Boot State':'secure-boot','TPM Status':'tpm'};
-    sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
-      const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
-      const label=FAQ_KEY[k]?flagLink(FAQ_KEY[k],esc(k)):esc(k);
-      h+='<dt>'+label+'</dt><dd'+(off?' class="flag-off"':'')+'>'+esc(val)+'</dd>';
-    });
-    h+='</dl></div>';
-  }
-  if(DEVERR.length){
-    h+='<div class="spec-section" id="devErrSection"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
-    const DEVERR_CODES={
-      '1':'Device not configured correctly',
-      '3':'Driver may be corrupted, or system is low on resources',
-      '10':'Device cannot start',
-      '12':'Not enough free resources',
-      '14':'Device needs a restart to work',
-      '18':'Drivers need reinstalling',
-      '19':'Registry entries for the device are corrupted',
-      '21':'Windows is in the process of removing the device',
-      '22':'Device is disabled',
-      '24':'Device not present, not working, or missing drivers',
-      '28':'Drivers are not installed',
-      '29':'Disabled by firmware \u2014 didn\u2019t give the device resources',
-      '31':'Windows cannot load the drivers',
-      '32':'Driver service is disabled',
-      '37':'Driver returned a failure',
-      '39':'Driver is missing or corrupted',
-      '41':'Driver loaded but can\u2019t find the device',
-      '42':'Duplicate device found',
-      '43':'Device reported a problem',
-      '44':'An application or driver stopped the device',
-      '45':'Device not currently connected',
-      '48':'A previous driver for this device is blocked from loading',
-      '52':'Drivers aren\u2019t digitally signed',
-    };
-    DEVERR.forEach(e=>{
-      const desc=DEVERR_CODES[String(e.code)];
-      h+='<dt>'+esc(e.name)+'</dt><dd style="color:var(--err)">Error code '+esc(e.code)+(desc?' <span style="color:var(--faint)">\u2014 '+desc+'</span>':'')+'</dd>';
-    });
-    h+='</dl></div>';
-  }
   let dh='';
   if(DISKLAYOUT.length){
     const smartByDisk={};
@@ -784,7 +737,6 @@ function renderSpecs(){
       (alerts.length?'<ul class="notes">'+alerts.join('')+'</ul>'
        :'<div style="color:var(--ok)">\u2713 No SMART alerts. All disks report Healthy with no uncorrected errors.</div>')+'</div>';
   }
-  v.innerHTML=h;
   document.getElementById('drivesView').innerHTML=dh||'<div class="spec-section"><h2>Storage</h2><div style="color:var(--faint)">No storage data embedded.</div></div>';
   return sp.programs;
 }
@@ -1123,7 +1075,7 @@ function renderSummary(){
   // BIOS date, memory) now lives in the hero tiles above instead - kept as plain variables here
   // since the hero-building code further down still needs them, just without a second pairs.push
   // duplicating what the tiles already show.
-  const sysName=specVal(sp.info,'System Name'), sysMfr=realSpec(specVal(sp.info,'Manufacturer')), sysModel=realSpec(specVal(sp.info,'Model'));
+  const sysMfr=realSpec(specVal(sp.info,'Manufacturer')), sysModel=realSpec(specVal(sp.info,'Model'));
   // On DIY/homebuilt PCs, Win32_ComputerSystemProduct's "Model" is often just the motherboard's
   // own part number restated (e.g. "MS-7C96") - already shown in full on the Motherboard tile.
   // Only treat it as adding something when it doesn't just repeat that.
@@ -1373,54 +1325,59 @@ function renderSummary(){
   (function(){
     const heroEl=document.getElementById('summaryHero');
     const tiles=[];
-    const cpuCT=specVal(sp.info,'CPU Cores/Threads'), cpuGHz=specVal(sp.info,'CPU Speed');
+    const cpuCT=specVal(sp.info,'CPU Cores/Threads'), cpuGHz=specVal(sp.info,'CPU Speed'), cpuSocket=specVal(sp.info,'CPU Socket');
     if(cpu){
       const ctm=(cpuCT||'').match(/(\d+)C\s*\/\s*(\d+)T/i);
       tiles.push({cls:'cpu',icon:ICON_CPU,label:'Processor',tab:'cpu',value:cpu.trim(),lines:[
         ctm?ctm[1]+' cores / '+ctm[2]+' threads':'',
-        cpuGHz?cpuGHz:''
+        cpuGHz?'Base speed: '+cpuGHz:'',
+        cpuSocket?'Socket: '+cpuSocket:''
       ].filter(Boolean)});
     }
     if(GPUS.length||DISPLAYS.length){
       const gNames=[...new Set(GPUS.length?GPUS.map(g=>g.name):DISPLAYS.map(d=>d.gpu))];
       const g0=GPUS[0];
+      // friendlyDriver() wraps the friendly number with a parenthetical HTML span showing the raw
+      // driver string, meant for the full GPU tab - the hero tile just wants the plain friendly
+      // number on its own, since that's the "at a glance" version.
+      const driverFriendly=g0&&g0.drv?friendlyDriver(g0.name,g0.drv,g0.radeon).replace(/\s*<span[^>]*>.*<\/span>/,''):'';
       tiles.push({cls:'gpu',icon:ICON_GPU,label:gNames.length>1?'Graphics ('+gNames.length+')':'Graphics',tab:'gpu',value:gNames[0]||'',lines:[
         g0&&g0.vram?g0.vram+' GB VRAM':'',
-        g0&&g0.drv?'Driver '+g0.drv:''
+        driverFriendly?'Driver: '+driverFriendly:''
       ].filter(Boolean)});
     }
     if(RAM.length){
       const heroRamGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
       const heroRamConf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
       tiles.push({cls:'ram',icon:ICON_RAM,label:'Memory',tab:'memory',value:heroRamGB+' GB',lines:[
-        heroRamConf?'Running at '+heroRamConf+' MT/s':'',
-        RAM.length>1?RAM.length+' modules':''
+        heroRamConf?'Speed: '+heroRamConf+' MT/s':'',
+        'Modules: '+RAM.length
       ].filter(Boolean)});
     }
     if(sp.drives&&sp.drives.length){
       const totalGB=DISKLAYOUT.length?DISKLAYOUT.reduce((a,d)=>a+(+d.sizeGB||0),0):sp.drives.reduce((a,d)=>a+(+d['Total Size (GB)']||0),0);
       const freeGB=sp.drives.reduce((a,d)=>a+(+d['Free Space (GB)']||0),0);
       const fmtSize=gb=>gb>=1000?(gb/1000).toFixed(1)+' TB':Math.round(gb)+' GB';
+      const freePct=totalGB?Math.round(freeGB/totalGB*100):null;
       const diskCount=DISKLAYOUT.length||sp.drives.length;
       tiles.push({cls:'storage',icon:ICON_STORAGE,label:diskCount>1?'Storage ('+diskCount+' disks)':'Storage',tab:'drives',value:fmtSize(totalGB)+' total',lines:[
-        fmtSize(freeGB)+' free'
+        'Free space: '+fmtSize(freeGB)+(freePct!=null?' ('+freePct+'%)':''),
+        'Disks: '+diskCount
       ]});
     }
     if(mb){
       const mbClean=((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim();
       tiles.push({cls:'mobo',icon:ICON_MOBO,label:'Motherboard',tab:'mobo',value:mbClean,lines:[
-        bver?'BIOS '+bver:'',
-        bdate?'BIOS dated '+bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''):''
+        bver?'BIOS: '+bver:'',
+        bdate?'Date: '+bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''):''
       ].filter(Boolean)});
     }
     if(os){
       const bMajor=build?build.split('.')[0]:'';
       const fv=WINVER[bMajor];
-      const installDate=specVal(sp.info,'Windows Install Date');
       tiles.push({cls:'os',icon:ICON_OS,label:'Windows',tab:'summary',value:os.replace('Microsoft ',''),lines:[
-        fv?'Version '+fv:(build?'Build '+build:''),
-        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):'',
-        installDate?'Installed '+installDate:''
+        fv?'Version: '+fv:(build?'Build: '+build:''),
+        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):''
       ].filter(Boolean)});
     }
     if(!tiles.length){heroEl.innerHTML='';return;}
@@ -1434,14 +1391,16 @@ function renderSummary(){
     if(warnCount)pillParts.push(warnCount+' Warning'+(warnCount>1?'s':''));
     const pillText=totalFlags===0?'All clear':pillParts.join(', ');
 
+    // Never fall back to the hostname (System Name) here - people commonly name their PC after
+    // themselves (e.g. a literal "Rory-PC"), so showing it risks leaking a real name into a
+    // report meant to be safely shareable. When manufacturer/model are the generic BIOS
+    // placeholder strings (common on DIY boards), fall back to a plainly generic label instead.
     const titleParts=[sysMfr,(sysModel&&!sysModelIsDupe)?sysModel:''].filter(Boolean);
-    const title=titleParts.length?titleParts.join(' '):(sysName||'This PC');
-    const subtitle=(sysName&&sysName!==title)?sysName:'';
+    const title=titleParts.length?titleParts.join(' '):'System Manufacturer, System Product Name';
 
     let h='<div class="identity"><div class="identity-left">'+
       '<div class="identity-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 22v-4M15 22v-4M9 6V2M15 6V2M22 9h-4M22 15h-4M2 9h4M2 15h4"/></svg></div>'+
       '<div class="identity-text"><div class="identity-title">'+esc(title)+'</div>'+
-      (subtitle?'<div class="identity-sub mono">'+esc(subtitle)+'</div>':'')+
       '</div></div>'+
       '<div class="status-pill '+pillCls+'"><span class="status-dot"></span>'+esc(pillText)+'</div></div>';
 
@@ -1550,8 +1509,8 @@ function renderSecurity(){
   let h='';
   if(tpmStatus||secureBoot||uac){
     h+='<div class="spec-section"><h2>Firmware &amp; account security</h2><dl class="kv">';
-    if(tpmStatus)h+='<dt>TPM</dt><dd style="color:'+(tpmStatus==='Enabled'?'var(--ok)':'var(--err)')+'">'+esc(tpmStatus)+(tpmVersion?' <span style="color:var(--dim)">('+esc(tpmVersion)+')</span>':'')+'</dd>';
-    if(secureBoot)h+='<dt>Secure Boot</dt><dd style="color:'+(secureBoot==='Enabled'?'var(--ok)':'var(--warn)')+'">'+esc(secureBoot)+'</dd>';
+    if(tpmStatus)h+='<dt>'+flagLink('tpm','TPM')+'</dt><dd style="color:'+(tpmStatus==='Enabled'?'var(--ok)':'var(--err)')+'">'+esc(tpmStatus)+(tpmVersion?' <span style="color:var(--dim)">('+esc(tpmVersion)+')</span>':'')+'</dd>';
+    if(secureBoot)h+='<dt>'+flagLink('secure-boot','Secure Boot')+'</dt><dd style="color:'+(secureBoot==='Enabled'?'var(--ok)':'var(--warn)')+'">'+esc(secureBoot)+'</dd>';
     if(uac)h+='<dt>User Account Control (UAC)</dt><dd style="color:'+(uac==='Enabled'?'var(--ok)':'var(--err)')+'">'+esc(uac)+'</dd>';
     h+='</dl></div>';
   }
@@ -1649,6 +1608,16 @@ function renderGPU(){
   let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
   if(HAGS)h+='<div style="color:var(--dim);font-size:14px;margin-bottom:16px">Hardware-accelerated GPU Scheduling: <b style="color:var(--text)">'+esc(HAGS)+'</b></div>';
   h+='<div class="drive-grid">';
+  // Official vendor driver pages are stable, well-known download hubs (unlike motherboard vendor
+  // support pages, which get restructured often) - no need for the site-scoped search fallback
+  // used for BIOS updates.
+  const gpuDriverUrl=name=>{
+    const n=(name||'').toLowerCase();
+    if(/nvidia|geforce|quadro|rtx|gtx/.test(n))return 'https://www.nvidia.com/Download/index.aspx';
+    if(/\bamd\b|radeon/.test(n))return 'https://www.amd.com/en/support';
+    if(/\bintel\b|\barc\b|iris|uhd/.test(n))return 'https://www.intel.com/content/www/us/en/support/detect.html';
+    return null;
+  };
   // dxdiag's MonitorName is the generic driver's friendly name, not the panel's actual model -
   // Windows shows "Generic PnP Monitor" here even when it has perfectly good EDID data (which
   // is exactly how Settings > Display gets the real model name to show). Swap in the real
@@ -1662,6 +1631,8 @@ function renderGPU(){
     const displays=byGpu[g]||[];
     h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
       (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
+    const driverUrl=gpuDriverUrl(g);
+    if(driverUrl)h+='<div style="margin-top:6px"><a href="'+driverUrl+'" target="_blank" rel="noopener" style="color:var(--info);font-size:13.5px">Check for driver updates</a></div>';
     const dispRows=displays.filter(d=>d.mon||d.mode);
     dispRows.forEach(d=>{ if(!d.mon||genericMonRe.test(d.mon.trim())){ const real=monsPool.shift(); if(real)d.mon=real; } });
     const fallbackMons=(!Object.keys(byGpu).length && monsPool.length)?monsPool.splice(0):[];
@@ -1686,12 +1657,22 @@ function renderMotherboard(){
   const bdate=specVal(sp.info,'BIOS Date');
   const fastBoot=specVal(sp.info,'Fast Boot State');
   const powerPlan=specVal(sp.info,'Active Power Plan');
+  // Vendor support sites are single-page apps that get restructured often (MSI's own
+  // "/Search?searchKeyword=" link 404s as of 2026, and ASUS's has since moved behind a region
+  // prefix) - hard-coding another guessed URL just sets up the next 404. A site-scoped Google
+  // search always lands on the current support page regardless of how the vendor's frontend
+  // changes, so every vendor uses that instead of a direct link.
+  const vendorSite={asus:'asus.com',msi:'msi.com','micro-star':'msi.com',gigabyte:'gigabyte.com',asrock:'asrock.com'};
+  const mfrL=(mbMfr||'').toLowerCase();
+  let biosUrl='https://www.google.com/search?q='+encodeURIComponent(mbClean+' bios update download');
+  const vendorKey=Object.keys(vendorSite).find(k=>mfrL.includes(k));
+  if(vendorKey)biosUrl='https://www.google.com/search?q='+encodeURIComponent('site:'+vendorSite[vendorKey]+' '+mb);
   let h='<div class="spec-section"><h2>Motherboard</h2><div class="drive-grid"><div class="drive"><h3>'+esc(mbClean)+'</h3><dl class="kv smart-kv">'+
     (bver?'<dt>BIOS version</dt><dd>'+esc(bver)+'</dd>':'')+
     (bdate?'<dt>BIOS date</dt><dd>'+esc(bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''))+'</dd>':'')+
     (fastBoot?'<dt>Fast Boot</dt><dd>'+esc(fastBoot)+'</dd>':'')+
     (powerPlan?'<dt>Active power plan</dt><dd>'+esc(powerPlan)+'</dd>':'')+
-    '</dl></div></div></div>';
+    '</dl><div style="margin-top:14px"><a href="'+biosUrl+'" target="_blank" rel="noopener" style="color:var(--info)">Check for BIOS updates</a></div></div></div></div>';
   v.innerHTML=h;
 }
 function renderCPU(){
@@ -1871,6 +1852,39 @@ function renderDevices(){
     h+='<div class="spec-section"><h2>Peripherals ('+USBDEVS.length+')</h2><dl class="kv">';
     USBDEVS.forEach(u=>{
       h+='<dt style="grid-column:1/-1">'+esc(u.name)+'</dt>';
+    });
+    h+='</dl></div>';
+  }
+  if(DEVERR.length){
+    h+='<div class="spec-section" id="devErrSection"><h2>Device Manager errors ('+DEVERR.length+')</h2><dl class="kv">';
+    const DEVERR_CODES={
+      '1':'Device not configured correctly',
+      '3':'Driver may be corrupted, or system is low on resources',
+      '10':'Device cannot start',
+      '12':'Not enough free resources',
+      '14':'Device needs a restart to work',
+      '18':'Drivers need reinstalling',
+      '19':'Registry entries for the device are corrupted',
+      '21':'Windows is in the process of removing the device',
+      '22':'Device is disabled',
+      '24':'Device not present, not working, or missing drivers',
+      '28':'Drivers are not installed',
+      '29':'Disabled by firmware \u2014 didn\u2019t give the device resources',
+      '31':'Windows cannot load the drivers',
+      '32':'Driver service is disabled',
+      '37':'Driver returned a failure',
+      '39':'Driver is missing or corrupted',
+      '41':'Driver loaded but can\u2019t find the device',
+      '42':'Duplicate device found',
+      '43':'Device reported a problem',
+      '44':'An application or driver stopped the device',
+      '45':'Device not currently connected',
+      '48':'A previous driver for this device is blocked from loading',
+      '52':'Drivers aren\u2019t digitally signed',
+    };
+    DEVERR.forEach(e=>{
+      const desc=DEVERR_CODES[String(e.code)];
+      h+='<dt>'+esc(e.name)+'</dt><dd style="color:var(--err)">Error code '+esc(e.code)+(desc?' <span style="color:var(--faint)">\u2014 '+desc+'</span>':'')+'</dd>';
     });
     h+='</dl></div>';
   }
@@ -2063,7 +2077,10 @@ function fileadd {
     $secureBootState = if ($secureBoot -match "True") { "Enabled" } elseif ($secureBoot -match "False") { "Disabled" } elseif ($secCompat -eq "$true") { "Not Supported" }
     $fastbootState = if ($fastboot -eq "1") { "Enabled" } else { "Disabled" }
 
-    specs "System Name: $sysName"
+    # Hostname is deliberately not embedded in the report - people commonly name a PC after
+    # themselves (e.g. a literal "Rory-PC"), so it's a real (if easy to overlook) way for a
+    # personal name to end up in a report meant to be safely shareable with strangers for
+    # tech support.
     specs "Manufacturer: $sysMfr"
     specs "Model: $sysModel"
     specs "`nCPU Name: $cpuName"
