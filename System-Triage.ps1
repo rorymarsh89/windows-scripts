@@ -294,7 +294,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
     <div class="nav-group">
       <div class="nav-group-title static"><span>Overview</span></div>
       <div class="nav-group-items">
-        <button class="tab on" data-tab="summary"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>System Summary</button>
+        <button class="tab on" data-tab="summary"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Summary</button>
       </div>
     </div>
     <div class="nav-group">
@@ -323,10 +323,10 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
       <div class="nav-group-title"><span>System</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
         <button class="tab" data-tab="security"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security</button>
-        <button class="tab" data-tab="processes"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Running Processes</button>
-        <button class="tab" data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Installed Apps</button>
-        <button class="tab" data-tab="updates"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Windows Updates</button>
-        <button class="tab" data-tab="extensions"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>Browser Extensions</button>
+        <button class="tab" data-tab="processes"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Processes</button>
+        <button class="tab" data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Apps</button>
+        <button class="tab" data-tab="updates"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Updates</button>
+        <button class="tab" data-tab="extensions"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>Extensions</button>
       </div>
     </div>
     <div class="nav-group">
@@ -341,7 +341,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 </aside>
 <main id="content">
 
-<h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- System Summary</span></h1>
+<h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- Summary</span></h1>
 
 <div id="summaryView" class="view">
   <div id="summaryHero"></div>
@@ -1401,7 +1401,7 @@ function renderSummary(){
     const title=titleParts.length?titleParts.join(' '):'System Manufacturer, System Product Name';
 
     let h='<div class="identity"><div class="identity-left">'+
-      '<div class="identity-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 22v-4M15 22v-4M9 6V2M15 6V2M22 9h-4M22 15h-4M2 9h4M2 15h4"/></svg></div>'+
+      '<div class="identity-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>'+
       '<div class="identity-text"><div class="identity-title">'+esc(title)+'</div>'+
       '</div></div>'+
       '<div class="status-pill '+pillCls+'"><span class="status-dot"></span>'+esc(pillText)+'</div></div>';
@@ -1607,9 +1607,7 @@ function renderGPU(){
   GPUS.forEach(g=>{if(g.name){drvByName[g.name]=g.drv;radByName[g.name]=g.radeon||'';vramByName[g.name]=g.vram||0;}});
   const gnames=Object.keys(byGpu).length?Object.keys(byGpu):GPUS.map(g=>g.name);
 
-  let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
-  if(HAGS)h+='<dl class="kv" style="margin-bottom:16px"><dt>HAGS</dt><dd>'+esc(HAGS)+'</dd></dl>';
-  h+='<div class="drive-grid">';
+  let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2><div class="drive-grid">';
   // Official vendor driver pages are stable, well-known download hubs (unlike motherboard vendor
   // support pages, which get restructured often) - no need for the site-scoped search fallback
   // used for BIOS updates.
@@ -1633,6 +1631,7 @@ function renderGPU(){
     const displays=byGpu[g]||[];
     h+='<div class="drive"><h3>'+esc(g)+'</h3>'+
       (drv?'<div class="sub">Driver '+drv+(vram?' \u00b7 '+vram+' GB VRAM':'')+'</div>':(vram?'<div class="sub">'+vram+' GB VRAM</div>':''));
+    if(HAGS)h+='<dl class="kv smart-kv" style="margin-top:10px"><dt>HAGS</dt><dd>'+esc(HAGS)+'</dd></dl>';
     const driverUrl=gpuDriverUrl(g);
     if(driverUrl)h+='<div style="margin-top:6px"><a href="'+driverUrl+'" target="_blank" rel="noopener" style="color:var(--info);font-size:13.5px">Check for driver updates</a></div>';
     const dispRows=displays.filter(d=>d.mon||d.mode);
@@ -1724,29 +1723,32 @@ function renderMemory(){
     });
     h+='</div></div>';
   }
-  if(MEMUSE&&MEMUSE.pt){
-    const physPct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
+  const hasOtherBox=(MEMUSE&&(MEMUSE.avail!=null||MEMUSE.cache!=null||MEMUSE.pagedPool!=null||MEMUSE.nonPagedPool!=null))||pageFile;
+  if((MEMUSE&&MEMUSE.pt)||hasOtherBox){
     h+='<div class="spec-section"><h2>Memory usage at capture</h2><div class="drive-grid">';
-    h+='<div class="drive"><h3>In use (compressed)</h3>'+
-      '<div class="meter'+(physPct>85?' low':'')+'"><div style="width:'+Math.min(physPct,100)+'%"></div></div>'+
-      '<div class="use mono">'+MEMUSE.pu.toFixed(1)+' GB used of '+MEMUSE.pt.toFixed(1)+' GB ('+physPct+'%)</div></div>';
-    if(MEMUSE.ct){
-      const commitPct=Math.round(MEMUSE.cu/MEMUSE.ct*100);
-      h+='<div class="drive"><h3>Committed</h3>'+
-        '<div class="meter'+(commitPct>90?' low':'')+'"><div style="width:'+Math.min(commitPct,100)+'%"></div></div>'+
-        '<div class="use mono">'+MEMUSE.cu.toFixed(1)+' GB used of '+MEMUSE.ct.toFixed(1)+' GB ('+commitPct+'%)</div></div>';
+    if(MEMUSE&&MEMUSE.pt){
+      const physPct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
+      h+='<div class="drive"><h3>In use (compressed)</h3>'+
+        '<div class="meter'+(physPct>85?' low':'')+'"><div style="width:'+Math.min(physPct,100)+'%"></div></div>'+
+        '<div class="use mono">'+MEMUSE.pu.toFixed(1)+' GB used of '+MEMUSE.pt.toFixed(1)+' GB ('+physPct+'%)</div></div>';
+      if(MEMUSE.ct){
+        const commitPct=Math.round(MEMUSE.cu/MEMUSE.ct*100);
+        h+='<div class="drive"><h3>Committed</h3>'+
+          '<div class="meter'+(commitPct>90?' low':'')+'"><div style="width:'+Math.min(commitPct,100)+'%"></div></div>'+
+          '<div class="use mono">'+MEMUSE.cu.toFixed(1)+' GB used of '+MEMUSE.ct.toFixed(1)+' GB ('+commitPct+'%)</div></div>';
+      }
     }
-    if(MEMUSE.avail!=null||MEMUSE.cache!=null||MEMUSE.pagedPool!=null||MEMUSE.nonPagedPool!=null){
+    if(hasOtherBox){
       h+='<div class="drive"><h3>Other</h3><dl class="kv smart-kv">'+
-        (MEMUSE.avail!=null?'<dt>Available</dt><dd>'+MEMUSE.avail.toFixed(1)+' GB</dd>':'')+
-        (MEMUSE.cache!=null?'<dt>Cached</dt><dd>'+MEMUSE.cache.toFixed(2)+' GB</dd>':'')+
-        (MEMUSE.pagedPool!=null?'<dt>Paged pool</dt><dd>'+Math.round(MEMUSE.pagedPool)+' MB</dd>':'')+
-        (MEMUSE.nonPagedPool!=null?'<dt>Non-paged pool</dt><dd>'+Math.round(MEMUSE.nonPagedPool)+' MB</dd>':'')+
+        (MEMUSE&&MEMUSE.avail!=null?'<dt>Available</dt><dd>'+MEMUSE.avail.toFixed(1)+' GB</dd>':'')+
+        (MEMUSE&&MEMUSE.cache!=null?'<dt>Cached</dt><dd>'+MEMUSE.cache.toFixed(2)+' GB</dd>':'')+
+        (MEMUSE&&MEMUSE.pagedPool!=null?'<dt>Paged pool</dt><dd>'+Math.round(MEMUSE.pagedPool)+' MB</dd>':'')+
+        (MEMUSE&&MEMUSE.nonPagedPool!=null?'<dt>Non-paged pool</dt><dd>'+Math.round(MEMUSE.nonPagedPool)+' MB</dd>':'')+
+        (pageFile?'<dt>Page file size</dt><dd>'+esc(pageFile)+'</dd>':'')+
         '</dl></div>';
     }
     h+='</div></div>';
   }
-  if(pageFile)h+='<div class="spec-section"><h2>Virtual memory</h2><dl class="kv"><dt>Page file size</dt><dd>'+esc(pageFile)+'</dd></dl></div>';
   v.innerHTML=h||'<div class="spec-section"><h2>Memory</h2><div style="color:var(--faint)">No memory data embedded.</div></div>';
 }
 function renderBattery(){
