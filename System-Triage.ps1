@@ -50,7 +50,7 @@ $infofile = "$File\specs-programs.txt"
 
 $ziptar = "$File\PCHH-Triage_$random.zip"
 
-$scriptVersion = "1.3"
+$scriptVersion = "1.2 25-08-2026"
 $lookbackDays = 365   # match reliability history's ~1 year span; System log is size-capped anyway
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
@@ -100,7 +100,9 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 .nav-group-items{display:flex;flex-direction:column;gap:2px}
 #sideFoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
 #sideFoot span{color:var(--faint);font-size:12px}
-.tab{display:block;width:100%;text-align:left;background:none;border:none;color:var(--dim);font-family:inherit;font-size:16px;font-weight:500;padding:9px 10px 9px 20px;cursor:pointer;border-radius:9px}
+.tab{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;color:var(--dim);font-family:inherit;font-size:16px;font-weight:500;padding:9px 10px 9px 20px;cursor:pointer;border-radius:9px}
+.tab svg{width:16px;height:16px;flex-shrink:0;opacity:.65;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab.on svg,.tab:hover svg{opacity:1}
 .tab:hover{color:var(--text);background:color-mix(in srgb,var(--panel2) 60%,transparent)}
 .tab.on{color:var(--text);background:var(--panel2)}
 #summary{padding:0;display:flex;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.55}
@@ -120,13 +122,45 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 .y{color:var(--warn)}
 .view{display:none}
 @keyframes viewFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.tab-shutdowns #shutdownsView,body.tab-drives #drivesView,body.tab-gpu #gpuView,body.tab-memory #memoryView,body.tab-net #netView,body.tab-devices #devicesView,body.tab-security #securityView,body.tab-processes #processesView,body.tab-apps #appsView,body.tab-updates #updatesView,body.tab-extensions #extensionsView,body.tab-faq #faqView,body.tab-tools #toolsView,body.tab-dumps #dumpsView{display:block;animation:viewFadeIn .28s cubic-bezier(.16,1,.3,1)}
+body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.tab-shutdowns #shutdownsView,body.tab-cpu #cpuView,body.tab-drives #drivesView,body.tab-gpu #gpuView,body.tab-memory #memoryView,body.tab-battery #batteryView,body.tab-net #netView,body.tab-devices #devicesView,body.tab-security #securityView,body.tab-processes #processesView,body.tab-apps #appsView,body.tab-updates #updatesView,body.tab-extensions #extensionsView,body.tab-faq #faqView,body.tab-tools #toolsView,body.tab-dumps #dumpsView{display:block;animation:viewFadeIn .28s cubic-bezier(.16,1,.3,1)}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#shutdownsView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
+
+/* System Summary hero: identity strip + at-a-glance spec tiles */
+#summaryHero{margin-bottom:36px}
+.identity{display:flex;align-items:center;justify-content:space-between;gap:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin-bottom:16px}
+.identity-left{display:flex;align-items:center;gap:16px;min-width:0}
+.identity-icon{width:46px;height:46px;flex-shrink:0;border-radius:10px;background:var(--panel2);display:flex;align-items:center;justify-content:center}
+.identity-icon svg{width:24px;height:24px;stroke:var(--info);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.identity-text{min-width:0}
+.identity-title{font-size:21px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.identity-sub{color:var(--dim);font-size:14px;margin-top:3px}
+.status-pill{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:14px;white-space:nowrap;flex-shrink:0}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-pill.warn{color:var(--warn)}.status-pill.warn .status-dot{background:var(--warn)}
+.status-pill.ok{color:var(--ok)}.status-pill.ok .status-dot{background:var(--ok)}
+.tile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:820px){.tile-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.tile-grid{grid-template-columns:1fr}.identity{flex-wrap:wrap}}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px 22px;transition:border-color .15s ease;cursor:pointer}
+.tile:hover{border-color:var(--dim)}
+.tile-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.tile-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tile-icon svg{width:17px;height:17px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile-label{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.tile-value{font-size:17px;font-weight:600;line-height:1.35;margin-bottom:6px}
+.tile-line{color:var(--dim);font-size:13.5px;line-height:1.6}
+.c-cpu .tile-icon{background:color-mix(in srgb,var(--info) 16%,transparent)}.c-cpu .tile-icon svg{stroke:var(--info)}
+.c-gpu .tile-icon{background:color-mix(in srgb,var(--ok) 16%,transparent)}.c-gpu .tile-icon svg{stroke:var(--ok)}
+.c-ram .tile-icon{background:color-mix(in srgb,var(--warn) 16%,transparent)}.c-ram .tile-icon svg{stroke:var(--warn)}
+.c-storage .tile-icon{background:color-mix(in srgb,#c398ff 16%,transparent)}.c-storage .tile-icon svg{stroke:#c398ff}
+.c-mobo .tile-icon{background:color-mix(in srgb,var(--dim) 16%,transparent)}.c-mobo .tile-icon svg{stroke:var(--dim)}
+.c-os .tile-icon{background:color-mix(in srgb,var(--info) 16%,transparent)}.c-os .tile-icon svg{stroke:var(--info)}
+
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:24px}
 .modal-overlay.open{display:flex}
 .modal-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 30px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto;position:relative}
@@ -245,7 +279,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#shutdownsView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
+  #summaryView,#sysView,#shutdownsView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -259,43 +293,45 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
     <div class="nav-group">
       <div class="nav-group-title static"><span>Overview</span></div>
       <div class="nav-group-items">
-        <button class="tab on" data-tab="summary">System Summary</button>
+        <button class="tab on" data-tab="summary"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>System Summary</button>
       </div>
     </div>
     <div class="nav-group">
       <div class="nav-group-title"><span>Diagnostics</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
-        <button class="tab" data-tab="rel">Reliability History</button>
-        <button class="tab" data-tab="sys">Event Viewer</button>
-        <button class="tab" data-tab="shutdowns">Unexpected Shutdowns</button>
-        <button class="tab" data-tab="dumps" id="dumpsTab" style="display:none">Memory Dumps</button>
+        <button class="tab" data-tab="rel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Reliability History</button>
+        <button class="tab" data-tab="sys"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Event Viewer</button>
+        <button class="tab" data-tab="shutdowns"><svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>Unexpected Shutdowns</button>
+        <button class="tab" data-tab="dumps" id="dumpsTab" style="display:none"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Memory Dumps</button>
       </div>
     </div>
     <div class="nav-group">
       <div class="nav-group-title"><span>Hardware</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
-        <button class="tab" data-tab="drives">Drives</button>
-        <button class="tab" data-tab="gpu">GPU and Display(s)</button>
-        <button class="tab" data-tab="memory">Memory</button>
-        <button class="tab" data-tab="net">Network</button>
-        <button class="tab" data-tab="devices">Connected Devices</button>
+        <button class="tab" data-tab="cpu"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>Processor</button>
+        <button class="tab" data-tab="drives"><svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>Storage</button>
+        <button class="tab" data-tab="gpu"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>GPU and Display(s)</button>
+        <button class="tab" data-tab="memory"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>Memory</button>
+        <button class="tab" data-tab="battery" id="batteryTab" style="display:none"><svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>Battery</button>
+        <button class="tab" data-tab="net"><svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Network</button>
+        <button class="tab" data-tab="devices"><svg viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Connected Devices</button>
       </div>
     </div>
     <div class="nav-group">
       <div class="nav-group-title"><span>System</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
-        <button class="tab" data-tab="security">Security</button>
-        <button class="tab" data-tab="processes">Running Processes</button>
-        <button class="tab" data-tab="apps">Installed Apps</button>
-        <button class="tab" data-tab="updates">Windows Updates</button>
-        <button class="tab" data-tab="extensions">Browser Extensions</button>
+        <button class="tab" data-tab="security"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security</button>
+        <button class="tab" data-tab="processes"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Running Processes</button>
+        <button class="tab" data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Installed Apps</button>
+        <button class="tab" data-tab="updates"><svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>Windows Updates</button>
+        <button class="tab" data-tab="extensions"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>Browser Extensions</button>
       </div>
     </div>
     <div class="nav-group">
       <div class="nav-group-title"><span>Help</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
-        <button class="tab" data-tab="faq">FAQ</button>
-        <button class="tab" data-tab="tools">Tools &amp; Utilities</button>
+        <button class="tab" data-tab="faq"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>FAQ</button>
+        <button class="tab" data-tab="tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>Tools &amp; Utilities</button>
       </div>
     </div>
   </nav>
@@ -306,8 +342,9 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 <h1 id="pageTitle">PCHH Triage <span id="pageTitleSub">- System Summary</span></h1>
 
 <div id="summaryView" class="view">
+  <div id="summaryHero"></div>
   <div class="spec-section"><h2>General Notes</h2><div id="notesBody"></div></div>
-  <div class="spec-section"><h2>System Specs</h2><div id="summary"></div><div id="specsContent"></div></div>
+  <div class="spec-section"><h2>System Specs</h2><div id="specsContent"></div></div>
 </div>
 
 <div id="relView" class="view">
@@ -334,9 +371,11 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <div id="sysView" class="view"></div>
 <div id="shutdownsView" class="view"></div>
+<div id="cpuView" class="view"></div>
 <div id="drivesView" class="view"></div>
 <div id="gpuView" class="view"></div>
 <div id="memoryView" class="view"></div>
+<div id="batteryView" class="view"></div>
 <div id="netView" class="view"></div>
 <div id="devicesView" class="view"></div>
 <div id="securityView" class="view"></div>
@@ -365,6 +404,8 @@ const RAM = /*__RAM__*/[];
 const GPUS = /*__GPUS__*/[];
 const HAGS = /*__HAGS__*/null;
 const ISLAPTOP = /*__ISLAPTOP__*/false;
+const BATTERY = /*__BATTERY__*/[];
+const RAMSLOTS = /*__RAMSLOTS__*/null;
 const WUHISTORY = /*__WUHISTORY__*/[];
 const WINUPDATE = /*__WINUPDATE__*/null;
 const MONS = /*__MONS__*/[];
@@ -558,6 +599,15 @@ function summary(e){
   return esc(e.s);
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// Hero tile icons - reused verbatim from the matching sidebar tab icon wherever one exists
+// (GPU, Storage, Memory), so a tile visually promises "click me to see more" honestly. CPU,
+// Motherboard and System have no dedicated tab of their own, so they get their own icon.
+const ICON_CPU='<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>';
+const ICON_GPU='<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+const ICON_RAM='<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>';
+const ICON_STORAGE='<svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>';
+const ICON_MOBO='<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>';
+const ICON_OS='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 // Guards accordion-row toggles against text selection. Checking only whether the click
 // *landed* inside .msg isn't enough - drag-selecting a long/wrapped message often ends with
 // the mouse released just outside its box, which used to collapse the row mid-selection and
@@ -648,7 +698,7 @@ function renderSpecs(){
   let h='';
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
-    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','CPU Name','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
+    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','CPU Name','CPU Cores/Threads','CPU Speed','CPU Socket','CPU Architecture','CPU L2 Cache','CPU L3 Cache','CPU Virtualization','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
     const FAQ_KEY={'Secure Boot State':'secure-boot','TPM Status':'tpm'};
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
@@ -732,7 +782,7 @@ function renderSpecs(){
        :'<div style="color:var(--ok)">\u2713 No SMART alerts. All disks report Healthy with no uncorrected errors.</div>')+'</div>';
   }
   v.innerHTML=h;
-  document.getElementById('drivesView').innerHTML=dh||'<div class="spec-section"><h2>Drives</h2><div style="color:var(--faint)">No drive data embedded.</div></div>';
+  document.getElementById('drivesView').innerHTML=dh||'<div class="spec-section"><h2>Storage</h2><div style="color:var(--faint)">No storage data embedded.</div></div>';
   return sp.programs;
 }
 const PS_={q:'',page:1,key:'mem',dir:-1}, PG_={q:'',page:1};
@@ -816,7 +866,7 @@ const FAQ_DATA=[
 {id:'unexpected-shutdown',q:"Unexpected Shutdowns",a:"Windows didn't shut down properly last time, meaning it never received the normal 'the user is turning off the PC' signal. This can be caused by:<ul style='margin:8px 0 8px 20px;padding:0'><li>a full system crash (a 'blue screen')</li><li>a power cut</li><li>overheating (thermal shutdown)</li><li>someone holding the power button</li><li>the PC freezing and being force-restarted</li></ul>If a specific bugcheck code is shown, that's the technical reason Windows gave. It can point toward whether this is a hardware, driver, or Windows problem. Most bugcheck codes are Google-able and have common fixes.<br><br>When Windows detects the power button was physically held down for 4+ seconds, it records that moment separately from the shutdown itself - that's shown as 'Power button held down' with the exact time, which usually means the PC was unresponsive and had to be force-closed rather than crashing cleanly with a bugcheck.",tools:["WhoCrashed","OCCT","MemTest86","Display Driver Uninstaller (DDU)"]},
 {id:'memory-dump',q:"Memory Dump",a:"When Windows crashes badly, a 'blue screen' happens. Windows tries to save a snapshot of exactly what the computer was doing at that moment to a file called a memory dump.<br><br>Memory dump(s) are included in the zip this tool creates. If you have them, you can share the zip file with us and we'll try to debug for you. Memory dumps are one of the most useful pieces of evidence for figuring out precisely what caused a crash.<br><br>If there are no memory dumps in the zip file but you've been experiencing crashes, shutdowns, or freezing, that means Windows wasn't able to create one. This can (but not always) indicate a hardware problem over a software one. Windows will usually try to generate a memory dump when the system crashes.",tools:["WhoCrashed"]},
 {id:'whea',q:"Fatal Hardware Error (WHEA)",a:"WHEA is Windows' hardware error reporting system. A fatal WHEA error means a core piece of hardware, usually the CPU, memory controller, or a PCIe device, reported a serious problem Windows couldn't recover from, and the machine likely crashed or rebooted as a result.<br><br>This is a strong indication that something is physically wrong or unstable, often an overclock, degraded hardware, or insufficient voltage, rather than a software issue.",tools:["OCCT","MemTest86","HWiNFO"]},
-{id:'disk-smart',q:"Drive / SMART Warnings",a:"Your drives (SSD, NVMe, hard drive) constantly track their own health statistics using something called SMART data. This data lists specific problems the drive itself has self-reported, such as:<ul style='margin:8px 0 8px 20px;padding:0'><li>reallocated sectors (damaged areas it's had to work around)</li><li>pending or uncorrectable sectors (data that couldn't be read reliably)</li><li>a high UltraDMA CRC error count (usually a loose or failing cable)</li></ul>If a drive predicts its own failure, it's important that you back up anything important from it immediately. Drive failures are often random and unpredictable.",tools:["CrystalDiskInfo"]},
+{id:'disk-smart',q:"Storage / SMART Warnings",a:"Your drives (SSD, NVMe, hard drive) constantly track their own health statistics using something called SMART data. This data lists specific problems the drive itself has self-reported, such as:<ul style='margin:8px 0 8px 20px;padding:0'><li>reallocated sectors (damaged areas it's had to work around)</li><li>pending or uncorrectable sectors (data that couldn't be read reliably)</li><li>a high UltraDMA CRC error count (usually a loose or failing cable)</li></ul>If a drive predicts its own failure, it's important that you back up anything important from it immediately. Drive failures are often random and unpredictable.",tools:["CrystalDiskInfo"]},
 {id:'dirty-bit',q:"Dirty Bit",a:"This means Windows flagged a drive as not having been cleanly unmounted, usually caused by the same unexpected shutdown or crash reported elsewhere in this report. It's a marker for Windows to check that drive's filesystem for errors next time it gets the chance.<br><br>On its own it isn't necessarily a sign of a failing drive, and is used as an indication that something might be wrong.",tools:[]},
 {id:'device-manager-errors',q:"Device Manager Errors",a:"Windows found a piece of hardware but couldn't properly load a driver for it, or the device itself reported a problem. This usually means a missing, outdated, or corrupted driver. Occasionally it's a genuine hardware fault.",tools:["AMD Drivers & Support","NVIDIA Drivers & Support","Intel Drivers & Support"]},
 {id:'mbr-secureboot',q:"MBR Partitioning",a:"Windows drives use one of two partitioning styles: MBR or the newer GPT. Secure Boot, a feature that helps stop malware loading before Windows starts, requires GPT.<br><br>If the main drive (the one with Windows installed on it) is MBR, Secure Boot can't be turned on without converting the drive or doing a clean reinstall of Windows, which is a bigger job and best not attempted without guidance.",tools:[]},
@@ -1063,69 +1113,25 @@ function realSpec(v){
 }
 function renderSummary(){
   const sp=parseSpecs(SPECS);
-  const el=document.getElementById('summary');
-  const pairs=[];
+  // pairs/el are now unused - everything that used to populate this curated list moved into the
+  // hero tiles above; #specsContent (via renderSpecs, further down) is the remaining "everything
+  // else" detail (TPM, Secure Boot, Page File, etc.) that never belonged in the hero.
+  // Most of what used to live here (name, manufacturer/model, OS, uptime, CPU, GPU, motherboard,
+  // BIOS date, memory) now lives in the hero tiles above instead - kept as plain variables here
+  // since the hero-building code further down still needs them, just without a second pairs.push
+  // duplicating what the tiles already show.
   const sysName=specVal(sp.info,'System Name'), sysMfr=realSpec(specVal(sp.info,'Manufacturer')), sysModel=realSpec(specVal(sp.info,'Model'));
-  if(sysName)pairs.push(['System name', esc(sysName)]);
   // On DIY/homebuilt PCs, Win32_ComputerSystemProduct's "Model" is often just the motherboard's
-  // own part number restated (e.g. "MS-7C96") - already shown in full in the Motherboard row
-  // below. Only show it here when it adds something the Motherboard line doesn't already say.
+  // own part number restated (e.g. "MS-7C96") - already shown in full on the Motherboard tile.
+  // Only treat it as adding something when it doesn't just repeat that.
   const mbForDedupe=specVal(sp.info,'Motherboard')||'';
   const sysModelIsDupe=sysModel && mbForDedupe.toLowerCase().includes(sysModel.toLowerCase());
-  if(sysMfr||(sysModel&&!sysModelIsDupe))pairs.push(sysModel&&!sysModelIsDupe?['Manufacturer / Model', esc([sysMfr,sysModel].filter(Boolean).join(' \u00b7 '))]:['Manufacturer', esc(sysMfr)]);
   const os=specVal(sp.info,'OS'), build=specVal(sp.info,'Build'), up=specVal(sp.info,'System Uptime');
   const WINVER={ '26200':'25H2','26100':'24H2','22631':'23H2','22621':'22H2','22000':'21H2','19045':'22H2','19044':'21H2' };
-  if(os){
-    const bMajor=build?build.split('.')[0]:'';
-    const fv=WINVER[bMajor];
-    pairs.push(['OS', esc(os.replace('Microsoft ',''))+(fv?' '+fv:'')+(build?' <span style="color:var(--faint)">(build '+esc(build)+')</span>':'')]);
-  }
-  if(up)pairs.push(['System uptime', esc(up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''))]);
   const cpu=specVal(sp.info,'CPU Name');
-  if(cpu)pairs.push(['CPU', esc(cpu.trim())]);
-  if(GPUS.length||DISPLAYS.length){
-    const gpuNames=[...new Set(GPUS.length?GPUS.map(g=>g.name):DISPLAYS.map(d=>d.gpu))];
-    pairs.push(['GPU'+(gpuNames.length>1?'s':''), gpuNames.map(esc).join(', ')]);
-  } else {
-    const gpu=specVal(sp.info,'GPU');
-    if(gpu)pairs.push(['GPU', esc(gpu)]);
-  }
   const mb=specVal(sp.info,'Motherboard'), mbMfr=specVal(sp.info,'Motherboard Manufacturer');
-  if(mb)pairs.push(['Motherboard', esc(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim())]);
   const bdate=specVal(sp.info,'BIOS Date');
-  if(bdate)pairs.push(['BIOS date', esc(bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''))]);
   const bver=specVal(sp.info,'BIOS Version');
-  if(bver||mb){
-    const val=bver?esc(bver):'';
-    // Vendor support sites are single-page apps that get restructured often (MSI's own
-    // "/Search?searchKeyword=" link 404s as of 2026, and ASUS's has since moved behind a
-    // region prefix) - hard-coding another guessed URL just sets up the next 404. A
-    // site-scoped Google search always lands on the current support page regardless of how
-    // the vendor's frontend changes, so every vendor uses that instead of a direct link.
-    const vendorSite={asus:'asus.com',msi:'msi.com','micro-star':'msi.com',gigabyte:'gigabyte.com',asrock:'asrock.com'};
-    const mfrL=(mbMfr||'').toLowerCase();
-    const q=encodeURIComponent(((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+(mb||'')).trim()+' bios update download');
-    let url='https://www.google.com/search?q='+q;
-    if(mb){
-      const vendorKey=Object.keys(vendorSite).find(k=>mfrL.includes(k));
-      if(vendorKey)url='https://www.google.com/search?q='+encodeURIComponent('site:'+vendorSite[vendorKey]+' '+mb);
-    }
-    pairs.push(['BIOS version', (val?val+' \u00b7 ':'')+'<a href="'+url+'" target="_blank" rel="noopener" style="color:var(--info)">Check for updates</a>']);
-  }
-  if(RAM.length){
-    const totGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
-    const conf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
-    pairs.push(['Memory', totGB+' GB'+(conf?' @ '+esc(conf)+' MT/s':'')]);
-  } else {
-    const rc=specVal(sp.info,'Ram Capacity');
-    if(rc)pairs.push(['Memory', esc(rc)]);
-  }
-  if(MEMUSE&&MEMUSE.pt){
-    const pct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
-    pairs.push(['Memory used', MEMUSE.pu.toFixed(1)+' / '+MEMUSE.pt.toFixed(1)+' GB ('+pct+'%)'+
-      ' <span style="color:var(--faint)">at time of capture</span>']);
-    if(MEMUSE.ct)pairs.push(['Commit charge', MEMUSE.cu.toFixed(1)+' / '+MEMUSE.ct.toFixed(1)+' GB ('+Math.round(MEMUSE.cu/MEMUSE.ct*100)+'%)']);
-  }
   // SourceName is a fixed internal identifier and stays in English regardless of the system's
   // display language - unlike the message text, which is fully localized. Counting by source
   // alone (rather than also requiring the English phrase "faulting application" in the message)
@@ -1355,7 +1361,105 @@ function renderSummary(){
     if(upDays>=7)notes.push(dataLink('sys','high-uptime','<span class="y">System has been running for <b>'+upDays+'</b> days without a restart</span>'));
   }
   const nEl=document.getElementById('notesBody');
-  el.innerHTML=pairs.length?'<dl class="kv summary-kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>':'';
+
+  // --- At-a-glance hero: identity strip + spec tiles ---
+  // Everything here is a plain fact, nothing flagged or colour-coded - anything worth calling
+  // out (RAM under its rated speed, a disk's SMART health, etc.) belongs in General Notes below,
+  // not buried in a tile. The status pill is the one exception, and it only ever reflects a
+  // count already computed for General Notes, never a new check of its own.
+  (function(){
+    const heroEl=document.getElementById('summaryHero');
+    const tiles=[];
+    const cpuCT=specVal(sp.info,'CPU Cores/Threads'), cpuGHz=specVal(sp.info,'CPU Speed');
+    if(cpu){
+      const ctm=(cpuCT||'').match(/(\d+)C\s*\/\s*(\d+)T/i);
+      tiles.push({cls:'cpu',icon:ICON_CPU,label:'Processor',tab:'summary',value:cpu.trim(),lines:[
+        ctm?ctm[1]+' cores / '+ctm[2]+' threads':'',
+        cpuGHz?cpuGHz:''
+      ].filter(Boolean)});
+    }
+    if(GPUS.length||DISPLAYS.length){
+      const gNames=[...new Set(GPUS.length?GPUS.map(g=>g.name):DISPLAYS.map(d=>d.gpu))];
+      const g0=GPUS[0];
+      tiles.push({cls:'gpu',icon:ICON_GPU,label:gNames.length>1?'Graphics ('+gNames.length+')':'Graphics',tab:'gpu',value:gNames[0]||'',lines:[
+        g0&&g0.vram?g0.vram+' GB VRAM':'',
+        g0&&g0.drv?'Driver '+g0.drv:''
+      ].filter(Boolean)});
+    }
+    if(RAM.length){
+      const heroRamGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
+      const heroRamConf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
+      tiles.push({cls:'ram',icon:ICON_RAM,label:'Memory',tab:'memory',value:heroRamGB+' GB',lines:[
+        heroRamConf?'Running at '+heroRamConf+' MT/s':'',
+        RAM.length>1?RAM.length+' modules':''
+      ].filter(Boolean)});
+    }
+    if(sp.drives&&sp.drives.length){
+      const totalGB=DISKLAYOUT.length?DISKLAYOUT.reduce((a,d)=>a+(+d.sizeGB||0),0):sp.drives.reduce((a,d)=>a+(+d['Total Size (GB)']||0),0);
+      const freeGB=sp.drives.reduce((a,d)=>a+(+d['Free Space (GB)']||0),0);
+      const fmtSize=gb=>gb>=1000?(gb/1000).toFixed(1)+' TB':Math.round(gb)+' GB';
+      const diskCount=DISKLAYOUT.length||sp.drives.length;
+      tiles.push({cls:'storage',icon:ICON_STORAGE,label:diskCount>1?'Storage ('+diskCount+' disks)':'Storage',tab:'drives',value:fmtSize(totalGB)+' total',lines:[
+        fmtSize(freeGB)+' free'
+      ]});
+    }
+    if(mb){
+      const mbClean=((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim();
+      // Vendor support sites are single-page apps that get restructured often (MSI's own
+      // "/Search?searchKeyword=" link 404s as of 2026, and ASUS's has since moved behind a
+      // region prefix) - hard-coding another guessed URL just sets up the next 404. A
+      // site-scoped Google search always lands on the current support page regardless of how
+      // the vendor's frontend changes, so every vendor uses that instead of a direct link.
+      const vendorSite={asus:'asus.com',msi:'msi.com','micro-star':'msi.com',gigabyte:'gigabyte.com',asrock:'asrock.com'};
+      const mfrL=(mbMfr||'').toLowerCase();
+      const q=encodeURIComponent(mbClean+' bios update download');
+      let biosUrl='https://www.google.com/search?q='+q;
+      const vendorKey=Object.keys(vendorSite).find(k=>mfrL.includes(k));
+      if(vendorKey)biosUrl='https://www.google.com/search?q='+encodeURIComponent('site:'+vendorSite[vendorKey]+' '+mb);
+      tiles.push({cls:'mobo',icon:ICON_MOBO,label:'Motherboard',tab:'summary',value:mbClean,lines:[
+        bver?'BIOS '+bver:'',
+        bdate?'BIOS dated '+bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''):''
+      ].filter(Boolean),link:{text:'Check for BIOS updates',url:biosUrl}});
+    }
+    if(os){
+      const bMajor=build?build.split('.')[0]:'';
+      const fv=WINVER[bMajor];
+      tiles.push({cls:'os',icon:ICON_OS,label:'Windows',tab:'summary',value:os.replace('Microsoft ',''),lines:[
+        fv?'Version '+fv:(build?'Build '+build:''),
+        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):''
+      ].filter(Boolean)});
+    }
+    if(!tiles.length){heroEl.innerHTML='';return;}
+
+    const critCount=notes.filter(n=>/class="r"/.test(n)).length;
+    const warnCount=notes.filter(n=>/class="y"/.test(n)).length;
+    const totalFlags=critCount+warnCount;
+    const pillCls=totalFlags===0?'ok':(critCount>0?'err':'warn');
+    const pillText=totalFlags===0?'All clear':(totalFlags+' thing'+(totalFlags>1?'s':'')+' worth checking');
+
+    const titleParts=[sysMfr,(sysModel&&!sysModelIsDupe)?sysModel:''].filter(Boolean);
+    const title=titleParts.length?titleParts.join(' '):(sysName||'This PC');
+    const subtitle=(sysName&&sysName!==title)?sysName:'';
+
+    let h='<div class="identity"><div class="identity-left">'+
+      '<div class="identity-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 22v-4M15 22v-4M9 6V2M15 6V2M22 9h-4M22 15h-4M2 9h4M2 15h4"/></svg></div>'+
+      '<div class="identity-text"><div class="identity-title">'+esc(title)+'</div>'+
+      (subtitle?'<div class="identity-sub mono">'+esc(subtitle)+'</div>':'')+
+      '</div></div>'+
+      '<div class="status-pill '+pillCls+'"><span class="status-dot"></span>'+esc(pillText)+'</div></div>';
+
+    h+='<div class="tile-grid">';
+    tiles.forEach(t=>{
+      h+='<div class="tile c-'+t.cls+'" onclick="return goTab(\''+t.tab+'\')"><div class="tile-head"><div class="tile-icon">'+t.icon+'</div><div class="tile-label">'+esc(t.label)+'</div></div>'+
+        '<div class="tile-value">'+esc(t.value)+'</div>'+
+        t.lines.map(l=>'<div class="tile-line">'+esc(l)+'</div>').join('')+
+        (t.link?'<div class="tile-line"><a href="'+t.link.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--info)">'+esc(t.link.text)+'</a></div>':'')+
+        '</div>';
+    });
+    h+='</div>';
+    heroEl.innerHTML=h;
+  })();
+
   const NOTE_GROUPS=[
     {label:'Critical',   items:notes.filter(n=>/class="r"/.test(n))},
     {label:'Warnings',   items:notes.filter(n=>/class="y"/.test(n))},
@@ -1451,6 +1555,13 @@ function renderSecurity(){
   if(SECURITY.avProducts&&SECURITY.avProducts.length){
     h+='<div class="spec-section"><h2>Antivirus</h2><dl class="kv">';
     SECURITY.avProducts.forEach(a=>{
+      h+='<dt>'+esc(a.name)+'</dt><dd style="color:'+(a.enabled?'var(--ok)':'var(--dim)')+'">'+(a.enabled?'Active':'Inactive')+'</dd>';
+    });
+    h+='</dl></div>';
+  }
+  if(SECURITY.firewallProducts&&SECURITY.firewallProducts.length){
+    h+='<div class="spec-section"><h2>Third-party firewall software</h2><dl class="kv">';
+    SECURITY.firewallProducts.forEach(a=>{
       h+='<dt>'+esc(a.name)+'</dt><dd style="color:'+(a.enabled?'var(--ok)':'var(--dim)')+'">'+(a.enabled?'Active':'Inactive')+'</dd>';
     });
     h+='</dl></div>';
@@ -1557,11 +1668,38 @@ function renderGPU(){
   h+='</div></div>';
   v.innerHTML=h;
 }
+function renderCPU(){
+  const v=document.getElementById('cpuView');
+  const sp=parseSpecs(SPECS);
+  const cpuName=specVal(sp.info,'CPU Name');
+  if(!cpuName){v.innerHTML='<div class="spec-section"><h2>Processor</h2><div style="color:var(--faint)">No processor data embedded.</div></div>';return;}
+  const ct=specVal(sp.info,'CPU Cores/Threads'), ctm=(ct||'').match(/(\d+)C\s*\/\s*(\d+)T/i);
+  const ghz=specVal(sp.info,'CPU Speed');
+  const l2=specVal(sp.info,'CPU L2 Cache'), l3=specVal(sp.info,'CPU L3 Cache');
+  const socket=specVal(sp.info,'CPU Socket'), arch=specVal(sp.info,'CPU Architecture');
+  const virt=specVal(sp.info,'CPU Virtualization');
+  let h='<div class="spec-section"><h2>Processor</h2><div class="drive-grid"><div class="drive"><h3>'+esc(cpuName.trim())+'</h3><dl class="kv smart-kv">'+
+    (ctm?'<dt>Cores / Threads</dt><dd>'+ctm[1]+' / '+ctm[2]+'</dd>':'')+
+    (ghz?'<dt>Speed</dt><dd>'+esc(ghz)+'</dd>':'')+
+    (socket?'<dt>Socket</dt><dd>'+esc(socket)+'</dd>':'')+
+    (arch?'<dt>Architecture</dt><dd>'+esc(arch)+'</dd>':'')+
+    (l2?'<dt>L2 Cache</dt><dd>'+esc(l2)+'</dd>':'')+
+    (l3?'<dt>L3 Cache</dt><dd>'+esc(l3)+'</dd>':'')+
+    (virt?'<dt>Virtualization (VT-x/AMD-V)</dt><dd style="color:'+(virt==='Enabled'?'var(--ok)':'var(--warn)')+'">'+esc(virt)+'</dd>':'')+
+    '</dl></div></div>';
+  if(virt==='Disabled'){
+    h+='<div style="color:var(--faint);font-size:13.5px;margin-top:14px">Hardware virtualization is present but disabled in firmware - this is the most common reason Hyper-V, WSL2, or an Android/emulator app fails to start. It\'s enabled in the BIOS/UEFI setup, usually under a CPU or Advanced settings page, often labelled Intel VT-x, AMD-V, or SVM Mode.</div>';
+  }
+  h+='</div>';
+  v.innerHTML=h;
+}
 function renderMemory(){
   const v=document.getElementById('memoryView');
   let h='';
   if(RAM.length){
-    h+='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2><div class="drive-grid">';
+    h+='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2>';
+    if(RAMSLOTS)h+='<div style="color:var(--dim);font-size:14px;margin-bottom:16px">'+RAM.length+' of '+RAMSLOTS+' slots populated'+(RAM.length<RAMSLOTS?' <span style="color:var(--faint)">('+(RAMSLOTS-RAM.length)+' free)</span>':'')+'</div>';
+    h+='<div class="drive-grid">';
     RAM.forEach(m=>{
       h+='<div class="drive"><h3>'+esc(m.slot)+'</h3>'+
         '<div class="sub">'+esc(m.mfr||'')+'</div>'+
@@ -1591,6 +1729,31 @@ function renderMemory(){
   }
   v.innerHTML=h||'<div class="spec-section"><h2>Memory</h2><div style="color:var(--faint)">No memory data embedded.</div></div>';
 }
+function renderBattery(){
+  if(!BATTERY.length)return;
+  document.getElementById('batteryTab').style.display='';
+  const v=document.getElementById('batteryView');
+  let h='<div class="spec-section"><h2>Battery health ('+BATTERY.length+')</h2><div class="drive-grid">';
+  BATTERY.forEach(b=>{
+    h+='<div class="drive"><h3>'+esc(b.name)+'</h3>'+
+      (b.chemistry?'<div class="sub">'+esc(b.chemistry)+'</div>':'');
+    if(b.healthPct!=null){
+      h+='<div class="meter'+(b.healthPct<70?' low':'')+'"><div style="width:'+Math.min(b.healthPct,100)+'%"></div></div>'+
+        '<div class="use mono">'+esc(b.healthPct)+'% of original capacity'+(b.healthPct<70?' <span class="y">(significant wear)</span>':'')+'</div>';
+    }
+    h+='<dl class="kv smart-kv">'+
+      (b.designCap?'<dt>Design capacity</dt><dd>'+esc(b.designCap)+' mWh</dd>':'')+
+      (b.fullCap?'<dt>Full charge capacity</dt><dd>'+esc(b.fullCap)+' mWh</dd>':'')+
+      (b.cycleCount?'<dt>Cycle count</dt><dd>'+esc(b.cycleCount)+'</dd>':'')+
+      (b.chargePct!=null?'<dt>Charge at capture</dt><dd>'+esc(b.chargePct)+'%</dd>':'')+
+      (b.status?'<dt>Status at capture</dt><dd>'+esc(b.status)+'</dd>':'')+
+      '</dl>'+
+      (b.healthPct==null?'<div style="color:var(--faint);font-size:13px;margin-top:8px">This hardware doesn\'t report a full-charge capacity, so wear % can\'t be calculated - only the raw status below is available.</div>':'')+
+      '</div>';
+  });
+  h+='</div></div>';
+  v.innerHTML=h;
+}
 function renderNet(){
   const v=document.getElementById('netView');
   if(!NET||(!NET.adapters||!NET.adapters.length)&&!NET.wifi){
@@ -1609,6 +1772,8 @@ function renderNet(){
         '<dt>Status</dt><dd style="color:'+stCol+'">'+esc(a.status)+'</dd>'+
         (up&&a.speed?'<dt>Link speed</dt><dd'+(a.gigabitBelowRated?' style="color:var(--warn)"':'')+'>'+esc(a.speed)+(a.gigabitBelowRated?' <span style="color:var(--faint)">(Gigabit-capable)</span>':'')+'</dd>':'')+
         (a.media?'<dt>Media</dt><dd>'+esc(friendlyMedia(a.media))+'</dd>':'')+
+        (a.driverVersion?'<dt>Driver version</dt><dd class="mono">'+esc(a.driverVersion)+'</dd>':'')+
+        (a.driverDate?'<dt>Driver date</dt><dd>'+esc(a.driverDate)+'</dd>':'')+
         '</dl></div>';
     });
     h+='</div></div>';
@@ -1623,6 +1788,10 @@ function renderNet(){
     });
     h+='</div></div>';
   }
+  if(NET.dns&&NET.dns.length){
+    h+='<div class="spec-section"><h2>DNS servers</h2><dl class="kv"><dt style="grid-column:1/-1">'+esc(NET.dns.join(', '))+'</dt></dl>'+
+      '<div style="color:var(--faint);font-size:13.5px;margin-top:8px">A stale DNS override left behind by a VPN client or router misconfiguration is a common, otherwise invisible cause of connectivity issues - worth checking these are what you expect.</div></div>';
+  }
   if(NET.wifi&&NET.wifi.signal){
     const w=NET.wifi;
     const sig=parseInt(w.signal)||0;
@@ -1632,13 +1801,13 @@ function renderNet(){
       '<dl class="kv smart-kv">'+
       '<dt>Signal</dt><dd>'+esc(w.signal)+'</dd>'+
       (w.band?'<dt>Band</dt><dd>'+esc(w.band)+'</dd>':'')+
-      (w.channel?'<dt>Channel</dt><dd>'+esc(w.channel)+'</dd>':'')+
+      (w.channel?'<dt>Channel</dt><dd>'+esc(w.channel)+(w.width?' ('+esc(w.width)+')':'')+'</dd>':'')+
       (w.radio?'<dt>Radio type</dt><dd>'+esc(w.radio)+'</dd>':'')+
       (w.rx?'<dt>Receive rate</dt><dd>'+esc(w.rx)+' Mbps</dd>':'')+
       (w.tx?'<dt>Transmit rate</dt><dd>'+esc(w.tx)+' Mbps</dd>':'')+
       (w.auth?'<dt>Authentication</dt><dd>'+esc(w.auth)+'</dd>':'')+
       '</dl></div>'+
-      '<div style="color:var(--faint);font-size:13.5px;margin-top:10px">SSID, BSSID and IP details are intentionally not collected.</div></div>';
+      '<div style="color:var(--faint);font-size:13.5px;margin-top:10px">SSID, BSSID and IP address are intentionally not collected.</div></div>';
   }
   v.innerHTML=h;
 }
@@ -1704,7 +1873,9 @@ renderDumps();
 renderNet();
 renderDevices();
 renderGPU();
+renderCPU();
 renderMemory();
+renderBattery();
 renderSecurity();
 renderAppsList(SPECS_PROGRAMS);
 renderProcesses();
@@ -1833,6 +2004,20 @@ function fileadd {
     $osInstallDate = try { ([System.Management.ManagementDateTimeConverter]::ToDateTime($os.InstallDate)).ToString("dd'/'MM'/'yyyy") } catch { "" }
     $cpuCores = ($cpu | Select-Object -ExpandProperty NumberOfCores) -join "+"
     $cpuThreads = ($cpu | Select-Object -ExpandProperty ThreadCount) -join "+"
+    # WMI's MaxClockSpeed is usually the CPU's rated/base speed, but on some systems it reports
+    # the max boost instead - labelled generically as "CPU Speed" rather than "Base Clock" so we
+    # aren't overclaiming precision we can't actually guarantee across every chip.
+    $cpuSpeedGHz = try { [math]::Round((($cpu | Select-Object -ExpandProperty MaxClockSpeed | Select-Object -First 1) / 1000), 2) } catch { $null }
+    # Cache sizes, socket, address width, and firmware virtualization state - all sitting
+    # unused on the same Win32_Processor object already queried above. Virtualization support
+    # is the one with real diagnostic value: it reflects whether VT-x/AMD-V is actually enabled
+    # in firmware right now, not just whether the CPU supports it - the classic reason Hyper-V,
+    # WSL2, or an Android emulator refuses to start even on hardware that fully supports it.
+    $cpuL2KB = try { $cpu | Select-Object -ExpandProperty L2CacheSize | Select-Object -First 1 } catch { $null }
+    $cpuL3KB = try { $cpu | Select-Object -ExpandProperty L3CacheSize | Select-Object -First 1 } catch { $null }
+    $cpuSocket = try { $cpu | Select-Object -ExpandProperty SocketDesignation | Select-Object -First 1 } catch { $null }
+    $cpuAddressWidth = try { $cpu | Select-Object -ExpandProperty AddressWidth | Select-Object -First 1 } catch { $null }
+    $cpuVirtEnabled = try { $cpu | Select-Object -ExpandProperty VirtualizationFirmwareEnabled | Select-Object -First 1 } catch { $null }
     $uacEnabled = try { if ((Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -ErrorAction Stop).EnableLUA -eq 1) { "Enabled" } else { "Disabled" } } catch { "" }
     $powerPlan = try { if ((powercfg /getactivescheme) -match '\((.+)\)\s*$') { $Matches[1] } else { "" } } catch { "" }
 
@@ -1869,6 +2054,12 @@ function fileadd {
     specs "Fast Boot State: $fastbootState"
     specs "Page File Size: $pgfilesize MB"
     specs "CPU Cores/Threads: ${cpuCores}C / ${cpuThreads}T"
+    if ($cpuSpeedGHz) { specs "CPU Speed: ${cpuSpeedGHz} GHz" }
+    if ($cpuSocket) { specs "CPU Socket: $cpuSocket" }
+    if ($cpuAddressWidth) { specs "CPU Architecture: ${cpuAddressWidth}-bit" }
+    if ($cpuL2KB -and $cpuL2KB -gt 0) { specs "CPU L2 Cache: $([math]::Round($cpuL2KB / 1024, 1)) MB" }
+    if ($cpuL3KB -and $cpuL3KB -gt 0) { specs "CPU L3 Cache: $([math]::Round($cpuL3KB / 1024, 1)) MB" }
+    if ($null -ne $cpuVirtEnabled) { specs "CPU Virtualization: $(if ($cpuVirtEnabled) { 'Enabled' } else { 'Disabled' })" }
     if ($osInstallDate) { specs "Windows Install Date: $osInstallDate" }
     if ($uacEnabled) { specs "UAC: $uacEnabled" }
     if ($powerPlan) { specs "Active Power Plan: $powerPlan" }
@@ -1927,7 +2118,7 @@ function fileadd {
 
     # Win32_LogicalDisk enumerates by drive letter (C, D, E...), which doesn't necessarily match
     # physical disk order - a drive letter on Disk 1 can easily sort before one on Disk 0. Sort by
-    # the actual disk number so the Drives tab always reads Disk 0, Disk 1, Disk 2... in order.
+    # the actual disk number so the Storage tab always reads Disk 0, Disk 1, Disk 2... in order.
     $drives = @($drives | Sort-Object { if ($_.'Drive ID' -is [int]) { $_.'Drive ID' } else { [int]::MaxValue } })
 
     specs "`n`nDrive Information:`n`n"
@@ -2267,6 +2458,14 @@ function reliabilityexport {
             })
         } catch { }
 
+        # Total physical RAM slots on the board (populated + empty), via the memory array rather
+        # than the modules themselves - tells someone whether they have room to add more RAM
+        # without opening the case to count empty slots by eye.
+        $ramSlotsTotal = $null
+        try {
+            $ramSlotsTotal = Get-CimInstance Win32_PhysicalMemoryArray -ErrorAction Stop | Select-Object -First 1 -ExpandProperty MemoryDevices
+        } catch { }
+
         # GPU adapters (name, driver, current mode) and monitor models
         $radeonVer = ""
         try {
@@ -2501,6 +2700,41 @@ function reliabilityexport {
             if ($batt) { $isLaptop = $true }
         } catch { }
 
+        # Battery health: Win32_Battery only gives current charge % and a coarse status, not
+        # the wear that actually matters. The real numbers - design capacity vs. what it can
+        # currently hold when full - live in root\wmi, the same data powercfg /batteryreport
+        # pulls from, just without needing to parse a report file.
+        $batteryInfo = @()
+        if ($isLaptop) {
+            try {
+                $bStatic = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryStaticData -ErrorAction SilentlyContinue)
+                $bFull = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryFullChargedCapacity -ErrorAction SilentlyContinue)
+                $bCycle = @(Get-CimInstance -Namespace root\wmi -ClassName BatteryCycleCount -ErrorAction SilentlyContinue)
+                $chemNames = @{1='Other';2='Unknown';3='Lead Acid';4='Nickel Cadmium';5='Nickel Metal Hydride';6='Lithium-ion';7='Zinc Air';8='Lithium Polymer'}
+                $battArr = @($batt)
+                for ($i = 0; $i -lt $battArr.Count; $i++) {
+                    $w32 = $battArr[$i]
+                    $static = $bStatic | Where-Object { $_.InstanceName -eq $w32.DeviceID -or $bStatic.Count -eq $battArr.Count } | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bStatic.Count-1)))
+                    $full = $bFull | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bFull.Count-1)))
+                    $cycle = $bCycle | Select-Object -Index ([Math]::Min($i, [Math]::Max(0,$bCycle.Count-1)))
+                    $designCap = if ($static -and $static.DesignedCapacity -gt 0) { $static.DesignedCapacity } else { $null }
+                    $fullCap = if ($full -and $full.FullChargedCapacity -gt 0) { $full.FullChargedCapacity } else { $null }
+                    $healthPct = if ($designCap -and $fullCap) { [Math]::Round(($fullCap / $designCap) * 100, 1) } else { $null }
+                    $cycleCount = if ($cycle -and $cycle.CycleCount -gt 0) { $cycle.CycleCount } else { $null }
+                    $batteryInfo += [PSCustomObject]@{
+                        name       = if ($w32.Name) { $w32.Name } else { "Battery $($i+1)" }
+                        chemistry  = if ($chemNames.ContainsKey([int]$w32.Chemistry)) { $chemNames[[int]$w32.Chemistry] } else { $null }
+                        chargePct  = $w32.EstimatedChargeRemaining
+                        designCap  = $designCap
+                        fullCap    = $fullCap
+                        healthPct  = $healthPct
+                        cycleCount = $cycleCount
+                        status     = switch ($w32.BatteryStatus) { 1 {'Discharging'} 2 {'On AC, fully charged'} 3 {'Fully charged'} 4 {'Low'} 5 {'Critical'} 6 {'Charging'} 7 {'Charging, high'} 8 {'Charging, low'} 9 {'Charging, critical'} 10 {'Undefined'} 11 {'Partially charged'} default {$null} }
+                    }
+                }
+            } catch { }
+        }
+
         $hagsEnabled = $null
         try {
             $hw = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers' -Name 'HwSchMode' -ErrorAction Stop).HwSchMode
@@ -2591,6 +2825,18 @@ function reliabilityexport {
             try {
                 $avProducts = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop | ForEach-Object {
                     # productState is a bitmask; the middle byte's low nibble indicates enabled/disabled
+                    $stateHex = "{0:X6}" -f [int]$_.productState
+                    $enabled = $stateHex.Substring(2,2) -in @('10','11')
+                    [PSCustomObject]@{ name = "$($_.displayName)"; enabled = $enabled }
+                })
+            } catch { }
+
+            # Third-party firewall products, same Security Center namespace as the AV check above -
+            # mainly useful for spotting a leftover firewall product (uninstalled security suites
+            # sometimes leave their firewall driver registered and blocking traffic behind).
+            $firewallProducts = @()
+            try {
+                $firewallProducts = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName FirewallProduct -ErrorAction Stop | ForEach-Object {
                     $stateHex = "{0:X6}" -f [int]$_.productState
                     $enabled = $stateHex.Substring(2,2) -in @('10','11')
                     [PSCustomObject]@{ name = "$($_.displayName)"; enabled = $enabled }
@@ -2867,13 +3113,20 @@ function reliabilityexport {
                 rdp              = $rdp
                 acctType         = $acctType
                 avProducts       = $avProducts
+                firewallProducts = $firewallProducts
             }
         } catch { }
 
         Write-Host "      - Network adapters, Memory and Running processes" -ForegroundColor DarkGray
-        # Network adapters (no IPs, MACs or SSIDs collected)
+        # Network adapters (no IPs, MACs or SSIDs collected - DNS server addresses are the one
+        # exception, since a stale/leftover DNS override, often left behind by a VPN client that's
+        # since been closed, is a common and otherwise invisible cause of "the internet is broken"
+        # reports; this is a static config read, not a live query out to anything)
         $net = $null
         try {
+            $dnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+                Where-Object { $_.ServerAddresses.Count -gt 0 -and $_.InterfaceAlias -notmatch 'Loopback' } |
+                Select-Object -ExpandProperty ServerAddresses | Sort-Object -Unique)
             $adapters = @(Get-NetAdapter -Physical -ErrorAction Stop | ForEach-Object {
                 # Flag an Ethernet link that's connected well below what the hardware can do - a
                 # classic sign of a bad/damaged cable, a bad port, or a cheap Cat5 run. We check the
@@ -2900,12 +3153,14 @@ function reliabilityexport {
                     speed  = "$($_.LinkSpeed)"
                     media  = "$($_.PhysicalMediaType)"
                     gigabitBelowRated = $gigabitBelowRated
+                    driverVersion = "$($_.DriverVersion)"
+                    driverDate    = if ($_.DriverDate) { $_.DriverDate.ToString("dd'/'MM'/'yyyy") } else { "" }
                 }
             })
             $vpns = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
                 -not $_.Physical -and (
                     $_.Status -eq 'Up' -or
-                    "$($_.InterfaceDescription) $($_.Name)" -match 'TAP|Wintun|WireGuard|OpenVPN|Tailscale|Nord|ExpressVPN|Proton|Surfshark|Mullvad|ZeroTier|Hamachi|Radmin|Bright|VPN'
+                    "$($_.InterfaceDescription) $($_.Name)" -match 'TAP|Wintun|WireGuard|OpenVPN|Tailscale|Nord|ExpressVPN|Proton|Surfshark|Mullvad|ZeroTier|Hamachi|Radmin|Bright|VPN|AnyConnect|GlobalProtect|Forti|Cloudflare|WARP|Pulse|SonicWall|NetExtender|CheckPoint|SoftEther|PacketiX|Windscribe|IVPN|Psiphon|Betternet|Shadowsocks|Hotspot Shield'
                 ) -and "$($_.InterfaceDescription)" -notmatch 'WAN Miniport|Bluetooth|Loopback|Kernel Debug'
             } | ForEach-Object {
                 [PSCustomObject]@{
@@ -3028,14 +3283,16 @@ namespace PCHH {
                 }
             } catch { }
 
-            # Band/Channel have no clean locale-independent source (the WLAN API's connection
-            # attributes don't carry frequency), so these two remain best-effort via netsh and may
-            # come back empty on a non-English system.
+            # Band/Channel/Channel width have no clean locale-independent source (the WLAN API's
+            # connection attributes don't carry frequency info), so these remain best-effort via
+            # netsh and may come back empty on a non-English system. Channel width specifically
+            # isn't a standard netsh field on every driver/Windows build - some report it, many
+            # don't, so treat it as a bonus when present rather than something to rely on.
             $wl = netsh wlan show interfaces 2>$null
             $wf = @{}
             if ($wl) {
                 foreach ($line in $wl) {
-                    if ($line -match '^\s*(Band|Channel)\s*:\s*(.+)$') {
+                    if ($line -match '^\s*(Band|Channel|Channel width)\s*:\s*(.+)$') {
                         $wf[$Matches[1]] = $Matches[2].Trim()
                     }
                 }
@@ -3045,13 +3302,14 @@ namespace PCHH {
                     signal  = "$wifiSignalPct%"
                     band    = "$($wf['Band'])"
                     channel = "$($wf['Channel'])"
+                    width   = "$($wf['Channel width'])"
                     radio   = "$radioType"
                     auth    = "$authDisplay"
                     rx      = "$rxMbps"
                     tx      = "$txMbps"
                 }
             }
-            $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi }
+            $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi; dns = $dnsServers }
         } catch { }
 
         # Memory usage at time of capture (physical + commit charge)
@@ -3084,7 +3342,10 @@ namespace PCHH {
         $dumpsJson = if ($dumps.Count -gt 0) { (ConvertTo-Json @($dumps) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $gpusJson = if ($gpus.Count -gt 0) { (ConvertTo-Json @($gpus) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $hagsJson = if ($hagsEnabled) { "`"$hagsEnabled`"" } else { 'null' }
+        $ramSlotsJson = if ($ramSlotsTotal) { "$ramSlotsTotal" } else { 'null' }
         $isLaptopJson = if ($isLaptop) { 'true' } else { 'false' }
+        $batteryJson = if ($batteryInfo.Count -gt 0) { $batteryInfo | ConvertTo-Json -Depth 5 -Compress } else { '[]' }
+        if ($batteryJson -notmatch '^\[') { $batteryJson = "[$batteryJson]" }
         $monsJson = if ($mons.Count -gt 0) { (ConvertTo-Json @($mons) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $displaysJson = if ($displays.Count -gt 0) { (ConvertTo-Json @($displays) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
         $procsJson = if ($procs.Count -gt 0) { (ConvertTo-Json @($procs) -Compress -Depth 3).Replace('</', '<\/') } else { '[]' }
@@ -3112,7 +3373,7 @@ namespace PCHH {
         $specsJson = (ConvertTo-Json "$specsRaw" -Compress).Replace('</', '<\/')
 
         $genStamp = (Get-Date).ToString("dd'/'MM'/'yyyy HH:mm")
-        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson)
+        $viewerHtml = $viewerTemplate.Replace('/*__VER__*/""', "`"$scriptVersion`"").Replace('/*__GEN__*/""', "`"$genStamp`"").Replace('/*__DATA__*/[]', $json).Replace('/*__SPECS__*/""', $specsJson).Replace('/*__DUMPS__*/[]', $dumpsJson).Replace('/*__SYSEVT__*/[]', $sysJson).Replace('/*__SMART__*/[]', $smartJson).Replace('/*__DIRTY__*/[]', $dirtyJson).Replace('/*__DISKLAYOUT__*/[]', $diskLayoutJson).Replace('/*__RAM__*/[]', $ramJson).Replace('/*__GPUS__*/[]', $gpusJson).Replace('/*__HAGS__*/null', $hagsJson).Replace('/*__ISLAPTOP__*/false', $isLaptopJson).Replace('/*__MONS__*/[]', $monsJson).Replace('/*__DISPLAYS__*/[]', $displaysJson).Replace('/*__PROCS__*/[]', $procsJson).Replace('/*__MEMUSE__*/null', $memuseJson).Replace('/*__NET__*/null', $netJson).Replace('/*__SECURITY__*/null', $securityJson).Replace('/*__HOTFIXES__*/[]', $hotfixesJson).Replace('/*__WINDOWSOLD__*/null', $windowsOldJson).Replace('/*__POWERPLAN__*/null', $powerPlanJson).Replace('/*__GENFLAGS__*/null', $generalFlagsJson).Replace('/*__CBS__*/null', $cbsJson).Replace('/*__WUHISTORY__*/[]', $wuHistoryJson).Replace('/*__WINUPDATE__*/null', $winUpdateJson).Replace('/*__DEVERR__*/[]', $devErrorsJson).Replace('/*__AUDIO__*/null', $audioJson).Replace('/*__USB__*/[]', $usbJson).Replace('/*__CAMERAS__*/[]', $camerasJson).Replace('/*__BATTERY__*/[]', $batteryJson).Replace('/*__RAMSLOTS__*/null', $ramSlotsJson)
         try {
             Set-Content -Path $reliability_html_path -Value $viewerHtml -Encoding UTF8
         } catch {
