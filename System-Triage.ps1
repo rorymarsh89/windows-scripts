@@ -50,7 +50,7 @@ $infofile = "$File\specs-programs.txt"
 
 $ziptar = "$File\PCHH-Triage_$random.zip"
 
-$scriptVersion = "1.2 25-08-2026"
+$scriptVersion = "2.0 26-08-2026"
 $lookbackDays = 365   # match reliability history's ~1 year span; System log is size-capped anyway
 $reliability_csv_path = "$File\reliability.csv"
 $reliability_html_path = "$File\triage-report.html"
@@ -617,7 +617,8 @@ const ICON_GPU='<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14
 const ICON_RAM='<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>';
 const ICON_STORAGE='<svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>';
 const ICON_MOBO='<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>';
-const ICON_OS='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+const ICON_OS='<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>';
+const ICON_PC='<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="5" y1="7" x2="19" y2="7"/><line x1="9" y1="15" x2="9.01" y2="15"/><line x1="13" y1="15" x2="17" y2="15"/></svg>';
 // Guards accordion-row toggles against text selection. Checking only whether the click
 // *landed* inside .msg isn't enough - drag-selecting a long/wrapped message often ends with
 // the mouse released just outside its box, which used to collapse the row mid-selection and
@@ -1400,7 +1401,11 @@ function renderSummary(){
     if(RAM.length){
       const heroRamGB=RAM.reduce((a,x)=>a+(+x.cap||0),0);
       const heroRamConf=[...new Set(RAM.map(m=>m.conf).filter(Boolean))].join('/');
-      tiles.push({cls:'ram',icon:ICON_RAM,label:'Memory',tab:'memory',value:heroRamGB+' GB',lines:[
+      // Only show a brand in the headline value when every stick agrees on one - a mixed-brand
+      // kit (or one with no resolved brand) just falls back to plain capacity.
+      const ramMfrs=[...new Set(RAM.map(m=>m.mfr).filter(Boolean))];
+      const ramMfrLabel=ramMfrs.length===1?ramMfrs[0]:'';
+      tiles.push({cls:'ram',icon:ICON_RAM,label:'Memory',tab:'memory',value:heroRamGB+' GB'+(ramMfrLabel?' '+ramMfrLabel:''),lines:[
         heroRamConf?'Speed: '+heroRamConf+' MT/s':'',
         'Modules: '+RAM.length
       ].filter(Boolean)});
@@ -1452,7 +1457,7 @@ function renderSummary(){
     const title=titleParts.length?titleParts.join(' '):'System Manufacturer, System Product Name';
 
     let h='<div class="identity"><div class="identity-left">'+
-      '<div class="identity-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>'+
+      '<div class="identity-icon">'+ICON_PC+'</div>'+
       '<div class="identity-text"><div class="identity-title">'+esc(title)+'</div>'+
       '</div></div>'+
       '<div class="status-pill '+pillCls+'"><span class="status-dot"></span>'+esc(pillText)+'</div></div>';
