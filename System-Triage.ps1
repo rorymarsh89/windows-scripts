@@ -122,10 +122,10 @@ body{background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif
 .y{color:var(--warn)}
 .view{display:none}
 @keyframes viewFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.tab-shutdowns #shutdownsView,body.tab-cpu #cpuView,body.tab-drives #drivesView,body.tab-gpu #gpuView,body.tab-memory #memoryView,body.tab-battery #batteryView,body.tab-net #netView,body.tab-devices #devicesView,body.tab-security #securityView,body.tab-processes #processesView,body.tab-apps #appsView,body.tab-updates #updatesView,body.tab-extensions #extensionsView,body.tab-faq #faqView,body.tab-tools #toolsView,body.tab-dumps #dumpsView{display:block;animation:viewFadeIn .28s cubic-bezier(.16,1,.3,1)}
+body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.tab-shutdowns #shutdownsView,body.tab-mobo #moboView,body.tab-cpu #cpuView,body.tab-drives #drivesView,body.tab-gpu #gpuView,body.tab-memory #memoryView,body.tab-battery #batteryView,body.tab-net #netView,body.tab-devices #devicesView,body.tab-security #securityView,body.tab-processes #processesView,body.tab-apps #appsView,body.tab-updates #updatesView,body.tab-extensions #extensionsView,body.tab-faq #faqView,body.tab-tools #toolsView,body.tab-dumps #dumpsView{display:block;animation:viewFadeIn .28s cubic-bezier(.16,1,.3,1)}
 #pageTitle{padding:36px 36px 0;font-size:40px;font-weight:700;letter-spacing:-.01em;color:var(--text);max-width:1160px}
 #pageTitleSub{color:var(--info);font-weight:600}
-#summaryView,#sysView,#shutdownsView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
+#summaryView,#sysView,#shutdownsView,#moboView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:20px 36px 64px;max-width:1160px}
 .sys-ok{color:var(--ok);padding:24px 0;font-size:16px}
 .sys-note{color:var(--faint);font-size:13px;margin-bottom:14px}
 .spec-section{margin-bottom:40px}
@@ -142,6 +142,7 @@ body.tab-summary #summaryView,body.tab-rel #relView,body.tab-sys #sysView,body.t
 .status-pill{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:8px 16px;font-size:14px;white-space:nowrap;flex-shrink:0}
 .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .status-pill.warn{color:var(--warn)}.status-pill.warn .status-dot{background:var(--warn)}
+.status-pill.err{color:var(--err)}.status-pill.err .status-dot{background:var(--err)}
 .status-pill.ok{color:var(--ok)}.status-pill.ok .status-dot{background:var(--ok)}
 .tile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media (max-width:820px){.tile-grid{grid-template-columns:repeat(2,1fr)}}
@@ -279,7 +280,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
   #timeline,#controls,#list{padding-left:14px;padding-right:14px}
   #search{width:100%;margin-left:0}
   .row{grid-template-columns:44px 10px 1fr}
-  #summaryView,#sysView,#shutdownsView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
+  #summaryView,#sysView,#shutdownsView,#moboView,#cpuView,#drivesView,#netView,#securityView,#appsView,#dumpsView,#memoryView,#gpuView,#processesView,#extensionsView,#updatesView,#toolsView,#faqView{padding:24px 16px 48px}
   #pageTitle{font-size:28px;padding:24px 16px 0}
 }
 </style>
@@ -308,9 +309,10 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
     <div class="nav-group">
       <div class="nav-group-title"><span>Hardware</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
+        <button class="tab" data-tab="mobo"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Motherboard</button>
         <button class="tab" data-tab="cpu"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>Processor</button>
         <button class="tab" data-tab="drives"><svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>Storage</button>
-        <button class="tab" data-tab="gpu"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>GPU and Display(s)</button>
+        <button class="tab" data-tab="gpu"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Graphics</button>
         <button class="tab" data-tab="memory"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>Memory</button>
         <button class="tab" data-tab="battery" id="batteryTab" style="display:none"><svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>Battery</button>
         <button class="tab" data-tab="net"><svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Network</button>
@@ -371,6 +373,7 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
 
 <div id="sysView" class="view"></div>
 <div id="shutdownsView" class="view"></div>
+<div id="moboView" class="view"></div>
 <div id="cpuView" class="view"></div>
 <div id="drivesView" class="view"></div>
 <div id="gpuView" class="view"></div>
@@ -698,7 +701,7 @@ function renderSpecs(){
   let h='';
   if(sp.info.length){
     h+='<div class="spec-section" style="border-top:1px solid var(--line);padding-top:18px"><dl class="kv">';
-    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','CPU Name','CPU Cores/Threads','CPU Speed','CPU Socket','CPU Architecture','CPU L2 Cache','CPU L3 Cache','CPU Virtualization','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Ram Capacity','RAM Speed'];
+    const SHOWN=['System Name','Manufacturer','Model','OS','OS Version','Build','System Uptime','Windows Install Date','CPU Name','CPU Cores/Threads','CPU Speed','CPU Socket','CPU Architecture','CPU L2 Cache','CPU L3 Cache','CPU Virtualization','GPU','Motherboard','Motherboard Manufacturer','BIOS Date','BIOS Version','Fast Boot State','Active Power Plan','Ram Capacity','RAM Speed','Page File Size','TPM Status','TPM Version','Secure Boot State','UAC'];
     const FAQ_KEY={'Secure Boot State':'secure-boot','TPM Status':'tpm'};
     sp.info.filter(([k])=>!SHOWN.includes(k)).forEach(([k,val])=>{
       const off=/^(Secure Boot State|TPM Status)$/.test(k)&&/Disabled/i.test(val);
@@ -1373,7 +1376,7 @@ function renderSummary(){
     const cpuCT=specVal(sp.info,'CPU Cores/Threads'), cpuGHz=specVal(sp.info,'CPU Speed');
     if(cpu){
       const ctm=(cpuCT||'').match(/(\d+)C\s*\/\s*(\d+)T/i);
-      tiles.push({cls:'cpu',icon:ICON_CPU,label:'Processor',tab:'summary',value:cpu.trim(),lines:[
+      tiles.push({cls:'cpu',icon:ICON_CPU,label:'Processor',tab:'cpu',value:cpu.trim(),lines:[
         ctm?ctm[1]+' cores / '+ctm[2]+' threads':'',
         cpuGHz?cpuGHz:''
       ].filter(Boolean)});
@@ -1405,28 +1408,19 @@ function renderSummary(){
     }
     if(mb){
       const mbClean=((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim();
-      // Vendor support sites are single-page apps that get restructured often (MSI's own
-      // "/Search?searchKeyword=" link 404s as of 2026, and ASUS's has since moved behind a
-      // region prefix) - hard-coding another guessed URL just sets up the next 404. A
-      // site-scoped Google search always lands on the current support page regardless of how
-      // the vendor's frontend changes, so every vendor uses that instead of a direct link.
-      const vendorSite={asus:'asus.com',msi:'msi.com','micro-star':'msi.com',gigabyte:'gigabyte.com',asrock:'asrock.com'};
-      const mfrL=(mbMfr||'').toLowerCase();
-      const q=encodeURIComponent(mbClean+' bios update download');
-      let biosUrl='https://www.google.com/search?q='+q;
-      const vendorKey=Object.keys(vendorSite).find(k=>mfrL.includes(k));
-      if(vendorKey)biosUrl='https://www.google.com/search?q='+encodeURIComponent('site:'+vendorSite[vendorKey]+' '+mb);
-      tiles.push({cls:'mobo',icon:ICON_MOBO,label:'Motherboard',tab:'summary',value:mbClean,lines:[
+      tiles.push({cls:'mobo',icon:ICON_MOBO,label:'Motherboard',tab:'mobo',value:mbClean,lines:[
         bver?'BIOS '+bver:'',
         bdate?'BIOS dated '+bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''):''
-      ].filter(Boolean),link:{text:'Check for BIOS updates',url:biosUrl}});
+      ].filter(Boolean)});
     }
     if(os){
       const bMajor=build?build.split('.')[0]:'';
       const fv=WINVER[bMajor];
+      const installDate=specVal(sp.info,'Windows Install Date');
       tiles.push({cls:'os',icon:ICON_OS,label:'Windows',tab:'summary',value:os.replace('Microsoft ',''),lines:[
         fv?'Version '+fv:(build?'Build '+build:''),
-        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):''
+        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):'',
+        installDate?'Installed '+installDate:''
       ].filter(Boolean)});
     }
     if(!tiles.length){heroEl.innerHTML='';return;}
@@ -1435,7 +1429,10 @@ function renderSummary(){
     const warnCount=notes.filter(n=>/class="y"/.test(n)).length;
     const totalFlags=critCount+warnCount;
     const pillCls=totalFlags===0?'ok':(critCount>0?'err':'warn');
-    const pillText=totalFlags===0?'All clear':(totalFlags+' thing'+(totalFlags>1?'s':'')+' worth checking');
+    const pillParts=[];
+    if(critCount)pillParts.push(critCount+' Critical');
+    if(warnCount)pillParts.push(warnCount+' Warning'+(warnCount>1?'s':''));
+    const pillText=totalFlags===0?'All clear':pillParts.join(', ');
 
     const titleParts=[sysMfr,(sysModel&&!sysModelIsDupe)?sysModel:''].filter(Boolean);
     const title=titleParts.length?titleParts.join(' '):(sysName||'This PC');
@@ -1547,11 +1544,22 @@ function renderShutdowns(){
 }
 function renderSecurity(){
   const v=document.getElementById('securityView');
+  const sp=parseSpecs(SPECS);
+  const tpmStatus=specVal(sp.info,'TPM Status'), tpmVersion=specVal(sp.info,'TPM Version');
+  const secureBoot=specVal(sp.info,'Secure Boot State'), uac=specVal(sp.info,'UAC');
+  let h='';
+  if(tpmStatus||secureBoot||uac){
+    h+='<div class="spec-section"><h2>Firmware &amp; account security</h2><dl class="kv">';
+    if(tpmStatus)h+='<dt>TPM</dt><dd style="color:'+(tpmStatus==='Enabled'?'var(--ok)':'var(--err)')+'">'+esc(tpmStatus)+(tpmVersion?' <span style="color:var(--dim)">('+esc(tpmVersion)+')</span>':'')+'</dd>';
+    if(secureBoot)h+='<dt>Secure Boot</dt><dd style="color:'+(secureBoot==='Enabled'?'var(--ok)':'var(--warn)')+'">'+esc(secureBoot)+'</dd>';
+    if(uac)h+='<dt>User Account Control (UAC)</dt><dd style="color:'+(uac==='Enabled'?'var(--ok)':'var(--err)')+'">'+esc(uac)+'</dd>';
+    h+='</dl></div>';
+  }
   if(!SECURITY){
-    v.innerHTML='<div class="spec-section"><h2>Security</h2><div style="color:var(--faint)">No security data embedded.</div></div>';
+    if(!h)v.innerHTML='<div class="spec-section"><h2>Security</h2><div style="color:var(--faint)">No security data embedded.</div></div>';
+    else v.innerHTML=h;
     return;
   }
-  let h='';
   if(SECURITY.avProducts&&SECURITY.avProducts.length){
     h+='<div class="spec-section"><h2>Antivirus</h2><dl class="kv">';
     SECURITY.avProducts.forEach(a=>{
@@ -1629,7 +1637,7 @@ function renderSecurity(){
 function renderGPU(){
   const v=document.getElementById('gpuView');
   if(!GPUS.length && !DISPLAYS.length){
-    v.innerHTML='<div class="spec-section"><h2>GPU and Display(s)</h2><div style="color:var(--faint)">No GPU data embedded.</div></div>';
+    v.innerHTML='<div class="spec-section"><h2>Graphics</h2><div style="color:var(--faint)">No GPU data embedded.</div></div>';
     return;
   }
   const byGpu={};
@@ -1668,6 +1676,24 @@ function renderGPU(){
   h+='</div></div>';
   v.innerHTML=h;
 }
+function renderMotherboard(){
+  const v=document.getElementById('moboView');
+  const sp=parseSpecs(SPECS);
+  const mb=specVal(sp.info,'Motherboard'), mbMfr=specVal(sp.info,'Motherboard Manufacturer');
+  if(!mb){v.innerHTML='<div class="spec-section"><h2>Motherboard</h2><div style="color:var(--faint)">No motherboard data embedded.</div></div>';return;}
+  const mbClean=((mbMfr||'').replace(/ASUSTeK COMPUTER INC\./i,'ASUS').replace(/Micro-Star International.*/i,'MSI').replace(/Gigabyte Technology.*/i,'Gigabyte')+' '+mb).trim();
+  const bver=specVal(sp.info,'BIOS Version');
+  const bdate=specVal(sp.info,'BIOS Date');
+  const fastBoot=specVal(sp.info,'Fast Boot State');
+  const powerPlan=specVal(sp.info,'Active Power Plan');
+  let h='<div class="spec-section"><h2>Motherboard</h2><div class="drive-grid"><div class="drive"><h3>'+esc(mbClean)+'</h3><dl class="kv smart-kv">'+
+    (bver?'<dt>BIOS version</dt><dd>'+esc(bver)+'</dd>':'')+
+    (bdate?'<dt>BIOS date</dt><dd>'+esc(bdate.replace(/\s+\d{1,2}:\d{2}(:\d{2})?(\s*[AP]M)?$/i,''))+'</dd>':'')+
+    (fastBoot?'<dt>Fast Boot</dt><dd>'+esc(fastBoot)+'</dd>':'')+
+    (powerPlan?'<dt>Active power plan</dt><dd>'+esc(powerPlan)+'</dd>':'')+
+    '</dl></div></div></div>';
+  v.innerHTML=h;
+}
 function renderCPU(){
   const v=document.getElementById('cpuView');
   const sp=parseSpecs(SPECS);
@@ -1695,6 +1721,8 @@ function renderCPU(){
 }
 function renderMemory(){
   const v=document.getElementById('memoryView');
+  const sp=parseSpecs(SPECS);
+  const pageFile=specVal(sp.info,'Page File Size');
   let h='';
   if(RAM.length){
     h+='<div class="spec-section"><h2>Memory modules ('+RAM.length+')</h2>';
@@ -1727,6 +1755,7 @@ function renderMemory(){
     }
     h+='</div></div>';
   }
+  if(pageFile)h+='<div class="spec-section"><h2>Virtual memory</h2><dl class="kv"><dt>Page file size</dt><dd>'+esc(pageFile)+'</dd></dl></div>';
   v.innerHTML=h||'<div class="spec-section"><h2>Memory</h2><div style="color:var(--faint)">No memory data embedded.</div></div>';
 }
 function renderBattery(){
@@ -1873,6 +1902,7 @@ renderDumps();
 renderNet();
 renderDevices();
 renderGPU();
+renderMotherboard();
 renderCPU();
 renderMemory();
 renderBattery();
