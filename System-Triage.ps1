@@ -309,11 +309,11 @@ body.dragging #drop{color:var(--info);border-color:var(--info)}
     <div class="nav-group">
       <div class="nav-group-title"><span>Hardware</span><span class="chev">&#9660;</span></div>
       <div class="nav-group-items">
-        <button class="tab" data-tab="mobo"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Motherboard</button>
         <button class="tab" data-tab="cpu"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>Processor</button>
-        <button class="tab" data-tab="drives"><svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>Storage</button>
         <button class="tab" data-tab="gpu"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Graphics</button>
         <button class="tab" data-tab="memory"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>Memory</button>
+        <button class="tab" data-tab="drives"><svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>Storage</button>
+        <button class="tab" data-tab="mobo"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Motherboard</button>
         <button class="tab" data-tab="battery" id="batteryTab" style="display:none"><svg viewBox="0 0 24 24"><rect x="1" y="6" width="18" height="12" rx="2" ry="2"/><line x1="23" y1="13" x2="23" y2="11"/></svg>Battery</button>
         <button class="tab" data-tab="net"><svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Network</button>
         <button class="tab" data-tab="devices"><svg viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Connected Devices</button>
@@ -1247,7 +1247,7 @@ function renderSummary(){
   Object.keys(foundSoft).forEach(grp=>{
     const items=[...foundSoft[grp]].sort().join(', ');
     const SOFT_FAQ={ac:'software-anticheat',oc:'software-overclock',periph:'software-rgb',audio:'software-audio',net:'software-network',bloat:'software-bloatware',shell:'software-shell',cheat:'software-cheat',fan:'software-fancontrol'};
-    const GRP_COLOR={cheat:'r',bloat:'y',remote:'y'};
+    const GRP_COLOR={cheat:'r'};
     softNotes.push(dataLink('apps',SOFT_FAQ[grp]||'','<span class="'+(GRP_COLOR[grp]||'')+'">'+esc(items)+'</span>'));
   });
 
@@ -1375,9 +1375,11 @@ function renderSummary(){
     if(os){
       const bMajor=build?build.split('.')[0]:'';
       const fv=WINVER[bMajor];
+      const installDate=specVal(sp.info,'Windows Install Date');
       tiles.push({cls:'os',icon:ICON_OS,label:'Windows',tab:'summary',value:os.replace('Microsoft ',''),lines:[
         fv?'Version: '+fv:(build?'Build: '+build:''),
-        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):''
+        up?'System uptime: '+up.replace(/ days?/,'d').replace(/ hours?/,'h').replace(/ minutes?/,'m').replace(/,/g,''):'',
+        installDate?'Install date: '+installDate:''
       ].filter(Boolean)});
     }
     if(!tiles.length){heroEl.innerHTML='';return;}
@@ -1606,7 +1608,7 @@ function renderGPU(){
   const gnames=Object.keys(byGpu).length?Object.keys(byGpu):GPUS.map(g=>g.name);
 
   let h='<div class="spec-section"><h2>Graphics adapters ('+gnames.length+')</h2>';
-  if(HAGS)h+='<div style="color:var(--dim);font-size:14px;margin-bottom:16px">Hardware-accelerated GPU Scheduling: <b style="color:var(--text)">'+esc(HAGS)+'</b></div>';
+  if(HAGS)h+='<dl class="kv" style="margin-bottom:16px"><dt>HAGS</dt><dd>'+esc(HAGS)+'</dd></dl>';
   h+='<div class="drive-grid">';
   // Official vendor driver pages are stable, well-known download hubs (unlike motherboard vendor
   // support pages, which get restructured often) - no need for the site-scoped search fallback
@@ -1725,14 +1727,22 @@ function renderMemory(){
   if(MEMUSE&&MEMUSE.pt){
     const physPct=Math.round(MEMUSE.pu/MEMUSE.pt*100);
     h+='<div class="spec-section"><h2>Memory usage at capture</h2><div class="drive-grid">';
-    h+='<div class="drive"><h3>Physical Memory</h3>'+
+    h+='<div class="drive"><h3>In use (compressed)</h3>'+
       '<div class="meter'+(physPct>85?' low':'')+'"><div style="width:'+Math.min(physPct,100)+'%"></div></div>'+
       '<div class="use mono">'+MEMUSE.pu.toFixed(1)+' GB used of '+MEMUSE.pt.toFixed(1)+' GB ('+physPct+'%)</div></div>';
     if(MEMUSE.ct){
       const commitPct=Math.round(MEMUSE.cu/MEMUSE.ct*100);
-      h+='<div class="drive"><h3>Commit Charge</h3>'+
+      h+='<div class="drive"><h3>Committed</h3>'+
         '<div class="meter'+(commitPct>90?' low':'')+'"><div style="width:'+Math.min(commitPct,100)+'%"></div></div>'+
         '<div class="use mono">'+MEMUSE.cu.toFixed(1)+' GB used of '+MEMUSE.ct.toFixed(1)+' GB ('+commitPct+'%)</div></div>';
+    }
+    if(MEMUSE.avail!=null||MEMUSE.cache!=null||MEMUSE.pagedPool!=null||MEMUSE.nonPagedPool!=null){
+      h+='<div class="drive"><h3>Other</h3><dl class="kv smart-kv">'+
+        (MEMUSE.avail!=null?'<dt>Available</dt><dd>'+MEMUSE.avail.toFixed(1)+' GB</dd>':'')+
+        (MEMUSE.cache!=null?'<dt>Cached</dt><dd>'+MEMUSE.cache.toFixed(2)+' GB</dd>':'')+
+        (MEMUSE.pagedPool!=null?'<dt>Paged pool</dt><dd>'+Math.round(MEMUSE.pagedPool)+' MB</dd>':'')+
+        (MEMUSE.nonPagedPool!=null?'<dt>Non-paged pool</dt><dd>'+Math.round(MEMUSE.nonPagedPool)+' MB</dd>':'')+
+        '</dl></div>';
     }
     h+='</div></div>';
   }
@@ -3170,10 +3180,19 @@ function reliabilityexport {
         # since been closed, is a common and otherwise invisible cause of "the internet is broken"
         # reports; this is a static config read, not a live query out to anything)
         $net = $null
+        # Each piece below gets its own try/catch with a safe empty default. Previously the whole
+        # block shared one try, so a single failure anywhere - e.g. Get-NetAdapter throwing on a
+        # machine with an unusual adapter setup - silently discarded everything else that had
+        # already been collected successfully, including data with nothing to do with the failure
+        # (this is almost certainly what caused "No network data embedded" on a real report).
+        $dnsServers = @()
         try {
             $dnsServers = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
                 Where-Object { $_.ServerAddresses.Count -gt 0 -and $_.InterfaceAlias -notmatch 'Loopback' } |
                 Select-Object -ExpandProperty ServerAddresses | Sort-Object -Unique)
+        } catch { }
+        $adapters = @()
+        try {
             $adapters = @(Get-NetAdapter -Physical -ErrorAction Stop | ForEach-Object {
                 # Flag an Ethernet link that's connected well below what the hardware can do - a
                 # classic sign of a bad/damaged cable, a bad port, or a cheap Cat5 run. We check the
@@ -3204,6 +3223,9 @@ function reliabilityexport {
                     driverDate    = if ($_.DriverDate) { $_.DriverDate.ToString("dd'/'MM'/'yyyy") } else { "" }
                 }
             })
+        } catch { }
+        $vpns = @()
+        try {
             $vpns = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
                 -not $_.Physical -and (
                     $_.Status -eq 'Up' -or
@@ -3216,7 +3238,9 @@ function reliabilityexport {
                     status = "$($_.Status)"
                 }
             })
-            $wifi = $null
+        } catch { }
+        $wifi = $null
+        try {
             # Signal strength via WMI rather than parsing 'netsh wlan show interfaces' text output -
             # netsh's field labels (Signal/Band/Channel/etc) are localized by Windows' own display
             # language, so text-matching them only works on English-language systems. This WMI class
@@ -3356,8 +3380,10 @@ namespace PCHH {
                     tx      = "$txMbps"
                 }
             }
-            $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi; dns = $dnsServers }
         } catch { }
+        # Assembled unconditionally from whatever succeeded above - each piece already has a safe
+        # empty/null default, so this can't itself throw and can't lose data to an unrelated failure.
+        $net = [PSCustomObject]@{ adapters = $adapters; vpns = $vpns; wifi = $wifi; dns = $dnsServers }
 
         # Memory usage at time of capture (physical + commit charge)
         $memuse = $null
@@ -3368,6 +3394,18 @@ namespace PCHH {
                 pu = [math]::Round(($osm.TotalVisibleMemorySize - $osm.FreePhysicalMemory) / 1MB, 1)
                 ct = [math]::Round($osm.TotalVirtualMemorySize / 1MB, 1)
                 cu = [math]::Round(($osm.TotalVirtualMemorySize - $osm.FreeVirtualMemory) / 1MB, 1)
+                avail = [math]::Round($osm.FreePhysicalMemory / 1MB, 1)
+            }
+        } catch { }
+        # The Task Manager-style breakdown (Cached, Paged pool, Non-paged pool) - a separate
+        # try/catch since it's a different WMI class to the essentials above, so a failure here
+        # only loses these extra numbers rather than the whole memory-usage section.
+        try {
+            $memPerf = Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory -ErrorAction Stop
+            if ($memuse -and $memPerf) {
+                $memuse | Add-Member -NotePropertyName cache -NotePropertyValue ([math]::Round($memPerf.CacheBytes / 1GB, 2))
+                $memuse | Add-Member -NotePropertyName pagedPool -NotePropertyValue ([math]::Round($memPerf.PoolPagedBytes / 1MB, 0))
+                $memuse | Add-Member -NotePropertyName nonPagedPool -NotePropertyValue ([math]::Round($memPerf.PoolNonpagedBytes / 1MB, 0))
             }
         } catch { }
 
